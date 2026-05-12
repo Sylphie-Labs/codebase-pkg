@@ -1,0 +1,85 @@
+{
+  "name": "@anthrorg-infra/codebase-pkg",
+  "version": "0.1.0",
+  "description": "AST-driven Neo4j knowledge graph of your codebase, exposed to Claude Code via MCP. Map your monorepo once; let the agent query it instead of re-reading files.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "mcp",
+    "knowledge-graph",
+    "neo4j",
+    "ast",
+    "ts-morph",
+    "agent-tooling"
+  ],
+  "license": "MIT",
+  "author": "Jim Tisdale",
+  "homepage": "https://github.com/jctisdale/codebase-pkg#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jctisdale/codebase-pkg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jctisdale/codebase-pkg/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./mcp-server": {
+      "types": "./dist/mcp-server/index.d.ts",
+      "import": "./dist/mcp-server/index.js"
+    },
+    "./sync": {
+      "types": "./dist/sync/sync-pipeline.d.ts",
+      "import": "./dist/sync/sync-pipeline.js"
+    },
+    "./seed": {
+      "types": "./dist/ingestion/initial-seed.d.ts",
+      "import": "./dist/ingestion/initial-seed.js"
+    }
+  },
+  "bin": {
+    "codebase-pkg": "./dist/cli/codebase-pkg.js",
+    "codebase-pkg-mcp": "./dist/mcp-server/index.js"
+  },
+  "files": [
+    "dist/",
+    "template/",
+    "constraints.example.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "prepublishOnly": "pnpm run clean && pnpm run build",
+    "mcp-server": "node dist/mcp-server/index.js",
+    "sync-pkg": "node dist/sync/sync-pipeline.js",
+    "seed-pkg": "node dist/ingestion/initial-seed.js",
+    "validate-pkg": "node dist/sync/integrity-checker.js",
+    "backfill-changes": "node dist/ingestion/backfill-changes.js",
+    "add-constraint": "node dist/ingestion/manual-constraints.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "neo4j-driver": "^5.27.0",
+    "ts-morph": "^25.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

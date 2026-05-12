@@ -1,0 +1,29 @@
+# Source — we publish dist/ only
+src/
+tsconfig.json
+*.tsbuildinfo
+
+# Development files
+.gitignore
+.github/
+.vscode/
+.idea/
+
+# Tests (if/when added)
+test/
+tests/
+*.spec.ts
+*.test.ts
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Per-consumer artifacts
+.last-sync-commit
+constraints.json
