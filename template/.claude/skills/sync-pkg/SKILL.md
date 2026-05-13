@@ -17,7 +17,7 @@ Refresh the codebase knowledge graph: re-seed or incrementally sync from source,
 ## Prerequisites
 
 1. Neo4j running on `bolt://localhost:7687` (override via `CODEBASE_PKG_NEO4J_URI`).
-2. `@anthrorg-infra/codebase-pkg` installed in this project.
+2. `@agent-gear/codebase-pkg` installed in this project.
 3. The initial seed has been run at least once (`npx codebase-pkg seed`). If not, run that first instead of sync.
 
 ---

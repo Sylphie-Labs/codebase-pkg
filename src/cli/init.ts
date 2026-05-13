@@ -146,12 +146,12 @@ function installMcp(cwd: string, flags: Flags, managed: ManagedFile[]): void {
     flags.installMode === 'local'
       ? {
           command: 'node',
-          args: ['./node_modules/@anthrorg-infra/codebase-pkg/dist/mcp-server/index.js'],
+          args: ['./node_modules/@agent-gear/codebase-pkg/dist/mcp-server/index.js'],
           env: {},
         }
       : {
           command: 'npx',
-          args: ['-y', '@anthrorg-infra/codebase-pkg', 'mcp-server'],
+          args: ['-y', '@agent-gear/codebase-pkg', 'mcp-server'],
           env: {},
         };
 

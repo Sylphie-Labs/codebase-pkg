@@ -1,4 +1,4 @@
-# @anthrorg-infra/codebase-pkg
+# @agent-gear/codebase-pkg
 
 **A queryable knowledge graph of your codebase, for Claude Code agents.**
 
@@ -13,7 +13,7 @@ Two install modes, pick what fits.
 **Global** (recommended for solo dev / cross-repo use):
 
 ```bash
-npm install -g @anthrorg-infra/codebase-pkg
+npm install -g @agent-gear/codebase-pkg
 ```
 
 Then in any repo:
@@ -25,7 +25,7 @@ codebase-pkg init
 **Local** (recommended for teams who want version pinning):
 
 ```bash
-npm install --save-dev @anthrorg-infra/codebase-pkg
+npm install --save-dev @agent-gear/codebase-pkg
 npx codebase-pkg init --local
 ```
 
@@ -35,7 +35,7 @@ You'll also need a Neo4j instance. `init --docker` writes a `docker-compose.code
 
 ```bash
 # 1. Install (global)
-npm install -g @anthrorg-infra/codebase-pkg
+npm install -g @agent-gear/codebase-pkg
 
 # 2. From your repo root
 codebase-pkg init --docker
