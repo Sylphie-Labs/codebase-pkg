@@ -16,8 +16,10 @@ Initial public release. Extracted from `drift-detector/packages/codebase-pkg` an
 - Integrity-gated cursor advancement: six structural checks run after every sync; errors block `.last-sync-commit` advance.
 - MCP stdio server exposing seven query tools: `getModuleContext`, `getFunctionDetail`, `getDataFlow`, `getRecentChanges`, `getConstraints`, `getLogContext`, `searchContent`.
 - Initial-seed pipeline with 4 uniqueness constraints + 11 indexes.
-- `codebase-pkg setup` CLI command for installing skill templates and patching `.mcp.json`.
-- `CODEBASE_PKG_*` environment variables for Neo4j connection, watched directories, workspace scope, and domain labels.
+- **Lifecycle command suite**: `init`, `upgrade`, `status`, `doctor`, `uninstall`. Tracks install state in `.codebase-pkg/state.json` with SHA-256 hashes per managed file so upgrades can detect drift, skip user-modified files with `--bak` backup on `--force`, and walk a migration graph from `state.version` to the currently-installed CLI version.
+- **Migration framework** (`src/upgrade/`). Registry is empty in 0.1.0 — the first migration ships with 0.2.0. Plan-first UX (`--plan`); explicit `--confirm` required to apply.
+- `setup` retained as a deprecated alias to `init` for the 0.x backwards-compat window.
+- `CODEBASE_PKG_*` environment variables for Neo4j connection, watched directories, workspace scope, domain labels, and cursor file location.
 
 ### Known limitations
 - TypeScript and TSX only. Tree-sitter integration for Python/Go/Rust is planned but not in this release.

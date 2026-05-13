@@ -8,35 +8,70 @@
 
 ## Install
 
+Two install modes, pick what fits.
+
+**Global** (recommended for solo dev / cross-repo use):
+
 ```bash
-npm install --save-dev @anthrorg-infra/codebase-pkg
-# or
-pnpm add -D @anthrorg-infra/codebase-pkg
-# or
-yarn add -D @anthrorg-infra/codebase-pkg
+npm install -g @anthrorg-infra/codebase-pkg
 ```
 
-You'll also need a Neo4j instance. The setup command can write a `docker-compose.codebase-pkg.yml` for you, or use whatever Neo4j you already have.
+Then in any repo:
+
+```bash
+codebase-pkg init
+```
+
+**Local** (recommended for teams who want version pinning):
+
+```bash
+npm install --save-dev @anthrorg-infra/codebase-pkg
+npx codebase-pkg init --local
+```
+
+You'll also need a Neo4j instance. `init --docker` writes a `docker-compose.codebase-pkg.yml` for you, or use whatever Neo4j you already have.
 
 ## Quickstart
 
 ```bash
-# 1. Install package
-npm install --save-dev @anthrorg-infra/codebase-pkg
+# 1. Install (global)
+npm install -g @anthrorg-infra/codebase-pkg
 
-# 2. Run the setup command from your repo root
-npx codebase-pkg setup
+# 2. From your repo root
+codebase-pkg init --docker
 
-# 3. Bring up Neo4j (skip if you already have one)
+# 3. Bring up Neo4j
 docker compose -f docker-compose.codebase-pkg.yml up -d
 
 # 4. Seed the graph from the current state of your repo
-npx codebase-pkg seed
+codebase-pkg seed
 
 # 5. Start a Claude Code session — the MCP tools are now available
 ```
 
-`setup` does three things: copies skill templates into `.claude/skills/`, patches your `.mcp.json` with the codebase-pkg MCP server stanza, and writes `constraints.json` from `constraints.example.json` if you don't already have one.
+`init` copies skill templates into `.claude/skills/`, patches `.mcp.json` with the MCP server stanza, writes `constraints.json` from the bundled example, and records what it did in `.codebase-pkg/state.json` so `upgrade`, `status`, and `uninstall` can later operate on the install cleanly.
+
+## Lifecycle
+
+```bash
+codebase-pkg init      [--local] [--docker] [--force] [--dry-run]
+codebase-pkg upgrade   [--plan] [--confirm] [--force]
+codebase-pkg status                                # show install state + drift
+codebase-pkg doctor    [--no-network]              # structural checks
+codebase-pkg uninstall --confirm
+```
+
+**`init`** is one-time per repo. It writes a state file that subsequent commands read.
+
+**`upgrade`** walks the migration graph from the version recorded in `state.json` to the version of the CLI you currently have installed. Always shows the plan first; nothing is applied without `--confirm`. Drifted files (modified since install) are skipped with a warning unless `--force` is also passed (which creates `.bak.<timestamp>` backups).
+
+**`status`** is a quick `git status`-style report of what's installed, the package's view of each managed file, and any drift.
+
+**`doctor`** runs six structural checks: state file present, version matches, managed files present, MCP stanza registered, constraints file populated, Neo4j reachable.
+
+**`uninstall`** removes every file recorded in `state.json` with `--confirm`. Modified files are backed up to `.bak.<timestamp>` rather than deleted unless `--force`.
+
+> `setup` is a deprecated alias for `init` and will be removed before 1.0.
 
 ## What's in the graph
 
@@ -79,18 +114,25 @@ Architectural invariants live in `constraints.json` at your repo root and surfac
 
 See `constraints.example.json` for the format.
 
-## CLI
+## CLI reference
 
 ```bash
-npx codebase-pkg setup                # one-time consumer setup
-npx codebase-pkg seed                 # initial full graph build
-npx codebase-pkg sync                 # incremental sync since last commit
-npx codebase-pkg validate             # run integrity checks against the graph
-npx codebase-pkg backfill-changes     # populate Change nodes from git history
-npx codebase-pkg add-constraint       # CLI to add an architectural constraint
+# Lifecycle
+codebase-pkg init        [--local] [--docker] [--force] [--dry-run]
+codebase-pkg upgrade     [--plan] [--confirm] [--force] [--verbose]
+codebase-pkg status
+codebase-pkg doctor      [--no-network]
+codebase-pkg uninstall   --confirm [--force] [--dry-run]
+
+# Graph operations
+codebase-pkg seed                 # initial full graph build
+codebase-pkg sync                 # incremental sync since last commit
+codebase-pkg validate             # run integrity checks against the graph
+codebase-pkg backfill-changes     # populate Change nodes from git history
+codebase-pkg add-constraint --file constraints.json [--validate]
 ```
 
-`npx codebase-pkg-mcp` runs the MCP server directly (Claude Code launches this for you via `.mcp.json`).
+`codebase-pkg-mcp` runs the MCP server directly (Claude Code launches it for you via `.mcp.json`).
 
 ## License
 
