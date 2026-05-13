@@ -1,5 +1,5 @@
 /**
- * @agent-gear/codebase-pkg — public library entry.
+ * @sylphie-labs/codebase-pkg — public library entry.
  *
  * Most consumers use this package via the CLI or the MCP server. This entry
  * exists so programmatic consumers can run the sync pipeline, integrity
