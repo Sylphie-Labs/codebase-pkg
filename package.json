@@ -14,13 +14,13 @@
   ],
   "license": "MIT",
   "author": "Jim Tisdale",
-  "homepage": "https://github.com/sylphie-labs/codebase-pkg#readme",
+  "homepage": "https://github.com/Sylphie-Labs/codebase-pkg#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sylphie-labs/codebase-pkg.git"
+    "url": "git+https://github.com/Sylphie-Labs/codebase-pkg.git"
   },
   "bugs": {
-    "url": "https://github.com/sylphie-labs/codebase-pkg/issues"
+    "url": "https://github.com/Sylphie-Labs/codebase-pkg/issues"
   },
   "type": "module",
   "engines": {
