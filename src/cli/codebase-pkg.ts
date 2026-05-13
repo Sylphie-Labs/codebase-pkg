@@ -19,12 +19,20 @@ import { closeDriver } from '../mcp-server/neo4j-client.js';
 function printUsage(): void {
   process.stdout.write(
     `Usage:\n` +
-      `  codebase-pkg setup              Install skill templates and patch .mcp.json\n` +
+      `\n` +
+      `Setup & lifecycle:\n` +
+      `  codebase-pkg init [--local] [--docker]   One-time setup in this repo\n` +
+      `  codebase-pkg upgrade [--plan] [--confirm] Bring repo's config to current version (Phase B)\n` +
+      `  codebase-pkg status                       Show install state and drift\n` +
+      `  codebase-pkg uninstall --confirm          Remove managed files and state\n` +
+      `\n` +
+      `Graph operations:\n` +
       `  codebase-pkg seed               Initial full graph build\n` +
       `  codebase-pkg sync               Incremental sync since last commit\n` +
       `  codebase-pkg validate           Run integrity checks\n` +
       `  codebase-pkg backfill-changes   Populate Change nodes from git history\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
+      `\n` +
       `  codebase-pkg --version          Print package version\n` +
       `  codebase-pkg --help             Print this message\n`,
   );
@@ -51,9 +59,36 @@ async function main(): Promise<number> {
 
   try {
     switch (cmd) {
+      case 'init': {
+        const { runInit } = await import('./init.js');
+        return await runInit(rest);
+      }
+
       case 'setup': {
-        const { runSetup } = await import('./setup.js');
-        return await runSetup(rest);
+        // Deprecated alias for init. Kept for back-compat through the 0.x cycle.
+        process.stderr.write(
+          `[codebase-pkg] 'setup' is a deprecated alias; use 'init' instead.\n`,
+        );
+        const { runInit } = await import('./init.js');
+        return await runInit(rest);
+      }
+
+      case 'status': {
+        const { runStatus } = await import('./status.js');
+        return await runStatus(rest);
+      }
+
+      case 'uninstall': {
+        const { runUninstall } = await import('./uninstall.js');
+        return await runUninstall(rest);
+      }
+
+      case 'upgrade': {
+        // Phase B — implementation lands separately. Stub until then.
+        process.stderr.write(
+          `[codebase-pkg] 'upgrade' is not implemented yet. Run 'init --force' to re-apply templates.\n`,
+        );
+        return 1;
       }
 
       case 'seed': {
