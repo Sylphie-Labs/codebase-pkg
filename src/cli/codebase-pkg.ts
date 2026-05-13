@@ -22,7 +22,7 @@ function printUsage(): void {
       `\n` +
       `Setup & lifecycle:\n` +
       `  codebase-pkg init [--local] [--docker]   One-time setup in this repo\n` +
-      `  codebase-pkg upgrade [--plan] [--confirm] Bring repo's config to current version (Phase B)\n` +
+      `  codebase-pkg upgrade [--plan] [--confirm] [--force]  Bring repo's config to current version\n` +
       `  codebase-pkg status                       Show install state and drift\n` +
       `  codebase-pkg uninstall --confirm          Remove managed files and state\n` +
       `\n` +
@@ -84,11 +84,8 @@ async function main(): Promise<number> {
       }
 
       case 'upgrade': {
-        // Phase B — implementation lands separately. Stub until then.
-        process.stderr.write(
-          `[codebase-pkg] 'upgrade' is not implemented yet. Run 'init --force' to re-apply templates.\n`,
-        );
-        return 1;
+        const { runUpgrade } = await import('./upgrade.js');
+        return await runUpgrade(rest);
       }
 
       case 'seed': {
