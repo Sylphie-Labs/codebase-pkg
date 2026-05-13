@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * index.ts -- MCP server entry point for the Codebase PKG.
  *

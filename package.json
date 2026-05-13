@@ -47,8 +47,8 @@
     }
   },
   "bin": {
-    "codebase-pkg": "./dist/cli/codebase-pkg.js",
-    "codebase-pkg-mcp": "./dist/mcp-server/index.js"
+    "codebase-pkg": "dist/cli/codebase-pkg.js",
+    "codebase-pkg-mcp": "dist/mcp-server/index.js"
   },
   "files": [
     "dist/",
