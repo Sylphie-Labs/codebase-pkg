@@ -24,6 +24,7 @@ function printUsage(): void {
       `  codebase-pkg init [--local] [--docker]   One-time setup in this repo\n` +
       `  codebase-pkg upgrade [--plan] [--confirm] [--force]  Bring repo's config to current version\n` +
       `  codebase-pkg status                       Show install state and drift\n` +
+      `  codebase-pkg doctor [--no-network]        Run structural checks\n` +
       `  codebase-pkg uninstall --confirm          Remove managed files and state\n` +
       `\n` +
       `Graph operations:\n` +
@@ -86,6 +87,11 @@ async function main(): Promise<number> {
       case 'upgrade': {
         const { runUpgrade } = await import('./upgrade.js');
         return await runUpgrade(rest);
+      }
+
+      case 'doctor': {
+        const { runDoctor } = await import('./doctor.js');
+        return await runDoctor(rest);
       }
 
       case 'seed': {
