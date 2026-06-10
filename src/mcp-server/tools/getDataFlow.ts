@@ -1,8 +1,10 @@
 /**
  * getDataFlow.ts -- Trace upstream/downstream data connections from a function or type.
  *
- * Follows IMPORTS and DATA_FLOWS_TO edges to build an ordered chain showing
- * how data moves through the codebase from or to the named starting node.
+ * Follows CALLS, USES_TYPE, IMPORTS, CONTAINS, INJECTS, EXTENDS, IMPLEMENTS,
+ * and DATA_FLOWS_TO edges to build an ordered chain showing how data moves
+ * through the codebase to ("upstream") or from ("downstream") the named
+ * starting node.
  *
  * Target response size: 1,000-3,000 tokens.
  */
@@ -61,7 +63,7 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
   if (startRecords.length === 0) {
     return (
       `Node "${startNode}" not found in the codebase PKG.\n\n` +
-      `Provide the exact function or type name (e.g., "ExecutorLoopService.tick").\n` +
+      `Provide the exact function or type name (e.g., "UserService.findById").\n` +
       `Use getModuleContext to discover names in a feature area.`
     );
   }
@@ -92,7 +94,7 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
   if (startFile) lines.push(`  File: ${startFile}`);
 
   if (direction === 'upstream' || direction === 'both') {
-    const upstreamChain = await traceDirection(resolvedName, 'upstream', depth);
+    const upstreamChain = await traceDirection(resolvedName, startLabels, 'upstream', depth);
     lines.push(`\nUPSTREAM (what feeds into "${resolvedName}")`);
     lines.push('-'.repeat(40));
     if (upstreamChain.length === 0) {
@@ -103,7 +105,7 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
   }
 
   if (direction === 'downstream' || direction === 'both') {
-    const downstreamChain = await traceDirection(resolvedName, 'downstream', depth);
+    const downstreamChain = await traceDirection(resolvedName, startLabels, 'downstream', depth);
     lines.push(`\nDOWNSTREAM (what "${resolvedName}" feeds into)`);
     lines.push('-'.repeat(40));
     if (downstreamChain.length === 0) {
@@ -124,27 +126,35 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
  */
 async function traceDirection(
   startName: string,
+  startLabels: string[],
   direction: 'upstream' | 'downstream',
   depth: number
 ): Promise<string[]> {
-  const edgeTypes = 'CALLS|USES_TYPE|IMPORTS|CONTAINS|INJECTS|EXTENDS|IMPLEMENTS';
+  const edgeTypes = 'CALLS|USES_TYPE|IMPORTS|CONTAINS|INJECTS|EXTENDS|IMPLEMENTS|DATA_FLOWS_TO';
+
+  // Anchor the start node by its actual label (Function or Type) so the
+  // name index applies instead of scanning all nodes.
+  const startLabel = startLabels.includes('Type') ? 'Type' : 'Function';
+
+  // upstream = what feeds INTO start, so edges point TOWARD start: (n)-[...]->(start)
+  // downstream = what start feeds, so edges point AWAY from start: (start)-[...]->(n)
   const pathPattern =
     direction === 'upstream'
-      ? `(n)<-[:${edgeTypes}*1..${depth}]-(start {name: $name})`
-      : `(start {name: $name})-[:${edgeTypes}*1..${depth}]->(n)`;
+      ? `(n)-[:${edgeTypes}*1..${depth}]->(start:${startLabel} {name: $name})`
+      : `(start:${startLabel} {name: $name})-[:${edgeTypes}*1..${depth}]->(n)`;
 
   const records = await runQuery(
     `
     MATCH path = ${pathPattern}
-    WHERE (start:Function OR start:Type)
-      AND (n:Function OR n:Type)
-    RETURN n.name AS name,
-           n.filePath AS filePath,
-           labels(n) AS labels,
-           n.returnType AS returnType,
-           n.kind AS kind,
-           length(path) AS hopDistance
-    ORDER BY hopDistance, n.name
+    WHERE (n:Function OR n:Type)
+    WITH n.name AS name,
+         n.filePath AS filePath,
+         labels(n) AS labels,
+         n.returnType AS returnType,
+         n.kind AS kind,
+         min(length(path)) AS hopDistance
+    RETURN name, filePath, labels, returnType, kind, hopDistance
+    ORDER BY hopDistance, name
     LIMIT 50
     `,
     { name: startName }

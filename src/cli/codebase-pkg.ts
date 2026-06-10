@@ -106,6 +106,14 @@ async function main(): Promise<number> {
         return 0;
       }
 
+      case 'mcp-server': {
+        // Back-compat: the canonical entry point is the `codebase-pkg-mcp` bin
+        // (dist/mcp-server/index.js). Older .mcp.json stanzas invoked
+        // `codebase-pkg mcp-server`; keep that working by booting the server here.
+        await import('../mcp-server/index.js');
+        return 0;
+      }
+
       case 'validate': {
         const { runIntegrityChecks } = await import('../sync/integrity-checker.js');
         const result = await runIntegrityChecks();

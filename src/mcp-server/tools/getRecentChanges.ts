@@ -1,7 +1,7 @@
 /**
  * getRecentChanges.ts -- Cross-reference a concept area with git/change history.
  *
- * Finds Change nodes that match a query area and returns PR numbers,
+ * Finds Change nodes that match a query area and returns commit hashes,
  * descriptions, affected functions, and affected types.
  *
  * Target response size: 500-1,500 tokens.
@@ -109,9 +109,11 @@ export async function handleGetRecentChanges(input: GetRecentChangesInput): Prom
     const date = r.get('date') as string | null;
     const author = r.get('author') as string | null;
     const desc = r.get('description') as string | null;
+    const shortHash = r.get('shortHash') as string | null;
 
     const header = [
       date ? date.slice(0, 10) : 'unknown date',
+      shortHash ?? null,
       author ? `by ${author}` : null,
     ]
       .filter(Boolean)

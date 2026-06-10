@@ -19,6 +19,10 @@
  *   node dist/mcp-server/index.js
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
 import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -53,7 +57,7 @@ const TOOLS: Tool[] = [
       properties: {
         query: {
           type: 'string',
-          description: 'Concept, feature area, or module name to look up. Examples: "drive system", "executor", "voice loop", "Neo4j".',
+          description: 'Concept, feature area, or module name to look up. Examples: "authentication", "payment processing", "the user service", "database client".',
         },
       },
       required: ['query'],
@@ -136,7 +140,7 @@ const TOOLS: Tool[] = [
       properties: {
         scope: {
           type: 'string',
-          description: 'Service, module, or function name to find constraints for. Examples: "drive-engine", "executor", "neo4j".',
+          description: 'Service, module, or function name to find constraints for. Examples: "the user service", "authentication", "database client".',
         },
       },
       required: ['scope'],
@@ -186,7 +190,7 @@ const TOOLS: Tool[] = [
         },
         fileFilter: {
           type: 'string',
-          description: 'Optional partial file path to narrow the search (e.g., "decision-making", "drive-engine").',
+          description: 'Optional partial file path to narrow the search (e.g., "authentication", "user-service").',
         },
         maxResults: {
           type: 'number',
@@ -202,8 +206,21 @@ const TOOLS: Tool[] = [
 // Server setup
 // ---------------------------------------------------------------------------
 
+// Read the package version at runtime so it never drifts from package.json.
+// This file compiles to dist/mcp-server/index.js, so package.json is two levels up.
+function readPackageVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const pkgPath = join(here, '..', '..', 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: string };
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
 const server = new Server(
-  { name: 'codebase-pkg', version: '0.1.0' },
+  { name: 'codebase-pkg', version: readPackageVersion() },
   { capabilities: { tools: {} } }
 );
 

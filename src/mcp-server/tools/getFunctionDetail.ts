@@ -71,7 +71,7 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
     return `Function "${functionName}" not found in the codebase PKG.${
       filePath ? ` (searched within path: ${filePath})` : ''
     }\n\nTry getModuleContext to discover function names in a feature area.` +
-    `\nNote: class methods are stored as "ClassName.methodName" (e.g., "ExecutorLoopService.tick").`;
+    `\nNote: class methods are stored as "ClassName.methodName" (e.g., "UserService.findById").`;
   }
 
   if (functionRecords.length > 1) {
@@ -94,10 +94,11 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
     MATCH (f:Function)-[:USES_TYPE]->(t:Type)
     WHERE f.name = $name
       AND (f.filePath = $fp OR $fp IS NULL)
+    OPTIONAL MATCH (t)-[:HAS_CODE]->(cb:CodeBlock)
     RETURN t.name AS name,
            t.filePath AS filePath,
            t.kind AS kind,
-           t.bodyText AS body
+           coalesce(cb.bodyText, t.bodyText) AS body
     ORDER BY t.name
     LIMIT 20
     `,

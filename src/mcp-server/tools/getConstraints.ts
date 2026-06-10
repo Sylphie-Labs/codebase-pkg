@@ -111,8 +111,9 @@ export async function handleGetConstraints(input: GetConstraintsInput): Promise<
   lines.push('='.repeat(60));
   lines.push(`${allConstraints.length} constraint(s) found\n`);
 
-  // Group by severity
-  const severityOrder = ['critical', 'high', 'medium', 'low', null];
+  // Group by severity. Constraints written by this package use must|should|prefer
+  // (see validateConstraint in manual-constraints.ts), so order those first; any
+  // other present severities follow, and null (no severity) is shown last.
   const grouped = new Map<string | null, typeof allConstraints>();
 
   for (const c of allConstraints) {
@@ -120,6 +121,20 @@ export async function handleGetConstraints(input: GetConstraintsInput): Promise<
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(c);
   }
+
+  // Derive the display order from the severities actually present.
+  const knownOrder = ['must', 'should', 'prefer'];
+  const presentKeys = [...grouped.keys()];
+  const severityOrder: Array<string | null> = [
+    // 1. Known package severities, in canonical order.
+    ...knownOrder.filter((k) => grouped.has(k)),
+    // 2. Any other non-null severities present (e.g. critical/high), sorted.
+    ...presentKeys
+      .filter((k): k is string => k !== null && !knownOrder.includes(k))
+      .sort(),
+    // 3. Null (no severity) last, if present.
+    ...(grouped.has(null) ? [null] : []),
+  ];
 
   for (const sev of severityOrder) {
     const group = grouped.get(sev);

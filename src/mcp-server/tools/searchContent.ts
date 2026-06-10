@@ -46,7 +46,7 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
            parent.kind AS kind,
            cb.bodyText AS bodyText
     ORDER BY parent.filePath, parent.lineNumber
-    LIMIT $maxResults
+    LIMIT toInteger($maxResults)
     `,
     fileFilter
       ? { pattern: searchPattern, fileFilter, maxResults }
@@ -73,7 +73,7 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
              null AS kind,
              f.bodyText AS bodyText
       ORDER BY f.filePath, f.lineNumber
-      LIMIT $maxResults
+      LIMIT toInteger($maxResults)
       `,
       fileFilter
         ? { pattern: searchPattern, fileFilter, maxResults }

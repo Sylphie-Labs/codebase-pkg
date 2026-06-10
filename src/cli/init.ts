@@ -151,7 +151,7 @@ function installMcp(cwd: string, flags: Flags, managed: ManagedFile[]): void {
         }
       : {
           command: 'npx',
-          args: ['-y', '@sylphie-labs/codebase-pkg', 'mcp-server'],
+          args: ['-y', '--package', '@sylphie-labs/codebase-pkg', 'codebase-pkg-mcp'],
           env: {},
         };
 

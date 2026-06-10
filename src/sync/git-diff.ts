@@ -225,10 +225,17 @@ export function getDeletedFiles(lastCommit: string, currentCommit: string): stri
   try {
     const output = git(`diff --name-only --diff-filter=D ${lastCommit} ${currentCommit}`);
     if (!output) return [];
+    // Mirror getChangedFiles: filter by isWatchedFile on the repo-RELATIVE path
+    // first, then absolutize and forward-slash so paths match the ABSOLUTE
+    // filePaths stored on graph nodes (see computeChangeset's `f.filePath IN
+    // $filePaths`). Do NOT filter by fs.existsSync — deleted files are gone.
     return output
       .split('\n')
       .filter(line => line.trim().length > 0)
-      .filter(relativePath => isWatchedFile(relativePath));
+      .filter(relativePath => isWatchedFile(relativePath))
+      .map(relativePath =>
+        path.join(REPO_ROOT, relativePath).replace(/\\/g, '/')
+      );
   } catch {
     return [];
   }

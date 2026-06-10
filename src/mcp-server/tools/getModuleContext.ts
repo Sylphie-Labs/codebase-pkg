@@ -6,9 +6,9 @@
  * Function bodies are NOT included — use getFunctionDetail for deep dives.
  *
  * Search strategy (in order):
- *   1. Match Module nodes by name/domain/description
- *   2. Match Service nodes by name (so "conversation" finds conversation-engine)
- *   3. Fallback: match Function names (so "synaptogenesis" finds the service)
+ *   1. Match Module nodes by name/packageName
+ *   2. Match Service nodes by name (so "auth" finds the auth-service)
+ *   3. Fallback: match Function names (so a function keyword finds its module)
  */
 
 import { runQuery } from '../neo4j-client.js';
@@ -23,29 +23,22 @@ export interface GetModuleContextInput {
 export async function handleGetModuleContext(input: GetModuleContextInput): Promise<string> {
   const { query } = input;
 
-  // Split multi-word queries into individual terms for OR matching.
-  const terms = query
-    .split(/\s+/)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
-  const searchTerm =
-    terms.length > 1
-      ? `(?i).*(${terms.map(escapeRegex).join('|')}).*`
-      : `(?i).*${escapeRegex(query)}.*`;
+  // Match the whole query string as a single phrase (multi-word queries must
+  // match in full, so "executor engine" does NOT match a module named just
+  // "engine"). Single-word queries behave the same way.
+  const searchTerm = `(?i).*${escapeRegex(query.trim())}.*`;
 
-  // Combined search: Module name/packageName/domain + Service name + Function name
+  // Combined search: Module name/packageName + Service name + Function name.
+  // Module nodes are directory-keyed and only store name/packageName — there is
+  // no domain/description property, so we don't match or return those.
   const moduleRecords = await runQuery(
     `
     MATCH (m:Module)
     WHERE m.name =~ $pattern
-       OR m.domain =~ $pattern
-       OR m.description =~ $pattern
        OR m.packageName =~ $pattern
     OPTIONAL MATCH (m)-[:BELONGS_TO]->(s:Service)
     RETURN m.name AS moduleName,
            m.filePath AS filePath,
-           m.description AS description,
-           m.domain AS domain,
            m.packageName AS packageName,
            s.name AS serviceName
     UNION
@@ -53,8 +46,6 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
     WHERE s.name =~ $pattern
     RETURN m.name AS moduleName,
            m.filePath AS filePath,
-           m.description AS description,
-           m.domain AS domain,
            m.packageName AS packageName,
            s.name AS serviceName
     UNION
@@ -63,16 +54,15 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
     OPTIONAL MATCH (m)-[:BELONGS_TO]->(s:Service)
     RETURN DISTINCT m.name AS moduleName,
            m.filePath AS filePath,
-           m.description AS description,
-           m.domain AS domain,
            m.packageName AS packageName,
            s.name AS serviceName
+    LIMIT 15
     `,
     { pattern: searchTerm }
   );
 
   if (moduleRecords.length === 0) {
-    return `No modules, services, or functions found matching "${query}". Try a single broad keyword (e.g., "executor" instead of "executor engine").`;
+    return `No modules, services, or functions found matching "${query}". Try a single broad keyword (e.g., "authentication" instead of "authentication and sessions").`;
   }
 
   // Collect module file paths for querying
@@ -137,14 +127,10 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
   lines.push('-'.repeat(40));
   for (const r of moduleRecords) {
     const service = r.get('serviceName') as string | null;
-    const desc = r.get('description') as string | null;
-    const domain = r.get('domain') as string | null;
     const pkgName = r.get('packageName') as string | null;
     lines.push(`${r.get('moduleName') as string}`);
     if (service) lines.push(`  Service: ${service}`);
     if (pkgName && pkgName !== service) lines.push(`  Package: ${pkgName}`);
-    if (domain) lines.push(`  Domain: ${domain}`);
-    if (desc) lines.push(`  Description: ${desc}`);
     lines.push(`  Path: ${r.get('filePath') as string ?? 'unknown'}`);
   }
 
