@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-06-10
+
+### Added
+- Registered a no-op `0.2.0 -> 0.2.1` migration (no managed files change in this release) so `codebase-pkg upgrade` works for existing 0.2.0 installs.
+
+### Fixed
+- `getDataFlow`: upstream traversal returned downstream results; now traverses incoming edges correctly, adds `DATA_FLOWS_TO` edges, and is label-anchored.
+- `getConstraints`: displayed no constraints because it grouped by severity values the package never writes; now groups by `must`/`should`/`prefer`.
+- `searchContent`: threw at runtime due to a float `LIMIT`; now uses `toInteger`.
+- `getFunctionDetail`: related-type bodies were always empty; now reads `CodeBlock` `bodyText`.
+- `getRecentChanges`: now prints commit short hashes.
+- `getModuleContext`: added a result `LIMIT` and fixed multi-word over-matching; removed dead `Module.domain`/`description` fields.
+- MCP server self-reported version `0.1.0`; now reads `package.json` at runtime.
+- Deleted files were never removed from the graph due to a relative-vs-absolute path mismatch in `getDeletedFiles`; now fixed.
+- Global-mode `init` wrote an `.mcp.json` stanza that could not start the server; it now invokes the `codebase-pkg-mcp` bin correctly (plus a defensive `mcp-server` dispatcher case).
+
 ## [0.2.0] — 2026-06-10
 
 ### Added
