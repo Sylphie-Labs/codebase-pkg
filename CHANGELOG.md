@@ -6,12 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-10
+
 ### Added
 - **Python support.** `.py` files in watched directories are now indexed alongside TypeScript/TSX, using your own Python runtime (`python3` or `python`, 3.9+) and the stdlib `ast` module — zero new npm dependencies. Functions and async defs (with `ClassName.method` naming), classes as `Type` nodes (kind `class`, bases → `EXTENDS`/`IMPLEMENTS`, `__init__` → constructor params), decorators with FastAPI/Flask route detection (`httpMethod`/`routePath`), docstrings, callees, type annotations → type refs, and content hashes. If no Python runtime is on PATH, `.py` files are skipped with a single warning and nothing else changes.
 - Python import resolution (relative dotted and absolute-within-watched-dirs imports) producing the same `IMPORTS` module edges as TypeScript, via a shared import resolver now used by both languages.
 - Python hygiene exclusions: `__pycache__`, `venv`, `.venv`, `.tox`, `site-packages` directories and `test_*.py` / `*_test.py` / `conftest.py` files are never indexed.
 - New library exports: `parseFiles` (language-dispatching), `parseTypeScriptFiles`, `parsePythonFiles`, `pythonAvailable`, `resolveImportTarget`, `resolvePythonImportTarget`, `getWatchedPackages`.
 - Test suite using `node:test` (`npm test`), with no new dependencies.
+- Registered a no-op `0.1.0 -> 0.2.0` migration (no managed files change in this release) so `codebase-pkg upgrade` works for existing installs.
 
 ### Fixed
 - Incremental sync created self-loop `IMPORTS` edges on file-keyed `Module` nodes; it now resolves real source→target module edges matching the seed's shape, and imports of external packages no longer create edges. Edges whose imported names drift are re-synced.
