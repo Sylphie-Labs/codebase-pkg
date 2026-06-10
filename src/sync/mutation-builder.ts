@@ -12,8 +12,13 @@
  */
 
 import * as path from 'path';
-import type { Changeset, NodeCreate, NodeUpdate, NodeDelete, EdgeAdd, EdgeRemove } from './graph-differ.js';
+import type { Changeset, NodeDelete, EdgeAdd, EdgeRemove } from './graph-differ.js';
 import type { ParsedFunction, ParsedType, ParsedFile } from './ast-parser.js';
+import {
+  resolveImportTarget,
+  resolvePythonImportTarget,
+  packageNameForDir,
+} from './import-resolver.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +54,10 @@ function buildFunctionCreate(fn: ParsedFunction): CypherStatement[] {
           f.contentHash  = $contentHash,
           f.updatedAt    = timestamp()
       WITH f
-      MATCH (m:Module {filePath: $dirPath})
+      MERGE (m:Module {filePath: $dirPath})
+      ON CREATE SET m.name        = $dirName,
+                    m.packageName = $pkgName,
+                    m.updatedAt   = timestamp()
       MERGE (m)-[:CONTAINS]->(f)
       WITH f
       MATCH (file:File {filePath: $filePath})
@@ -58,6 +66,8 @@ function buildFunctionCreate(fn: ParsedFunction): CypherStatement[] {
     params: {
       filePath: fn.filePath,
       dirPath,
+      dirName: path.basename(dirPath),
+      pkgName: packageNameForDir(dirPath),
       name: fn.name,
       lineNumber: fn.lineNumber,
       endLine: fn.endLine,
@@ -120,7 +130,10 @@ function buildTypeCreate(ty: ParsedType): CypherStatement[] {
           t.contentHash      = $contentHash,
           t.updatedAt        = timestamp()
       WITH t
-      MATCH (m:Module {filePath: $dirPath})
+      MERGE (m:Module {filePath: $dirPath})
+      ON CREATE SET m.name        = $dirName,
+                    m.packageName = $pkgName,
+                    m.updatedAt   = timestamp()
       MERGE (m)-[:CONTAINS]->(t)
       WITH t
       MATCH (file:File {filePath: $filePath})
@@ -129,6 +142,8 @@ function buildTypeCreate(ty: ParsedType): CypherStatement[] {
     params: {
       filePath: ty.filePath,
       dirPath,
+      dirName: path.basename(dirPath),
+      pkgName: packageNameForDir(dirPath),
       name: ty.name,
       lineNumber: ty.lineNumber,
       kind: ty.kind,
@@ -293,12 +308,17 @@ export function buildFileCreate(file: ParsedFile): CypherStatement[] {
           f.lineCount  = $lineCount,
           f.updatedAt  = timestamp()
       WITH f
-      MATCH (m:Module {filePath: $dirPath})
+      MERGE (m:Module {filePath: $dirPath})
+      ON CREATE SET m.name        = $dirName,
+                    m.packageName = $pkgName,
+                    m.updatedAt   = timestamp()
       MERGE (m)-[:CONTAINS_FILE]->(f)
     `.trim(),
     params: {
       filePath: file.filePath,
       dirPath,
+      dirName: path.basename(dirPath),
+      pkgName: packageNameForDir(dirPath),
       fileName: file.fileName,
       extension: file.extension,
       lineCount: file.lineCount,
@@ -312,10 +332,13 @@ export function buildFileCreate(file: ParsedFile): CypherStatement[] {
 
 function buildNodeDelete(del: NodeDelete): CypherStatement {
   const label = del.kind === 'function' ? 'Function' : 'Type';
+  // Also delete the node's CodeBlock — otherwise it is stranded until the
+  // whole file is deleted.
   return {
     cypher: `
       MATCH (n:${label} {filePath: $filePath, name: $name})
-      DETACH DELETE n
+      OPTIONAL MATCH (n)-[:HAS_CODE]->(cb:CodeBlock {functionName: $name})
+      DETACH DELETE n, cb
     `.trim(),
     params: { filePath: del.filePath, name: del.name },
   };
@@ -350,33 +373,60 @@ function buildDeletedFileNodes(filePath: string): CypherStatement[] {
 // Edge mutations
 // ---------------------------------------------------------------------------
 
-function buildEdgeAdd(edge: EdgeAdd): CypherStatement {
-  if (edge.kind === 'IMPORTS') {
-    return {
-      cypher: `
-        MERGE (m:Module {filePath: $fromFile})
-        MERGE (m)-[e:IMPORTS {moduleSpecifier: $moduleSpecifier}]->(m)
-        SET e.importedNames = $importedNames,
-            e.updatedAt     = timestamp()
-      `.trim(),
-      params: {
-        fromFile: edge.fromFile,
-        moduleSpecifier: edge.moduleSpecifier ?? '',
-        importedNames: edge.importedNames ?? [],
-      },
-    };
-  }
+/**
+ * IMPORTS edges connect directory-keyed Module nodes:
+ *   (sourceDir:Module)-[:IMPORTS {moduleSpecifier, fromFile}]->(targetDir:Module)
+ * matching the shape the initial seed creates. External-package specifiers
+ * resolve to null and produce NO statement (returns null; filtered out in
+ * buildMutations).
+ */
+function buildEdgeAdd(edge: EdgeAdd): CypherStatement | null {
+  if (edge.kind !== 'IMPORTS') return null;
+
+  const fromFile = edge.fromFile.replace(/\\/g, '/');
+  const moduleSpecifier = edge.moduleSpecifier ?? '';
+  const dirPath = path.dirname(fromFile).replace(/\\/g, '/');
+
+  const targetPath = fromFile.endsWith('.py')
+    ? resolvePythonImportTarget(dirPath, moduleSpecifier)
+    : resolveImportTarget(dirPath, moduleSpecifier);
+  if (!targetPath) return null;
 
   return {
-    cypher: 'RETURN 1',
-    params: {},
+    cypher: `
+      MERGE (source:Module {filePath: $dirPath})
+      ON CREATE SET source.name        = $sourceName,
+                    source.packageName = $sourcePkg,
+                    source.updatedAt   = timestamp()
+      MERGE (target:Module {filePath: $targetPath})
+      ON CREATE SET target.name        = $targetName,
+                    target.packageName = $targetPkg,
+                    target.updatedAt   = timestamp()
+      MERGE (source)-[e:IMPORTS {moduleSpecifier: $moduleSpecifier}]->(target)
+      SET e.importedNames = $importedNames,
+          e.fromFile      = $fromFile,
+          e.updatedAt     = timestamp()
+    `.trim(),
+    params: {
+      dirPath,
+      targetPath,
+      sourceName: path.basename(dirPath),
+      sourcePkg: packageNameForDir(dirPath),
+      targetName: path.basename(targetPath),
+      targetPkg: packageNameForDir(targetPath),
+      moduleSpecifier,
+      importedNames: edge.importedNames ?? [],
+      fromFile,
+    },
   };
 }
 
 function buildEdgeRemove(edge: EdgeRemove): CypherStatement {
+  // The edge lives on a directory-keyed Module; the source file is on e.fromFile.
   return {
     cypher: `
-      MATCH (m:Module {filePath: $fromFile})-[e:IMPORTS {moduleSpecifier: $moduleSpecifier}]->()
+      MATCH (:Module)-[e:IMPORTS {moduleSpecifier: $moduleSpecifier}]->()
+      WHERE e.fromFile = $fromFile
       DELETE e
     `.trim(),
     params: {
@@ -430,9 +480,10 @@ export function buildMutations(changeset: Changeset): CypherStatement[] {
     }
   }
 
-  // 5. New edges
+  // 5. New edges (unresolvable / external imports produce no statement)
   for (const edge of changeset.edgesToAdd) {
-    statements.push(buildEdgeAdd(edge));
+    const stmt = buildEdgeAdd(edge);
+    if (stmt) statements.push(stmt);
   }
 
   return statements;

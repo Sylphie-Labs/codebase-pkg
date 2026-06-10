@@ -19,7 +19,17 @@ export type {
 
 export { getDriver, closeDriver, runQuery } from './mcp-server/neo4j-client.js';
 
-export { parseFiles, parseFile, clearProjectCache } from './sync/ast-parser.js';
+// Language-dispatching parser (routes .ts/.tsx to ts-morph, .py to the
+// Python runtime). This is the parseFiles consumers should use.
+export { parseFiles, clearProjectCache } from './sync/parser.js';
+export { parseFile, parseFiles as parseTypeScriptFiles } from './sync/ast-parser.js';
+export { parsePythonFiles, pythonAvailable } from './sync/python-parser.js';
+export {
+  resolveImportTarget,
+  resolvePythonImportTarget,
+  getWatchedPackages,
+} from './sync/import-resolver.js';
+export type { WatchedPackage } from './sync/import-resolver.js';
 export type {
   ParsedFile,
   ParsedFunction,

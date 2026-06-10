@@ -1,9 +1,9 @@
 /**
  * initial-seed.ts -- One-time full codebase parse and PKG bootstrap.
  *
- * Walks the entire monorepo, extracts all TypeScript functions/types/imports,
- * creates the full node and edge set in the codebase PKG, then runs
- * integrity checks.
+ * Walks the entire monorepo, extracts all source (.ts/.tsx/.py)
+ * functions/types/imports, creates the full node and edge set in the
+ * codebase PKG, then runs integrity checks.
  *
  * Entry point: `npm run seed-pkg`
  */
@@ -11,10 +11,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { parseFiles, clearProjectCache } from '../sync/ast-parser.js';
+import { parseFiles, clearProjectCache } from '../sync/parser.js';
 import { runIntegrityChecks } from '../sync/integrity-checker.js';
 import { writeLastSyncCommit } from '../sync/git-diff.js';
 import { getDriver, closeDriver } from '../mcp-server/neo4j-client.js';
+import { WATCHED_PACKAGES, resolveImportTarget, resolvePythonImportTarget } from '../sync/import-resolver.js';
 import type { ParsedFile, ParsedImport } from '../sync/ast-parser.js';
 
 // ---------------------------------------------------------------------------
@@ -22,56 +23,6 @@ import type { ParsedFile, ParsedImport } from '../sync/ast-parser.js';
 // ---------------------------------------------------------------------------
 
 const REPO_ROOT = process.cwd();
-
-/**
- * Packages to index. Defaults auto-detect common layouts: `src/` if it exists
- * at the repo root (single-package projects), and any direct subdirectories of
- * `apps/` and `packages/` (monorepos). Override via the CODEBASE_PKG_PACKAGES
- * env var (JSON array of {name, dir} objects) to specify exactly which package
- * roots to scan.
- */
-function getWatchedPackages(): Array<{ name: string; dir: string }> {
-  const envJson = process.env.CODEBASE_PKG_PACKAGES;
-  if (envJson) {
-    try {
-      return JSON.parse(envJson);
-    } catch {
-      console.warn('[seed] CODEBASE_PKG_PACKAGES JSON invalid; falling back to auto-detect.');
-    }
-  }
-
-  const detected: Array<{ name: string; dir: string }> = [];
-
-  // Single-package layout: <repo>/src/
-  if (fs.existsSync(path.join(REPO_ROOT, 'src'))) {
-    detected.push({ name: 'app', dir: 'src' });
-  }
-
-  // Monorepo layout: <repo>/apps/* and <repo>/packages/*
-  for (const parent of ['apps', 'packages']) {
-    const parentPath = path.join(REPO_ROOT, parent);
-    if (!fs.existsSync(parentPath)) continue;
-    try {
-      for (const entry of fs.readdirSync(parentPath, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const subSrc = path.join(parentPath, entry.name, 'src');
-        if (fs.existsSync(subSrc)) {
-          detected.push({ name: entry.name, dir: `${parent}/${entry.name}/src` });
-        }
-      }
-    } catch {
-      // ignore unreadable parent
-    }
-  }
-
-  if (detected.length === 0) {
-    // Last-ditch fallback: scan the repo root itself.
-    detected.push({ name: 'root', dir: '.' });
-  }
-  return detected;
-}
-
-const WATCHED_PACKAGES: Array<{ name: string; dir: string }> = getWatchedPackages();
 
 const EXCLUDE_PATTERNS = [
   /node_modules/,
@@ -81,6 +32,11 @@ const EXCLUDE_PATTERNS = [
   /\.test\.ts$/,
   /\.spec\.tsx$/,
   /\.test\.tsx$/,
+  /__pycache__/,
+  /\/(venv|\.venv|\.tox)\//,
+  /(^|\/)test_[^\/]+\.py$/,
+  /_test\.py$/,
+  /(^|\/)conftest\.py$/,
 ];
 
 const BATCH_SIZE = 50;
@@ -89,7 +45,7 @@ const BATCH_SIZE = 50;
 // File discovery
 // ---------------------------------------------------------------------------
 
-function collectTsFiles(dir: string): string[] {
+function collectSourceFiles(dir: string): string[] {
   const results: string[] = [];
 
   function walk(currentDir: string): void {
@@ -109,12 +65,20 @@ function collectTsFiles(dir: string): string[] {
           entry.name === 'node_modules' ||
           entry.name === 'dist' ||
           entry.name === '.git' ||
-          entry.name === '.cache'
+          entry.name === '.cache' ||
+          entry.name === '__pycache__' ||
+          entry.name === 'venv' ||
+          entry.name === '.venv' ||
+          entry.name === '.tox' ||
+          entry.name === 'site-packages'
         ) continue;
         walk(fullPath);
       } else if (entry.isFile()) {
-        const isTs = entry.name.endsWith('.ts') || entry.name.endsWith('.tsx');
-        if (!isTs) continue;
+        const isSource =
+          entry.name.endsWith('.ts') ||
+          entry.name.endsWith('.tsx') ||
+          entry.name.endsWith('.py');
+        if (!isSource) continue;
         if (EXCLUDE_PATTERNS.some(rx => rx.test(relativePath))) continue;
         results.push(fullPath);
       }
@@ -123,61 +87,6 @@ function collectTsFiles(dir: string): string[] {
 
   walk(dir);
   return results;
-}
-
-// ---------------------------------------------------------------------------
-// Import resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Workspace package → source directory map. Built from WATCHED_PACKAGES.
- * Set CODEBASE_PKG_WORKSPACE_SCOPE (e.g. "@your-org") to resolve scoped
- * intra-monorepo imports; leave unset for non-workspace repos.
- */
-const WORKSPACE_SCOPE: string | null = process.env.CODEBASE_PKG_WORKSPACE_SCOPE ?? null;
-const PACKAGE_SOURCE_DIRS: Record<string, string> = WORKSPACE_SCOPE
-  ? Object.fromEntries(WATCHED_PACKAGES.map(p => [`${WORKSPACE_SCOPE}/${p.name}`, p.dir]))
-  : {};
-
-function resolveImportTarget(sourceDir: string, moduleSpecifier: string): string | null {
-  const repoRoot = REPO_ROOT.replace(/\\/g, '/');
-
-  // Handle workspace-scoped imports when a scope is configured.
-  if (WORKSPACE_SCOPE && moduleSpecifier.startsWith(`${WORKSPACE_SCOPE}/`)) {
-    const sortedKeys = Object.keys(PACKAGE_SOURCE_DIRS).sort((a, b) => b.length - a.length);
-    for (const pkg of sortedKeys) {
-      if (moduleSpecifier === pkg || moduleSpecifier.startsWith(pkg + '/')) {
-        const basePath = `${repoRoot}/${PACKAGE_SOURCE_DIRS[pkg]}`;
-        const subPath = moduleSpecifier.slice(pkg.length + 1);
-        if (subPath) {
-          const fullPath = `${basePath}/${subPath}`;
-          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-            return fullPath;
-          }
-          const parentDir = path.dirname(`${basePath}/${subPath}`).replace(/\\/g, '/');
-          if (fs.existsSync(parentDir)) return parentDir;
-        }
-        return basePath;
-      }
-    }
-    return null;
-  }
-
-  // Handle relative imports
-  if (moduleSpecifier.startsWith('.')) {
-    const resolved = path.resolve(sourceDir, moduleSpecifier).replace(/\\/g, '/');
-    if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
-      return resolved;
-    }
-    const targetDir = path.dirname(resolved).replace(/\\/g, '/');
-    if (targetDir !== sourceDir && fs.existsSync(targetDir)) {
-      return targetDir;
-    }
-    return null;
-  }
-
-  // External package — skip
-  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -461,9 +370,11 @@ async function writeParsedBatch(
         types++;
       }
 
-      // IMPORTS edges
+      // IMPORTS edges (dispatch on source language)
       for (const imp of parsedFile.imports) {
-        const targetPath = resolveImportTarget(dirPath, imp.moduleSpecifier);
+        const targetPath = parsedFile.extension === '.py'
+          ? resolvePythonImportTarget(dirPath, imp.moduleSpecifier)
+          : resolveImportTarget(dirPath, imp.moduleSpecifier);
         if (!targetPath) continue;
 
         await tx.run(
@@ -514,7 +425,7 @@ async function runSeed(): Promise<void> {
   await createSchemaIndexes(driver);
 
   // Step 2: Discover files
-  console.log('\n[seed] Step 2/8: Discovering TypeScript files...');
+  console.log('\n[seed] Step 2/8: Discovering source files...');
   const allFiles: string[] = [];
   for (const pkg of WATCHED_PACKAGES) {
     const pkgDir = path.join(REPO_ROOT, pkg.dir).replace(/\\/g, '/');
@@ -522,7 +433,7 @@ async function runSeed(): Promise<void> {
       console.warn(`[seed] Package directory not found, skipping: ${pkgDir}`);
       continue;
     }
-    const files = collectTsFiles(pkgDir);
+    const files = collectSourceFiles(pkgDir);
     console.log(`       ${pkg.name.padEnd(25)} ${files.length} files`);
     allFiles.push(...files);
   }
@@ -534,7 +445,7 @@ async function runSeed(): Promise<void> {
   await createModuleNodes(allFiles, driver);
 
   // Step 4: Parse all files in batches
-  console.log('\n[seed] Step 4/8: Parsing TypeScript files...');
+  console.log('\n[seed] Step 4/8: Parsing source files...');
   const parseStart = Date.now();
   let totalFunctions = 0;
   let totalTypes = 0;

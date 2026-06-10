@@ -2,9 +2,14 @@
 
 **A queryable knowledge graph of your codebase, for Claude Code agents.**
 
-`codebase-pkg` parses your TypeScript/TSX source tree into a Neo4j graph (functions, types, imports, call chains, constraints, change history) and exposes it to Claude Code over MCP. Instead of re-greping and re-reading files every session, the agent queries the graph.
+`codebase-pkg` parses your TypeScript/TSX and Python source tree into a Neo4j graph (functions, types, imports, call chains, constraints, change history) and exposes it to Claude Code over MCP. Instead of re-greping and re-reading files every session, the agent queries the graph.
 
-> Status: 0.1.0 — initial public release. TypeScript only. No test suite yet (see [CHANGELOG](./CHANGELOG.md) for known limitations).
+> Status: 0.x — early release. TypeScript/TSX and Python (see [Language support](#language-support)). Tested with `node:test` (`npm test`). See the [CHANGELOG](./CHANGELOG.md) for what's new and known limitations.
+
+## Language support
+
+- **TypeScript / TSX** — parsed in-process with ts-morph. No extra requirements.
+- **Python** — parsed with your own Python runtime via the stdlib `ast` module (zero extra npm dependencies). Needs `python3` or `python` (3.9+) on PATH, and only to index `.py` files — if no runtime is found, `.py` files are skipped with a warning and everything else works unchanged. Test files (`test_*.py`, `*_test.py`, `conftest.py`) and `__pycache__`/virtualenv directories are excluded automatically.
 
 ## Install
 
@@ -79,7 +84,7 @@ codebase-pkg uninstall --confirm
 
 **Edges:** `CONTAINS`, `DEFINES`, `BELONGS_TO`, `IMPORTS`, `USES_TYPE`, `CALLS`, `HAS_CODE`, `EXTENDS`, `IMPLEMENTS`, `INJECTS`, `CHANGED_IN`.
 
-After the initial seed, every `git push` (or `npx codebase-pkg sync`) updates only the deltas. SHA-256 content hashes per entity drive change detection.
+After the initial seed, run `codebase-pkg sync` to update only the deltas since the last synced commit. SHA-256 content hashes per entity drive change detection. Sync is a manual command — if you want it automatic, wire it into a `pre-push` git hook or a CI step.
 
 ## MCP tools
 
@@ -110,7 +115,13 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 
 ## Constraints
 
-Architectural invariants live in `constraints.json` at your repo root and surface via the `getConstraints` MCP tool. Add or remove constraints as your architecture evolves; the graph re-reads on every MCP call.
+Architectural invariants live in `constraints.json` at your repo root and surface via the `getConstraints` MCP tool. The tool reads from the graph, not the file — after adding or editing constraints, load them with:
+
+```bash
+codebase-pkg add-constraint --file constraints.json
+```
+
+Re-run that after every edit (add `--validate` to check the file without writing).
 
 See `constraints.example.json` for the format.
 

@@ -60,6 +60,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
     "clean": "rimraf dist",
     "prepublishOnly": "pnpm run clean && pnpm run build",
     "mcp-server": "node dist/mcp-server/index.js",

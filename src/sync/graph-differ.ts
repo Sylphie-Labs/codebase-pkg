@@ -132,10 +132,12 @@ async function fetchGraphImports(
 ): Promise<Map<string, GraphImportEdge>> {
   if (filePaths.length === 0) return new Map();
 
+  // IMPORTS edges live on directory-keyed Module nodes; the source FILE is
+  // recorded on the edge itself as e.fromFile (see initial-seed writeParsedBatch).
   const records = await runQuery(
-    `MATCH (m:Module)-[e:IMPORTS]->(target)
-     WHERE m.filePath IN $filePaths
-     RETURN m.filePath AS fromFile, e.moduleSpecifier AS moduleSpecifier,
+    `MATCH (:Module)-[e:IMPORTS]->(:Module)
+     WHERE e.fromFile IN $filePaths
+     RETURN e.fromFile AS fromFile, e.moduleSpecifier AS moduleSpecifier,
             e.importedNames AS importedNames`,
     { filePaths }
   );
@@ -150,6 +152,13 @@ async function fetchGraphImports(
     map.set(`${edge.fromFile}::${edge.moduleSpecifier}`, edge);
   }
   return map;
+}
+
+function sameImportedNames(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((name, i) => name === sortedB[i]);
 }
 
 // ---------------------------------------------------------------------------
@@ -250,7 +259,10 @@ export async function computeChangeset(
       const key = `${filePath}::${imp.moduleSpecifier}`;
       parsedImportKeys.add(key);
 
-      if (!graphImports.has(key)) {
+      const existing = graphImports.get(key);
+      // Re-add when missing OR when importedNames drifted — the add is a
+      // MERGE+SET, so it updates the existing edge in place.
+      if (!existing || !sameImportedNames(existing.importedNames, imp.importedNames)) {
         changeset.edgesToAdd.push({
           kind: 'IMPORTS',
           fromFile: filePath,

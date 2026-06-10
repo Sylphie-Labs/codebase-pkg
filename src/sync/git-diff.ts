@@ -1,9 +1,9 @@
 /**
- * git-diff.ts -- Detect changed TypeScript files since the last sync.
+ * git-diff.ts -- Detect changed source files (.ts/.tsx/.py) since the last sync.
  *
  * Reads a .last-sync-commit file to find the last synced git commit, runs
- * git diff to identify changed files, and filters to only the TypeScript
- * sources we care about in this monorepo.
+ * git diff to identify changed files, and filters to only the source
+ * files we care about in this monorepo.
  *
  * On the first run (no .last-sync-commit), returns ALL matching files so
  * the initial seed can use this same interface.
@@ -74,6 +74,11 @@ const EXCLUDE_PATTERNS = [
   /\.test\.ts$/,
   /\.spec\.tsx$/,
   /\.test\.tsx$/,
+  /__pycache__/,
+  /\/(venv|\.venv|\.tox)\//,
+  /(^|\/)test_[^\/]+\.py$/,
+  /_test\.py$/,
+  /(^|\/)conftest\.py$/,
 ];
 
 // ---------------------------------------------------------------------------
@@ -96,8 +101,11 @@ function isWatchedFile(relativePath: string): boolean {
   );
   if (!inWatchedDir) return false;
 
-  const isTypeScript = normalised.endsWith('.ts') || normalised.endsWith('.tsx');
-  if (!isTypeScript) return false;
+  const isSourceFile =
+    normalised.endsWith('.ts') ||
+    normalised.endsWith('.tsx') ||
+    normalised.endsWith('.py');
+  if (!isSourceFile) return false;
 
   if (EXCLUDE_PATTERNS.some(rx => rx.test(normalised))) return false;
   if (EXCLUDE_DIR_PATTERNS.some(rx => rx.test(normalised))) return false;
@@ -125,7 +133,12 @@ function getAllWatchedFiles(): string[] {
           entry.name === 'node_modules' ||
           entry.name === 'dist' ||
           entry.name === '.git' ||
-          entry.name === 'archives'
+          entry.name === 'archives' ||
+          entry.name === '__pycache__' ||
+          entry.name === 'venv' ||
+          entry.name === '.venv' ||
+          entry.name === '.tox' ||
+          entry.name === 'site-packages'
         ) {
           continue;
         }

@@ -15,7 +15,7 @@
  */
 
 import { getChangedFiles, writeLastSyncCommit, readLastSyncCommit, getDeletedFiles } from './git-diff.js';
-import { parseFiles, clearProjectCache } from './ast-parser.js';
+import { parseFiles, clearProjectCache } from './parser.js';
 import { computeChangeset } from './graph-differ.js';
 import { buildMutations, applyMutations } from './mutation-builder.js';
 import { logChange } from './change-logger.js';
