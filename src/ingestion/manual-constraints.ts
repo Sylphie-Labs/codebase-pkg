@@ -6,7 +6,7 @@
  * apply to.
  *
  * Usage:
- *   npm run add-constraint                          # reads codebase-pkg/constraints.json
+ *   npm run add-constraint                          # reads constraints.json at the repo root
  *   npm run add-constraint -- path/to/file.json     # custom file
  *   npm run add-constraint -- --validate            # validate only, no writes
  */
@@ -20,12 +20,7 @@ import { getDriver, closeDriver } from '../mcp-server/neo4j-client.js';
 // ---------------------------------------------------------------------------
 
 const REPO_ROOT = process.cwd();
-const DEFAULT_CONSTRAINTS_FILE = path.join(
-  REPO_ROOT,
-  'packages',
-  'codebase-pkg',
-  'constraints.json'
-);
+const DEFAULT_CONSTRAINTS_FILE = path.join(REPO_ROOT, 'constraints.json');
 
 // ---------------------------------------------------------------------------
 // Types

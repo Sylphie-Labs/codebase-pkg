@@ -8,7 +8,7 @@
  *
  * Tools:
  *   getModuleContext   — feature area overview (functions, types, constraints)
- *   getFunctionDetail  — full body + types + tests + change history for one function
+ *   getFunctionDetail  — full body + types + change history for one function
  *   getDataFlow        — trace upstream/downstream data connections
  *   getRecentChanges   — cross-reference a concept with git/change history
  *   getConstraints     — architectural invariants for a scope
@@ -62,7 +62,7 @@ const TOOLS: Tool[] = [
   {
     name: 'getFunctionDetail',
     description:
-      'Deep dive on a specific function: full body, complete type definitions, test file locations, and recent changes. ' +
+      'Deep dive on a specific function: full body, complete type definitions, and recent changes. ' +
       'Use after getModuleContext to read implementation details.',
     inputSchema: {
       type: 'object',
@@ -109,7 +109,7 @@ const TOOLS: Tool[] = [
     name: 'getRecentChanges',
     description:
       'Cross-reference a concept area with git/change history. ' +
-      'Returns PR numbers, descriptions, and affected functions/types. ' +
+      'Returns commit hashes, messages, authors, and affected functions/types. ' +
       'Use before modifying code to understand what has changed recently.',
     inputSchema: {
       type: 'object',

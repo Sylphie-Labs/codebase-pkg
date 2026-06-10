@@ -24,7 +24,9 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
   const { pattern, fileFilter } = input;
   const maxResults = Math.min(input.maxResults ?? 20, 50);
 
-  const searchPattern = `(?i).*${escapeRegex(pattern)}.*`;
+  // (?is): case-insensitive + DOTALL so `.` crosses newlines — Neo4j `=~` must
+  // match the entire (usually multiline) bodyText string.
+  const searchPattern = `(?is).*${escapeRegex(pattern)}.*`;
 
   // Search CodeBlock nodes, traverse back to parent Function/Type
   const records = await runQuery(
@@ -41,6 +43,7 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
            parent.args AS args,
            parent.isExported AS isExported,
            parent.isAsync AS isAsync,
+           parent.kind AS kind,
            cb.bodyText AS bodyText
     ORDER BY parent.filePath, parent.lineNumber
     LIMIT $maxResults
@@ -67,6 +70,7 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
              f.args AS args,
              f.isExported AS isExported,
              f.isAsync AS isAsync,
+             null AS kind,
              f.bodyText AS bodyText
       ORDER BY f.filePath, f.lineNumber
       LIMIT $maxResults
@@ -101,12 +105,13 @@ export async function handleSearchContent(input: SearchContentInput): Promise<st
     const returnType = r.get('returnType') as string | null;
     const isAsync = r.get('isAsync') as boolean | null;
     const isExported = r.get('isExported') as boolean | null;
+    const kind = r.get('kind') as string | null;
     const bodyText = r.get('bodyText') as string | null;
 
     const prefix = [isExported ? 'export' : '', isAsync ? 'async' : '']
       .filter(Boolean)
       .join(' ');
-    const typeTag = labels.includes('Type') ? ` [${r.get('kind') ?? 'type'}]` : '';
+    const typeTag = labels.includes('Type') ? ` [${kind ?? 'type'}]` : '';
     const retTag = returnType ? `: ${returnType}` : '';
 
     lines.push(`\n  ${prefix ? prefix + ' ' : ''}${name}${retTag}${typeTag}`);

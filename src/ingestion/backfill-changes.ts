@@ -12,15 +12,14 @@
 
 import { execSync } from 'child_process';
 import neo4j, { Integer as Neo4jInteger, Session } from 'neo4j-driver';
+import { getDriver, closeDriver } from '../mcp-server/neo4j-client.js';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
 const REPO_ROOT = process.cwd();
-const NEO4J_URI = process.env.CODEBASE_PKG_NEO4J_URI ?? 'bolt://localhost:7688';
-const NEO4J_USER = process.env.CODEBASE_PKG_NEO4J_USER ?? 'neo4j';
-const NEO4J_PASSWORD = process.env.CODEBASE_PKG_NEO4J_PASSWORD ?? 'codebase-pkg-local';
+const NEO4J_URI = process.env.CODEBASE_PKG_NEO4J_URI ?? 'bolt://localhost:7687';
 const COMMIT_LIMIT = 30;
 
 // ---------------------------------------------------------------------------
@@ -182,21 +181,7 @@ export async function runBackfillChanges(): Promise<void> {
   const commits = getRecentCommits(REPO_ROOT, COMMIT_LIMIT);
   console.log(`Found ${commits.length} commits.\n`);
 
-  const driver = neo4j.driver(
-    NEO4J_URI,
-    neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
-    {
-      maxConnectionPoolSize: 5,
-      logging: {
-        level: 'warn',
-        logger: (level, message) => {
-          if (level === 'error' || level === 'warn') {
-            process.stderr.write(`[neo4j] [${level}] ${message}\n`);
-          }
-        },
-      },
-    }
-  );
+  const driver = getDriver();
 
   try {
     await driver.verifyConnectivity();
@@ -204,7 +189,7 @@ export async function runBackfillChanges(): Promise<void> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`Failed to connect to Neo4j at ${NEO4J_URI}: ${msg}`);
-    await driver.close();
+    await closeDriver();
     process.exit(1);
   }
 
@@ -254,7 +239,7 @@ export async function runBackfillChanges(): Promise<void> {
     console.log(`  CHANGED_IN edges     : ${totalEdges}`);
   } finally {
     await session.close();
-    await driver.close();
+    await closeDriver();
   }
 }
 

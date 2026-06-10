@@ -2,7 +2,7 @@
  * getFunctionDetail.ts -- Deep dive on a specific function.
  *
  * Returns the full function body, complete type definitions for arguments
- * and return type, linked test file locations, and recent Change nodes.
+ * and return type, and recent Change nodes.
  *
  * Target response size: 500-2,000 tokens.
  */
@@ -104,28 +104,14 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
     { name: fnName, fp: fnFilePath ?? null }
   );
 
-  // Get test files linked to this function
-  const testRecords = await runQuery(
-    `
-    MATCH (f:Function)-[:TESTED_BY]->(tf:TestFile)
-    WHERE f.name = $name
-      AND (f.filePath = $fp OR $fp IS NULL)
-    RETURN tf.filePath AS filePath,
-           tf.description AS description
-    ORDER BY tf.filePath
-    LIMIT 10
-    `,
-    { name: fnName, fp: fnFilePath ?? null }
-  );
-
   // Get recent change nodes
   const changeRecords = await runQuery(
     `
     MATCH (f:Function)-[:CHANGED_IN]->(c:Change)
     WHERE f.name = $name
       AND (f.filePath = $fp OR $fp IS NULL)
-    RETURN c.description AS description,
-           c.prNumber AS prNumber,
+    RETURN c.message AS description,
+           c.shortHash AS shortHash,
            c.date AS date,
            c.author AS author
     ORDER BY c.date DESC
@@ -183,29 +169,18 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
     }
   }
 
-  // Tests
-  if (testRecords.length > 0) {
-    lines.push(`\nTEST FILES (${testRecords.length})`);
-    lines.push('-'.repeat(40));
-    for (const r of testRecords) {
-      const desc = r.get('description') as string | null;
-      lines.push(`  ${r.get('filePath') as string}`);
-      if (desc) lines.push(`    ${desc}`);
-    }
-  }
-
   // Changes
   if (changeRecords.length > 0) {
     lines.push(`\nRECENT CHANGES (${changeRecords.length})`);
     lines.push('-'.repeat(40));
     for (const r of changeRecords) {
-      const pr = r.get('prNumber') as string | number | null;
+      const shortHash = r.get('shortHash') as string | null;
       const date = r.get('date') as string | null;
       const author = r.get('author') as string | null;
       const desc = r.get('description') as string | null;
       const header = [
         date ? date.slice(0, 10) : null,
-        pr ? `PR #${pr}` : null,
+        shortHash ?? null,
         author ? `by ${author}` : null,
       ]
         .filter(Boolean)

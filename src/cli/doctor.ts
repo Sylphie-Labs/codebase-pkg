@@ -115,8 +115,15 @@ async function checkConstraints(cwd: string): Promise<CheckResult> {
     };
   }
   try {
-    const j = JSON.parse(fs.readFileSync(p, 'utf8')) as { constraints?: unknown[] };
-    const count = Array.isArray(j.constraints) ? j.constraints.length : 0;
+    const j = JSON.parse(fs.readFileSync(p, 'utf8')) as unknown;
+    if (!Array.isArray(j)) {
+      return {
+        name: 'constraints.json',
+        status: 'warn',
+        message: 'unexpected format: expected a root-level JSON array of constraint objects',
+      };
+    }
+    const count = j.length;
     return {
       name: 'constraints.json',
       status: count > 0 ? 'pass' : 'warn',

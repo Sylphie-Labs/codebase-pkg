@@ -101,7 +101,8 @@ export async function handleGetConstraints(input: GetConstraintsInput): Promise<
   if (allConstraints.length === 0) {
     return (
       `No constraints found for scope "${scope}".\n\n` +
-      `Check the CANON (docs/CANON.md) for architectural rules that may not yet be loaded into the PKG.`
+      `To define constraints, edit constraints.json at the repo root and load it with ` +
+      `\`codebase-pkg add-constraint --file constraints.json\`.`
     );
   }
 
@@ -140,7 +141,10 @@ export async function handleGetConstraints(input: GetConstraintsInput): Promise<
   }
 
   lines.push('='.repeat(60));
-  lines.push(`Always consult docs/CANON.md for the authoritative source of architectural rules.`);
+  lines.push(
+    `To add or update constraints, edit constraints.json at the repo root and load it with ` +
+    `\`codebase-pkg add-constraint --file constraints.json\`.`
+  );
 
   return lines.join('\n');
 }

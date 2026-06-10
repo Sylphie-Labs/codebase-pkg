@@ -1,83 +1,38 @@
 [
   {
-    "id": "privacy-diffs-local-001",
-    "description": "Diffs never leave the customer's network during enforcement. Hook payloads and session diffs stay local; only license validation and capture classification traverse to Drift Cloud.",
-    "scope": "shared",
-    "scopeType": "service",
-    "source": "PRD refined v0.5 — Deployment",
+    "id": "api-no-direct-db-001",
+    "description": "API handlers must not access the database directly. All persistence goes through the repository layer so queries stay testable and access rules live in one place.",
+    "scope": "src/api",
+    "scopeType": "module",
+    "source": "Architecture guidelines",
     "severity": "must",
-    "tags": ["privacy", "networking", "architectural"]
+    "tags": ["architecture", "layering"]
   },
   {
-    "id": "hook-latency-budget-001",
-    "description": "Phase 1 warning hooks must return in under 150ms p95. Semantic evaluation and LLM round-trips belong in Phase 2 (Stop hook), never inline during coding.",
-    "scope": "hooks-adapter",
-    "scopeType": "service",
-    "source": "PRD refined v0.5 — Enforcement Engine",
-    "severity": "must",
-    "tags": ["performance", "architectural"]
+    "id": "payments-explicit-return-types-001",
+    "description": "All exported functions in src/payments require an explicit return type annotation. Money-handling code must never rely on inferred types.",
+    "scope": "src/payments",
+    "scopeType": "module",
+    "source": "Code review checklist",
+    "severity": "should",
+    "tags": ["type-safety", "code-quality"]
   },
   {
-    "id": "semantic-budget-per-session-001",
-    "description": "Semantic evaluation has a configurable per-session max LLM call count. When exhausted, unchecked rules are logged and the engine proceeds — never silently retry or expand budget.",
-    "scope": "semantic-engine",
+    "id": "no-credential-logging-001",
+    "description": "Never log credentials, API keys, session tokens, or other secrets at any log level. Redact sensitive fields before passing objects to the logger.",
+    "scope": "app",
     "scopeType": "service",
-    "source": "PRD refined v0.5 — Enforcement Engine",
+    "source": "Security policy",
     "severity": "must",
-    "tags": ["cost-control", "architectural"]
+    "tags": ["security", "logging"]
   },
   {
-    "id": "config-schema-versioned-001",
-    "description": "Config schema is versioned and forward-compatible across minor versions. Breaking changes require a major bump and migration tooling.",
-    "scope": "config-schema",
+    "id": "prefer-async-fs-001",
+    "description": "Prefer the async fs/promises APIs over synchronous fs calls in request-handling code paths to avoid blocking the event loop.",
+    "scope": "app",
     "scopeType": "service",
-    "source": "PRD refined v0.5 — Config Object",
-    "severity": "must",
-    "tags": ["versioning", "compatibility"]
-  },
-  {
-    "id": "degradation-not-brick-001",
-    "description": "When license is invalid, expired, or unreachable, the container must NOT hard-brick. OSS-equivalent rule engine and hook endpoint keep running with user-authored config. Paid features gate off with a clear error.",
-    "scope": "license-cloud",
-    "scopeType": "service",
-    "source": "PRD refined v0.5 — Licensing",
-    "severity": "must",
-    "tags": ["licensing", "reliability"]
-  },
-  {
-    "id": "override-requires-reason-001",
-    "description": "Override directives must carry a rule name and a non-empty reason. Per-rule policies may additionally require a linked ticket or disallow overrides entirely.",
-    "scope": "rule-engine",
-    "scopeType": "service",
-    "source": "PRD refined v0.5 — Override Mechanism",
-    "severity": "must",
-    "tags": ["governance", "code-quality"]
-  },
-  {
-    "id": "kg-incremental-build-001",
-    "description": "After the initial attach, KG builds are incremental — only changed files are re-parsed. Full rebuild is an explicit operator action, not an automatic behavior.",
-    "scope": "knowledge-graph",
-    "scopeType": "service",
-    "source": "PRD refined v0.5 — Knowledge Graph",
-    "severity": "must",
-    "tags": ["performance", "architectural"]
-  },
-  {
-    "id": "no-hardcoded-paths-001",
-    "description": "Never use __dirname or hardcoded absolute paths to reference repo-root files. Use process.cwd() plus environment overrides for runtime path resolution.",
-    "scope": "shared",
-    "scopeType": "service",
-    "source": "Code quality",
-    "severity": "must",
-    "tags": ["code-quality", "portability"]
-  },
-  {
-    "id": "no-silent-stubs-001",
-    "description": "Wire pipelines end-to-end. Do not leave zero-vector placeholders or stub implementations silently. If something is not yet implemented, flag it explicitly.",
-    "scope": "shared",
-    "scopeType": "service",
-    "source": "Code quality",
-    "severity": "must",
-    "tags": ["code-quality", "completeness"]
+    "source": "Performance guidelines",
+    "severity": "prefer",
+    "tags": ["performance"]
   }
 ]
