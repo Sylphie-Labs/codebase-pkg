@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-19
+
+### Added
+- `init --docker` now allocates a free host port pair per repo instead of the fixed `7474`/`7687`, and names the container, compose project, and volumes with a per-repo slug (`codebase-pkg-neo4j-<slug>`, where the slug is the repo basename plus 4 hex chars of a path hash). Multiple codebase-pkg instances can now run Neo4j side-by-side on one machine without port or container-name collisions.
+- The chosen Bolt URI is recorded in `.codebase-pkg/state.json` under a new `neo4j` field; the MCP server and `doctor` read it (precedence: `CODEBASE_PKG_NEO4J_URI` env > `state.json` > `bolt://localhost:7687`).
+
+### Changed
+- The bundled cypher-shell skill snippets now discover the container by name-prefix filter instead of hardcoding `codebase-pkg-neo4j`, so they work with per-instance slug names.
+- Existing installs are unaffected: their generated compose file and skills keep the old fixed names and ports and keep working. To adopt per-instance naming, re-run `codebase-pkg init --docker --force`, which recreates the container and volumes (volume names change, so re-seed afterward).
+
 ## [0.2.1] — 2026-06-10
 
 ### Added

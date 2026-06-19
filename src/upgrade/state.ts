@@ -37,6 +37,17 @@ export interface InstallState {
   cliPathAtInstall: string;
   /** Files this package manages in the consumer's repo. */
   managedFiles: ManagedFile[];
+  /**
+   * Per-instance Neo4j settings chosen at `init --docker` time. Optional so
+   * state files written before this field existed remain valid.
+   */
+  neo4j?: {
+    uri: string;
+    containerName: string;
+    httpPort: number;
+    boltPort: number;
+    slug: string;
+  };
 }
 
 export function statePath(cwd: string): string {

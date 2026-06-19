@@ -54,6 +54,8 @@ codebase-pkg seed
 # 5. Start a Claude Code session — the MCP tools are now available
 ```
 
+`init --docker` picks a free pair of host ports per repo and records the resulting Bolt URI in `.codebase-pkg/state.json`, so multiple repos can run Neo4j side by side without collisions. The exact ports and container name are printed by `init` and shown by `doctor`.
+
 `init` copies skill templates into `.claude/skills/`, patches `.mcp.json` with the MCP server stanza, writes `constraints.json` from the bundled example, and records what it did in `.codebase-pkg/state.json` so `upgrade`, `status`, and `uninstall` can later operate on the install cleanly.
 
 ## Lifecycle
@@ -100,7 +102,7 @@ After the initial seed, run `codebase-pkg sync` to update only the deltas since 
 
 ## Configuration
 
-All settings are environment variables. Defaults work for a standard local Neo4j on the default Bolt port.
+All settings are environment variables. Defaults work for a standard local Neo4j on the default Bolt port. When you use `init --docker`, the Bolt URI it chooses is auto-recorded in `.codebase-pkg/state.json` and used automatically by the MCP server and `doctor`; `CODEBASE_PKG_NEO4J_URI` still overrides everything.
 
 | Variable | Default | Purpose |
 |---|---|---|

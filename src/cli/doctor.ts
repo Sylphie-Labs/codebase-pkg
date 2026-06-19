@@ -14,6 +14,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { detectDrift, readState } from '../upgrade/state.js';
 import { compareVersions } from '../upgrade/runner.js';
+import { resolveNeo4jConfig } from './neo4j-config.js';
 
 type CheckResult = { name: string; status: 'pass' | 'warn' | 'fail'; message: string };
 
@@ -134,16 +135,13 @@ async function checkConstraints(cwd: string): Promise<CheckResult> {
   }
 }
 
-async function checkNeo4j(): Promise<CheckResult> {
-  const uri = process.env.CODEBASE_PKG_NEO4J_URI ?? 'bolt://localhost:7687';
+async function checkNeo4j(cwd: string): Promise<CheckResult> {
+  const { uri, user, password } = resolveNeo4jConfig(cwd);
   try {
     const neo4j = (await import('neo4j-driver')).default;
     const driver = neo4j.driver(
       uri,
-      neo4j.auth.basic(
-        process.env.CODEBASE_PKG_NEO4J_USER ?? 'neo4j',
-        process.env.CODEBASE_PKG_NEO4J_PASSWORD ?? 'codebase-pkg-local',
-      ),
+      neo4j.auth.basic(user, password),
       { connectionAcquisitionTimeout: 3000 },
     );
     try {
@@ -179,7 +177,7 @@ export async function runDoctor(args: string[]): Promise<number> {
     () => checkMcpStanza(cwd),
     () => checkConstraints(cwd),
   ];
-  if (!noNetwork) checks.push(() => checkNeo4j());
+  if (!noNetwork) checks.push(() => checkNeo4j(cwd));
 
   let fails = 0;
   let warns = 0;

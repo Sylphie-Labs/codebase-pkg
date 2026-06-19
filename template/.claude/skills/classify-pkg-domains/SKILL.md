@@ -101,5 +101,6 @@ Classified X functions:
 - Functions in `src/database/` → `database`, etc. — directory is the strongest signal.
 - Run Cypher via `cypher-shell` or the `neo4j-driver`; example:
   ```bash
-  docker exec codebase-pkg-neo4j cypher-shell -u neo4j -p codebase-pkg-local "<query>"
+  docker exec "$(docker ps -q --filter name=codebase-pkg-neo4j)" cypher-shell -u neo4j -p codebase-pkg-local "<query>"
   ```
+  (The container name is `codebase-pkg-neo4j-<slug>` for per-instance installs; the name-prefix filter resolves it.)

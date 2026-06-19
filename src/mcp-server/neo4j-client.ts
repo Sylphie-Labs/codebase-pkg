@@ -4,17 +4,20 @@
  * Connects to a Neo4j instance on bolt://localhost:7687 by default. All tool
  * handlers import runQuery from here rather than managing their own sessions.
  *
- * Environment overrides:
- *   CODEBASE_PKG_NEO4J_URI      defaults to bolt://localhost:7687
- *   CODEBASE_PKG_NEO4J_USER     defaults to neo4j
- *   CODEBASE_PKG_NEO4J_PASSWORD defaults to codebase-pkg-local
+ * Connection settings resolve via resolveNeo4jConfig (env > state.json >
+ * default), so a per-instance bolt URI chosen at `init --docker` time is picked
+ * up automatically from `.codebase-pkg/state.json`:
+ *   CODEBASE_PKG_NEO4J_URI      > state.json neo4j.uri > bolt://localhost:7687
+ *   CODEBASE_PKG_NEO4J_USER     > neo4j
+ *   CODEBASE_PKG_NEO4J_PASSWORD > codebase-pkg-local
  */
 
 import neo4j, { Driver, Record as Neo4jRecord } from 'neo4j-driver';
+import { resolveNeo4jConfig } from '../cli/neo4j-config.js';
 
-const NEO4J_URI = process.env.CODEBASE_PKG_NEO4J_URI ?? 'bolt://localhost:7687';
-const NEO4J_USER = process.env.CODEBASE_PKG_NEO4J_USER ?? 'neo4j';
-const NEO4J_PASSWORD = process.env.CODEBASE_PKG_NEO4J_PASSWORD ?? 'codebase-pkg-local';
+const { uri: NEO4J_URI, user: NEO4J_USER, password: NEO4J_PASSWORD } = resolveNeo4jConfig(
+  process.cwd(),
+);
 
 let _driver: Driver | null = null;
 

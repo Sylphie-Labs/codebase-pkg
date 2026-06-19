@@ -21,7 +21,7 @@ Analyze the codebase knowledge graph to discover cross-cutting patterns — hubs
 2. Graph seeded (`npx codebase-pkg seed`).
 3. Domains classified (`/classify-pkg-domains`).
 
-Run Cypher via `cypher-shell` (`docker exec codebase-pkg-neo4j cypher-shell -u neo4j -p codebase-pkg-local "<query>"`) or via the `neo4j-driver` npm package.
+Run Cypher via `cypher-shell` (`docker exec "$(docker ps -q --filter name=codebase-pkg-neo4j)" cypher-shell -u neo4j -p codebase-pkg-local "<query>"`) or via the `neo4j-driver` npm package. (The container name is `codebase-pkg-neo4j-<slug>` for per-instance installs; the name-prefix filter resolves it for both old fixed and new slugged names.)
 
 ---
 
