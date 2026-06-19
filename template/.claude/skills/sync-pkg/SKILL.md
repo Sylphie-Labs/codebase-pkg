@@ -1,6 +1,6 @@
 # Sync PKG
 
-Refresh the codebase knowledge graph: re-seed or incrementally sync from source, classify domains, and infer connections. Three steps, run sequentially.
+Refresh the codebase knowledge graph: re-seed or incrementally sync from source, classify domains, and infer connections. Three sequential steps, plus an optional top-down mapping pass.
 
 ## Usage
 
@@ -44,10 +44,14 @@ Wait for it to complete before proceeding.
 
 Run the `/infer-pkg-connections` skill.
 
+### Step 4 (optional): Map from root
+
+Run the `/map-pkg-from-root` skill to add top-down entry-point summaries. This step is optional but benefits from running last — it uses the domains and inferred connections written by the previous steps.
+
 ---
 
 ## Key Rules
 
-- Steps must run sequentially — each depends on the previous one.
+- Steps 1–3 must run sequentially — each depends on the previous one.
 - If any step fails, stop and report the error — do not continue to the next step.
 - Do not pass extra flags to the sub-skills unless explicitly instructed.

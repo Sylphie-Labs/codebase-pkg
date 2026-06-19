@@ -86,6 +86,8 @@ codebase-pkg uninstall --confirm
 
 **Edges:** `CONTAINS`, `DEFINES`, `BELONGS_TO`, `IMPORTS`, `USES_TYPE`, `CALLS`, `HAS_CODE`, `EXTENDS`, `IMPLEMENTS`, `INJECTS`, `CHANGED_IN`.
 
+Skills add more on top of the seeded graph (schemaless — no migration or indexes needed): `/infer-pkg-connections` writes `DATA_FLOWS_TO` and `BRIDGES` edges plus `hubScore` properties, and `/map-pkg-from-root` writes `REACHES` edges (Function/File → Function/Type, with a `hops` property) along with root annotations (`entryPointKind`, `purpose`, `summary`, `reachableCount`) on entry-point nodes.
+
 After the initial seed, run `codebase-pkg sync` to update only the deltas since the last synced commit. SHA-256 content hashes per entity drive change detection. Sync is a manual command — if you want it automatic, wire it into a `pre-push` git hook or a CI step.
 
 ## MCP tools

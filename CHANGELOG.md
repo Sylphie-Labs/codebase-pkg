@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-19
+
+### Added
+- New top-down `/map-pkg-from-root` skill. Starts at the application's true entry point (frontend `App`/`main`, backend bootstrap and HTTP route surface, or CLI command) and descends via `CALLS`/`IMPORTS`, summarizing what each surface does and what it reaches. Writes `entryPointKind`/`purpose`/`summary`/`reachableCount` on root nodes and `REACHES` edges (with `hops`) to the significant surfaces they depend on. Complements the bottom-up `/infer-pkg-connections`; runs as an optional final step of `/sync-pkg`. Schemaless — no migration or new indexes.
+
 ## [0.3.0] — 2026-06-19
 
 ### Added
