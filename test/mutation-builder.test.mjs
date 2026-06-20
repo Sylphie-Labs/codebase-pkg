@@ -202,3 +202,196 @@ test('no statement anywhere in a mixed changeset is a RETURN 1 no-op', () => {
     assert.ok(!/RETURN\s+1/.test(stmt.cypher), `no RETURN 1 no-op: ${stmt.cypher.slice(0, 60)}`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// AC1: Scope-aware CALLS edge resolution — phantom cross-service edge guard
+// ---------------------------------------------------------------------------
+
+test('AC1: callee NOT in importedNames → same-file-only CALLS query (no phantom cross-service edge)', () => {
+  // Package A has a function "normalize" that calls "helper".
+  // Package B also has a function "helper" (same name, unrelated package).
+  // Package A's file does NOT import "helper" — it is a local same-file call.
+  // Expected: the CALLS query constrains callee to filePath = caller's file.
+
+  const callerFilePath = `${REPO_ROOT}/src/sync/package-a.ts`;
+
+  const fn = makeParsedFunction({
+    name: 'normalize',
+    filePath: callerFilePath,
+    callees: ['helper'],
+  });
+
+  // parsedFiles must include the caller file with its imports so the index is built.
+  // No import of "helper" is declared — local call only.
+  const parsedFile = {
+    filePath: callerFilePath,
+    fileName: 'package-a.ts',
+    extension: '.ts',
+    lineCount: 10,
+    functions: [fn],
+    types: [],
+    imports: [
+      // Imports something else entirely — not 'helper'
+      { fromFile: callerFilePath, importedNames: ['normalize'], moduleSpecifier: './normalize.js' },
+    ],
+  };
+
+  const changeset = emptyChangeset({
+    nodesToCreate: [{ kind: 'function', data: fn }],
+    parsedFiles: [parsedFile],
+  });
+
+  const statements = buildMutations(changeset);
+
+  // Find the CALLS statement for the 'helper' callee
+  const callsStmt = statements.find(
+    s => s.cypher.includes('CALLS') && s.params.calleeName === 'helper',
+  );
+  assert.ok(callsStmt, 'CALLS statement for helper callee must be generated');
+
+  // Must constrain callee to the same file — filePath must appear in the callee MATCH
+  assert.ok(
+    callsStmt.cypher.includes('callee:Function {filePath: $filePath}'),
+    'same-file constraint: callee MATCH must include {filePath: $filePath}',
+  );
+
+  // Must NOT have the cross-file exclusion (callee.filePath <> $filePath)
+  assert.ok(
+    !callsStmt.cypher.includes('callee.filePath <> $filePath'),
+    'same-file path must not include cross-file exclusion',
+  );
+});
+
+test('AC1: callee IN importedNames → cross-file CALLS query (allows imported, blocks unrelated packages)', () => {
+  // Package A imports "normalize" from package B and calls it.
+  // Expected: the CALLS query does NOT constrain to same file (uses cross-file branch).
+
+  const callerFilePath = `${REPO_ROOT}/src/sync/package-a.ts`;
+
+  const fn = makeParsedFunction({
+    name: 'process',
+    filePath: callerFilePath,
+    callees: ['normalize'],
+  });
+
+  const parsedFile = {
+    filePath: callerFilePath,
+    fileName: 'package-a.ts',
+    extension: '.ts',
+    lineCount: 10,
+    functions: [fn],
+    types: [],
+    imports: [
+      // Explicitly imports 'normalize' from package B
+      { fromFile: callerFilePath, importedNames: ['normalize'], moduleSpecifier: './package-b.js' },
+    ],
+  };
+
+  const changeset = emptyChangeset({
+    nodesToCreate: [{ kind: 'function', data: fn }],
+    parsedFiles: [parsedFile],
+  });
+
+  const statements = buildMutations(changeset);
+
+  const callsStmt = statements.find(
+    s => s.cypher.includes('CALLS') && s.params.calleeName === 'normalize',
+  );
+  assert.ok(callsStmt, 'CALLS statement for normalize callee must be generated');
+
+  // Must use cross-file exclusion to avoid landing on same file
+  assert.ok(
+    callsStmt.cypher.includes('callee.filePath <> $filePath'),
+    'cross-file branch must include callee.filePath <> $filePath to exclude same-file match',
+  );
+
+  // Must NOT use the same-file-only pattern ({filePath: $filePath} on callee MATCH)
+  assert.ok(
+    !callsStmt.cypher.includes('callee:Function {filePath: $filePath}'),
+    'cross-file branch must not constrain callee MATCH to same file',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// AC2: Local same-file call — CALLS edge created even with no imports
+// ---------------------------------------------------------------------------
+
+test('AC2: local same-file callee with zero imports still produces a CALLS statement', () => {
+  // A file with no imports at all calls a local helper — the edge must still be created.
+  const callerFilePath = `${REPO_ROOT}/src/sync/isolated.ts`;
+
+  const fn = makeParsedFunction({
+    name: 'run',
+    filePath: callerFilePath,
+    callees: ['localHelper'],
+  });
+
+  const parsedFile = {
+    filePath: callerFilePath,
+    fileName: 'isolated.ts',
+    extension: '.ts',
+    lineCount: 5,
+    functions: [fn],
+    types: [],
+    imports: [], // no imports whatsoever
+  };
+
+  const changeset = emptyChangeset({
+    nodesToCreate: [{ kind: 'function', data: fn }],
+    parsedFiles: [parsedFile],
+  });
+
+  const statements = buildMutations(changeset);
+
+  const callsStmt = statements.find(
+    s => s.cypher.includes('CALLS') && s.params.calleeName === 'localHelper',
+  );
+  assert.ok(callsStmt, 'CALLS statement must be generated for local callee even with no imports');
+
+  // Must constrain to same file (safe local-call rule)
+  assert.ok(
+    callsStmt.cypher.includes('callee:Function {filePath: $filePath}'),
+    'local-call rule: callee MATCH must include same-file filePath constraint',
+  );
+});
+
+test('AC2: function from parsedFiles missing from nodesToCreate still gets importedNames (update path)', () => {
+  // When a function appears in nodesToUpdate (not nodesToCreate), the importedNames
+  // index is still derived from parsedFiles and CALLS resolution is still scoped.
+  const callerFilePath = `${REPO_ROOT}/src/sync/package-a.ts`;
+
+  const fn = makeParsedFunction({
+    name: 'process',
+    filePath: callerFilePath,
+    callees: ['normalize'],
+    contentHash: 'updated-hash',
+  });
+
+  const parsedFile = {
+    filePath: callerFilePath,
+    fileName: 'package-a.ts',
+    extension: '.ts',
+    lineCount: 10,
+    functions: [fn],
+    types: [],
+    imports: [
+      { fromFile: callerFilePath, importedNames: ['normalize'], moduleSpecifier: './package-b.js' },
+    ],
+  };
+
+  const changeset = emptyChangeset({
+    nodesToUpdate: [{ kind: 'function', data: fn, changedFields: ['full'] }],
+    parsedFiles: [parsedFile],
+  });
+
+  const statements = buildMutations(changeset);
+
+  const callsStmt = statements.find(
+    s => s.cypher.includes('CALLS') && s.params.calleeName === 'normalize',
+  );
+  assert.ok(callsStmt, 'CALLS statement generated via update path');
+  assert.ok(
+    callsStmt.cypher.includes('callee.filePath <> $filePath'),
+    'update path also uses cross-file branch for imported callee',
+  );
+});

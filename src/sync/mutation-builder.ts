@@ -33,7 +33,7 @@ export interface CypherStatement {
 // Function node mutations
 // ---------------------------------------------------------------------------
 
-function buildFunctionCreate(fn: ParsedFunction): CypherStatement[] {
+function buildFunctionCreate(fn: ParsedFunction, importedNames: ReadonlySet<string>): CypherStatement[] {
   const stmts: CypherStatement[] = [];
   const dirPath = path.dirname(fn.filePath).replace(/\\/g, '/');
 
@@ -99,14 +99,14 @@ function buildFunctionCreate(fn: ParsedFunction): CypherStatement[] {
     });
   }
 
-  stmts.push(...buildCallsEdges(fn.filePath, fn.name, fn.callees));
+  stmts.push(...buildCallsEdges(fn.filePath, fn.name, fn.callees, importedNames));
   stmts.push(...buildUsesTypeEdges(fn.filePath, fn.name, fn.typeRefs));
 
   return stmts;
 }
 
-function buildFunctionUpdate(fn: ParsedFunction, _changedFields: string[]): CypherStatement[] {
-  return buildFunctionCreate(fn);
+function buildFunctionUpdate(fn: ParsedFunction, _changedFields: string[], importedNames: ReadonlySet<string>): CypherStatement[] {
+  return buildFunctionCreate(fn, importedNames);
 }
 
 // ---------------------------------------------------------------------------
@@ -235,7 +235,24 @@ function buildTypeUpdate(ty: ParsedType, _changedFields: string[]): CypherStatem
 // Relationship edge builders
 // ---------------------------------------------------------------------------
 
-function buildCallsEdges(filePath: string, callerName: string, callees: string[]): CypherStatement[] {
+/**
+ * Build CALLS edges for a function, scoped to prevent phantom cross-service edges.
+ *
+ * Resolution order (first match wins):
+ *   1. Same-file call — callee lives in the same filePath as the caller.
+ *   2. Imported call  — callee name appears in the set of names the caller's
+ *      file explicitly imports (importedNames collected from all ParsedImports).
+ *
+ * Without scope, a bare name like "normalize" would match the first Function
+ * node in the graph with that name, regardless of package — creating phantom
+ * cross-service edges where no IMPORTS path connects the two modules.
+ */
+function buildCallsEdges(
+  filePath: string,
+  callerName: string,
+  callees: string[],
+  importedNames: ReadonlySet<string>,
+): CypherStatement[] {
   const stmts: CypherStatement[] = [];
 
   stmts.push({
@@ -247,22 +264,50 @@ function buildCallsEdges(filePath: string, callerName: string, callees: string[]
   });
 
   for (const callee of callees) {
-    stmts.push({
-      cypher: `
-        MATCH (caller:Function {filePath: $filePath, name: $callerName})
-        MATCH (callee:Function)
-        WHERE callee.name = $calleeName
-           OR callee.name ENDS WITH $calleeSuffix
-        WITH caller, callee LIMIT 1
-        MERGE (caller)-[:CALLS]->(callee)
-      `.trim(),
-      params: {
-        filePath,
-        callerName,
-        calleeName: callee,
-        calleeSuffix: '.' + callee,
-      },
-    });
+    // Bare name match: accepted when same-file OR name is in the import list.
+    // Method suffix (e.g. "this.normalize" → calleeSuffix ".normalize") is
+    // already stripped in ast-parser, so we only need the bare name here.
+    const isImported = importedNames.has(callee);
+
+    if (isImported) {
+      // Cross-file: callee must appear in the caller's import list to avoid
+      // landing on a same-named function in an unrelated package.
+      stmts.push({
+        cypher: `
+          MATCH (caller:Function {filePath: $filePath, name: $callerName})
+          MATCH (callee:Function)
+          WHERE (callee.name = $calleeName OR callee.name ENDS WITH $calleeSuffix)
+            AND callee.filePath <> $filePath
+          WITH caller, callee LIMIT 1
+          MERGE (caller)-[:CALLS]->(callee)
+        `.trim(),
+        params: {
+          filePath,
+          callerName,
+          calleeName: callee,
+          calleeSuffix: '.' + callee,
+        },
+      });
+    } else {
+      // Same-file only: callee is not in the import list, so it must be a
+      // local function defined in the same file.
+      stmts.push({
+        cypher: `
+          MATCH (caller:Function {filePath: $filePath, name: $callerName})
+          MATCH (callee:Function {filePath: $filePath})
+          WHERE callee.name = $calleeName
+             OR callee.name ENDS WITH $calleeSuffix
+          WITH caller, callee LIMIT 1
+          MERGE (caller)-[:CALLS]->(callee)
+        `.trim(),
+        params: {
+          filePath,
+          callerName,
+          calleeName: callee,
+          calleeSuffix: '.' + callee,
+        },
+      });
+    }
   }
 
   return stmts;
@@ -440,8 +485,36 @@ function buildEdgeRemove(edge: EdgeRemove): CypherStatement {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * Build a map from filePath → set of all names explicitly imported by that
+ * file.  Used to scope CALLS edge resolution so we never create a cross-service
+ * edge to a same-named function in a package the caller never imports.
+ */
+function buildImportedNamesIndex(parsedFiles: ParsedFile[]): Map<string, Set<string>> {
+  const index = new Map<string, Set<string>>();
+  for (const file of parsedFiles) {
+    const names = new Set<string>();
+    for (const imp of file.imports) {
+      for (const name of imp.importedNames) {
+        // Strip "* as ns" namespace imports — they resolve at the call site
+        // via a property access we can't easily scope here, so skip them.
+        if (!name.startsWith('* as ')) {
+          names.add(name);
+        }
+      }
+    }
+    index.set(file.filePath, names);
+  }
+  return index;
+}
+
 export function buildMutations(changeset: Changeset): CypherStatement[] {
   const statements: CypherStatement[] = [];
+
+  // Pre-build the importedNames index so CALLS resolution can scope callees to
+  // names the caller's file actually imports — avoiding phantom cross-service edges.
+  const importedNamesIndex = buildImportedNamesIndex(changeset.parsedFiles);
+  const emptySet: ReadonlySet<string> = new Set();
 
   // 1. Deleted files
   for (const filePath of changeset.deletedFiles) {
@@ -466,7 +539,9 @@ export function buildMutations(changeset: Changeset): CypherStatement[] {
   // 4. Creates and updates
   for (const create of changeset.nodesToCreate) {
     if (create.kind === 'function') {
-      statements.push(...buildFunctionCreate(create.data as ParsedFunction));
+      const fn = create.data as ParsedFunction;
+      const importedNames = importedNamesIndex.get(fn.filePath) ?? emptySet;
+      statements.push(...buildFunctionCreate(fn, importedNames));
     } else {
       statements.push(...buildTypeCreate(create.data as ParsedType));
     }
@@ -474,7 +549,9 @@ export function buildMutations(changeset: Changeset): CypherStatement[] {
 
   for (const update of changeset.nodesToUpdate) {
     if (update.kind === 'function') {
-      statements.push(...buildFunctionUpdate(update.data as ParsedFunction, update.changedFields));
+      const fn = update.data as ParsedFunction;
+      const importedNames = importedNamesIndex.get(fn.filePath) ?? emptySet;
+      statements.push(...buildFunctionUpdate(fn, update.changedFields, importedNames));
     } else {
       statements.push(...buildTypeUpdate(update.data as ParsedType, update.changedFields));
     }
