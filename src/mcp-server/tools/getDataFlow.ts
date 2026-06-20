@@ -10,6 +10,7 @@
  */
 
 import { runQuery } from '../neo4j-client.js';
+import { findNearMisses, formatDidYouMean } from './suggestion-helper.js';
 
 export interface GetDataFlowInput {
   startNode: string;
@@ -42,6 +43,9 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
     { name: startNode }
   );
 
+  // Track whether we fell through to the suffix-fallback path.
+  let usedSuffixFallback = false;
+
   // Fallback: try ENDS WITH for unqualified method names
   if (startRecords.length === 0 && !startNode.includes('.')) {
     const suffix = `.${startNode}`;
@@ -58,13 +62,20 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
       `,
       { suffix }
     );
+    if (startRecords.length > 0) {
+      usedSuffixFallback = true;
+    }
   }
 
   if (startRecords.length === 0) {
+    // Provide near-miss suggestions so the caller can correct a typo.
+    const misses = await findNearMisses(startNode);
+    const didYouMean = formatDidYouMean(misses);
     return (
       `Node "${startNode}" not found in the codebase PKG.\n\n` +
       `Provide the exact function or type name (e.g., "UserService.findById").\n` +
-      `Use getModuleContext to discover names in a feature area.`
+      `Use getModuleContext to discover names in a feature area.` +
+      didYouMean
     );
   }
 
@@ -76,13 +87,22 @@ export async function handleGetDataFlow(input: GetDataFlowInput): Promise<string
         return `  ${labels.join('/')} — ${fp ?? 'unknown path'}`;
       })
       .join('\n');
+    const header = usedSuffixFallback ? 'MATCH MODE: suffix-fallback\n\n' : '';
     return (
+      header +
       `Multiple nodes named "${startNode}" exist:\n\n${matches}\n\n` +
       `The data flow query uses the first match. Refine using getFunctionDetail with filePath if needed.`
     );
   }
 
   const lines: string[] = [];
+
+  // Surface the fallback so the caller knows the match was fuzzy, not exact.
+  if (usedSuffixFallback) {
+    lines.push('MATCH MODE: suffix-fallback');
+    lines.push('');
+  }
+
   lines.push(`DATA FLOW: "${startNode}" (${direction}, depth ${depth})`);
   lines.push('='.repeat(60));
 

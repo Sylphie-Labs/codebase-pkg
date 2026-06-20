@@ -8,6 +8,7 @@
  */
 
 import { runQuery } from '../neo4j-client.js';
+import { findNearMisses, formatDidYouMean } from './suggestion-helper.js';
 
 export interface GetFunctionDetailInput {
   functionName: string;
@@ -42,6 +43,9 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
     filePath ? { name: functionName, filePath } : { name: functionName }
   );
 
+  // Track whether we fell through to the suffix-fallback path.
+  let usedSuffixFallback = false;
+
   // Fallback: try as unqualified method name.
   if (functionRecords.length === 0 && !functionName.includes('.')) {
     const suffix = `.${functionName}`;
@@ -65,20 +69,31 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
       `,
       filePath ? { suffix, filePath } : { suffix }
     );
+    if (functionRecords.length > 0) {
+      usedSuffixFallback = true;
+    }
   }
 
   if (functionRecords.length === 0) {
-    return `Function "${functionName}" not found in the codebase PKG.${
-      filePath ? ` (searched within path: ${filePath})` : ''
-    }\n\nTry getModuleContext to discover function names in a feature area.` +
-    `\nNote: class methods are stored as "ClassName.methodName" (e.g., "UserService.findById").`;
+    // Provide near-miss suggestions so the caller can correct a typo.
+    const misses = await findNearMisses(functionName);
+    const didYouMean = formatDidYouMean(misses);
+    return (
+      `Function "${functionName}" not found in the codebase PKG.${
+        filePath ? ` (searched within path: ${filePath})` : ''
+      }\n\nTry getModuleContext to discover function names in a feature area.` +
+      `\nNote: class methods are stored as "ClassName.methodName" (e.g., "UserService.findById").` +
+      didYouMean
+    );
   }
 
   if (functionRecords.length > 1) {
     const locations = functionRecords
       .map((r) => `  ${r.get('filePath') as string}:${r.get('lineNumber') as number ?? '?'}`)
       .join('\n');
+    const header = usedSuffixFallback ? 'MATCH MODE: suffix-fallback\n\n' : '';
     return (
+      header +
       `Multiple functions named "${functionName}" found. Provide filePath to disambiguate:\n\n${locations}\n\n` +
       `Example: getFunctionDetail({ functionName: "${functionName}", filePath: "path/to/file" })`
     );
@@ -130,6 +145,12 @@ export async function handleGetFunctionDetail(input: GetFunctionDetailInput): Pr
   const comment = fn.get('comment') as string | null;
   const body = fn.get('body') as string | null;
   const lineNo = fn.get('lineNumber') as number | null;
+
+  // Surface the fallback so the caller knows the match was fuzzy, not exact.
+  if (usedSuffixFallback) {
+    lines.push('MATCH MODE: suffix-fallback');
+    lines.push('');
+  }
 
   lines.push(`FUNCTION DETAIL: ${fnName}`);
   lines.push('='.repeat(60));
