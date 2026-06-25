@@ -28,6 +28,10 @@ import * as crypto from 'crypto';
 export interface ParsedArgument {
   name: string;
   type: string;
+  /** Whether the parameter declares a default initializer (e.g. `x = 5`). */
+  hasDefault: boolean;
+  /** The default initializer's source text, if any (e.g. `5`, `{}`). */
+  defaultText?: string;
 }
 
 export interface ParsedDecorator {
@@ -132,12 +136,26 @@ function extractJsDoc(node: Node): string {
 }
 
 function extractArgsFromNode(
-  node: { getParameters(): Array<{ getName(): string; getTypeNode(): { getText(): string } | undefined }> }
+  node: {
+    getParameters(): Array<{
+      getName(): string;
+      getTypeNode(): { getText(): string } | undefined;
+      getInitializer?(): { getText(): string } | undefined;
+    }>;
+  }
 ): ParsedArgument[] {
-  return node.getParameters().map(p => ({
-    name: p.getName(),
-    type: p.getTypeNode()?.getText() ?? 'unknown',
-  }));
+  return node.getParameters().map(p => {
+    const initializer = p.getInitializer?.();
+    const arg: ParsedArgument = {
+      name: p.getName(),
+      type: p.getTypeNode()?.getText() ?? 'unknown',
+      hasDefault: initializer !== undefined,
+    };
+    if (initializer !== undefined) {
+      arg.defaultText = initializer.getText().slice(0, 120);
+    }
+    return arg;
+  });
 }
 
 function extractBodyText(

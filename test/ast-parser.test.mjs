@@ -30,6 +30,10 @@ export function add(first: number, second: number): number {
   return first + second;
 }
 
+export function withDefaults(base: number, step = 1, label: string = 'x'): number {
+  return base + step;
+}
+
 function internalHelper(): void {
   console.log('noise');
   JSON.stringify({ a: 1 });
@@ -98,8 +102,8 @@ test('named function declaration: JSDoc, typed args, return type, flags', () => 
   assert.ok(add, 'add() extracted');
   assert.equal(add.jsDoc, 'Adds two numbers together.');
   assert.deepEqual(add.args, [
-    { name: 'first', type: 'number' },
-    { name: 'second', type: 'number' },
+    { name: 'first', type: 'number', hasDefault: false },
+    { name: 'second', type: 'number', hasDefault: false },
   ]);
   assert.equal(add.returnType, 'number');
   assert.equal(add.isExported, true);
@@ -107,6 +111,16 @@ test('named function declaration: JSDoc, typed args, return type, flags', () => 
   assert.match(add.contentHash, HASH_RE);
   assert.ok(add.lineNumber >= 1, 'lineNumber >= 1');
   assert.ok(add.endLine >= add.lineNumber, 'endLine >= lineNumber');
+});
+
+test('default parameters captured: hasDefault flag and defaultText (additive fields)', () => {
+  const fn = parsed.functions.find(f => f.name === 'withDefaults');
+  assert.ok(fn, 'withDefaults() extracted');
+  assert.deepEqual(fn.args, [
+    { name: 'base', type: 'number', hasDefault: false },
+    { name: 'step', type: 'unknown', hasDefault: true, defaultText: '1' },
+    { name: 'label', type: 'string', hasDefault: true, defaultText: "'x'" },
+  ]);
 });
 
 test('non-exported function has isExported false and builtin callees filtered', () => {
