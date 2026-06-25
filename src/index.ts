@@ -47,3 +47,34 @@ export {
   isSignificantChange,
 } from './sync/domain-classifier.js';
 export type { DomainLabel, ClassificationResult } from './sync/domain-classifier.js';
+
+// Conformity Judge engine (signature-skeleton conformity via embedding
+// distance). Engine only -- not yet wired into sync/Neo4j/MCP.
+export {
+  judgeChunk,
+  categoryOf,
+  signatureSkeleton,
+  normalizedSignature,
+  rawSignature,
+  signatureText,
+  cosineDistance,
+  knnPoolDistance,
+  embed as embedSkeletons,
+  CHOSEN_MODEL,
+  MODEL_CANDIDATES,
+  CATEGORIES,
+  FUNCTION_SIGNATURE_SKELETON,
+  DEFAULT_K,
+  DRAFT_OUTLIER_THRESHOLD,
+} from './conformity/index.js';
+export type {
+  Embedder,
+  Category,
+  SignatureLike,
+  SignatureMode,
+  SkeletonOptions,
+  PoolEntry,
+  Judgment,
+  Verdict,
+  JudgeOptions,
+} from './conformity/index.js';

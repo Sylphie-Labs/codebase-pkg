@@ -44,6 +44,10 @@
     "./seed": {
       "types": "./dist/ingestion/initial-seed.d.ts",
       "import": "./dist/ingestion/initial-seed.js"
+    },
+    "./conformity": {
+      "types": "./dist/conformity/index.d.ts",
+      "import": "./dist/conformity/index.js"
     }
   },
   "bin": {
