@@ -60,11 +60,13 @@ export {
 } from './sync/domain-classifier.js';
 export type { DomainLabel, ClassificationResult } from './sync/domain-classifier.js';
 
-// Conformity Judge engine (signature-skeleton conformity via embedding
-// distance). Engine only -- not yet wired into sync/Neo4j/MCP.
+// Conformity Judge engine (whole-body conformity via embedding distance).
+// Engine only -- not yet wired into sync/Neo4j/MCP.
 export {
   judgeChunk,
   categoryOf,
+  representationText,
+  normalizedBody,
   signatureSkeleton,
   normalizedSignature,
   rawSignature,
@@ -76,6 +78,7 @@ export {
   CHOSEN_MODEL,
   MODEL_CANDIDATES,
   CATEGORIES,
+  FUNCTION_BODY,
   FUNCTION_SIGNATURE_SKELETON,
   DEFAULT_K,
   DRAFT_OUTLIER_THRESHOLD,
@@ -88,6 +91,7 @@ export {
 export type {
   Embedder,
   Category,
+  BodyLike,
   SignatureLike,
   SignatureMode,
   SkeletonOptions,

@@ -25,7 +25,7 @@ import {
 import { EMBEDDING_DIM } from '../dist/conformity/index.js';
 import {
   categoryOf,
-  signatureSkeleton,
+  representationText,
 } from '../dist/conformity/category.js';
 
 // --- Fakes -----------------------------------------------------------------
@@ -57,8 +57,8 @@ function makeFakeEmbedder() {
   return embedder;
 }
 
-/** A minimal ParsedFunction good enough for category/skeleton derivation. */
-function fn(name, filePath, args = [], returnType = 'void') {
+/** A minimal ParsedFunction good enough for category/representation derivation. */
+function fn(name, filePath, args = [], returnType = 'void', bodyText = '{}') {
   return {
     name,
     filePath,
@@ -71,7 +71,7 @@ function fn(name, filePath, args = [], returnType = 'void') {
     ),
     returnType,
     jsDoc: '',
-    bodyText: '{}',
+    bodyText,
     isExported: true,
     isAsync: false,
     decorators: [],
@@ -83,13 +83,13 @@ function fn(name, filePath, args = [], returnType = 'void') {
 
 // --- embedAndStoreFunctions ------------------------------------------------
 
-test('embedAndStoreFunctions derives category/skeleton, nodeIds, and captures model', async () => {
+test('embedAndStoreFunctions derives category/representation text, nodeIds, and captures model', async () => {
   const store = makeFakeStore();
   const embedder = makeFakeEmbedder();
 
   const fns = [
-    fn('alpha', 'a.ts', ['x', 'y'], 'number'),
-    fn('beta', 'b.ts', [], 'void'),
+    fn('alpha', 'a.ts', ['x', 'y'], 'number', '{ return x + y; }'),
+    fn('beta', 'b.ts', [], 'void', '{ doSomething(); }'),
   ];
 
   const res = await embedAndStoreFunctions(fns, {
@@ -101,11 +101,12 @@ test('embedAndStoreFunctions derives category/skeleton, nodeIds, and captures mo
   assert.equal(res.embedded, 2);
   assert.equal(res.skipped, 0);
 
-  // One batch (both functions fit), embedded with their skeletons.
+  // One batch (both functions fit), embedded with their representation texts
+  // (the lightly-normalized whole body), NOT the legacy signature skeleton.
   assert.equal(embedder.calls.length, 1);
   assert.deepEqual(embedder.calls[0], [
-    signatureSkeleton(fns[0], { normalized: true }),
-    signatureSkeleton(fns[1], { normalized: true }),
+    representationText(fns[0]),
+    representationText(fns[1]),
   ]);
 
   // One upsert batch.

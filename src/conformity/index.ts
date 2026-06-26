@@ -11,20 +11,25 @@
 export { embed, CHOSEN_MODEL, MODEL_CANDIDATES } from './embed.js';
 export type { Embedder } from './embed.js';
 
-// Signature normalization / canonicalization
+// Text normalization / canonicalization. `normalizedBody` is the current
+// embedding path; the signature helpers are legacy (back-compat/diagnostics).
 export {
   collapseWhitespace,
+  normalizedBody,
   rawSignature,
   normalizedSignature,
   signatureText,
 } from './normalize.js';
-export type { SignatureLike, SignatureMode } from './normalize.js';
+export type { BodyLike, SignatureLike, SignatureMode } from './normalize.js';
 
-// Category derivation
+// Category derivation. `representationText`/`FUNCTION_BODY` are current;
+// `signatureSkeleton`/`FUNCTION_SIGNATURE_SKELETON` are legacy.
 export {
   categoryOf,
+  representationText,
   signatureSkeleton,
   CATEGORIES,
+  FUNCTION_BODY,
   FUNCTION_SIGNATURE_SKELETON,
 } from './category.js';
 export type { Category, SkeletonOptions } from './category.js';

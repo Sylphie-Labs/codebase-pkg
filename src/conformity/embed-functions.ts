@@ -4,9 +4,9 @@
  *
  * This module is the shared core used by BOTH the incremental sync hook
  * (sync-pipeline.ts) and the cold-start backfill (runConformityBackfill). It
- * takes parsed functions, derives the per-category canonical skeleton, batch-
- * embeds the skeletons, and upserts the resulting vectors into the
- * ConformityStore keyed by stable node id.
+ * takes parsed functions, derives the per-category canonical representation
+ * text (the lightly-normalized whole body), batch-embeds it, and upserts the
+ * resulting vectors into the ConformityStore keyed by stable node id.
  *
  * Injectability: both the store and the embedder are injectable, so unit tests
  * exercise the selection/derivation logic with a deterministic fake embedder
@@ -19,7 +19,7 @@
  */
 
 import type { ParsedFunction } from '../sync/ast-parser.js';
-import { categoryOf, signatureSkeleton } from './category.js';
+import { categoryOf, representationText } from './category.js';
 import { embed as realEmbed, CHOSEN_MODEL, MODEL_CANDIDATES, type Embedder } from './embed.js';
 import {
   createConformityStore,
@@ -29,7 +29,7 @@ import {
 } from './store.js';
 
 /**
- * Maximum number of skeletons handed to the embedder in a single call. The real
+ * Maximum number of texts handed to the embedder in a single call. The real
  * @xenova backend embeds sequentially internally, but capping the batch keeps
  * memory bounded and gives predictable progress on large repos.
  */
@@ -52,15 +52,15 @@ export interface EmbedAndStoreOptions {
 
 /** Result of an embed-and-store pass. */
 export interface EmbedAndStoreResult {
-  /** Functions whose skeletons were embedded and upserted. */
+  /** Functions whose representation text was embedded and upserted. */
   embedded: number;
-  /** Functions skipped (e.g. empty derived skeleton). */
+  /** Functions skipped (e.g. empty derived representation text). */
   skipped: number;
 }
 
 /**
- * Derive category + signature skeleton for each function, batch-embed the
- * skeletons, and upsert one vector per function into the store.
+ * Derive category + representation text (lightly-normalized whole body) for each
+ * function, batch-embed it, and upsert one vector per function into the store.
  *
  * The model id stamped on each row is captured AFTER embedding from
  * {@link CHOSEN_MODEL} (the model the real backend actually loaded), falling
@@ -74,22 +74,23 @@ export async function embedAndStoreFunctions(
   const store = opts.store ?? createConformityStore();
   const embedder = opts.embedder ?? realEmbed;
 
-  // Derive (nodeId, category, skeleton) for every function up front. Functions
-  // whose skeleton comes back empty are skipped (nothing meaningful to embed).
-  type Pending = { nodeId: string; category: string; skeleton: string };
+  // Derive (nodeId, category, text) for every function up front. Functions
+  // whose representation text comes back empty (e.g. an empty body) are skipped
+  // (nothing meaningful to embed).
+  type Pending = { nodeId: string; category: string; text: string };
   const pending: Pending[] = [];
   let skipped = 0;
 
   for (const fn of functions) {
-    const skeleton = signatureSkeleton(fn, { normalized: true });
-    if (!skeleton || skeleton.trim() === '') {
+    const text = representationText(fn);
+    if (!text || text.trim() === '') {
       skipped++;
       continue;
     }
     pending.push({
       nodeId: nodeIdOf(fn),
       category: categoryOf(fn),
-      skeleton,
+      text,
     });
   }
 
@@ -101,7 +102,7 @@ export async function embedAndStoreFunctions(
 
   for (let i = 0; i < pending.length; i += EMBED_BATCH_SIZE) {
     const batch = pending.slice(i, i + EMBED_BATCH_SIZE);
-    const vectors = await embedder(batch.map((p) => p.skeleton));
+    const vectors = await embedder(batch.map((p) => p.text));
 
     if (vectors.length !== batch.length) {
       throw new Error(

@@ -1,9 +1,10 @@
 /**
  * judge.ts -- thin conformity orchestrator (no Neo4j, no sync, no MCP).
  *
- * Composes the pure pieces -- category derivation, skeleton canonicalization,
- * embedding, and kNN pool distance -- into a single call that scores how well a
- * parsed chunk "conforms" to a pool of same-category peers.
+ * Composes the pure pieces -- category derivation, representation-text
+ * canonicalization (the lightly-normalized whole body), embedding, and kNN pool
+ * distance -- into a single call that scores how well a parsed chunk "conforms"
+ * to a pool of same-category peers.
  *
  * This is the engine only. Wiring it to the sync pipeline, Neo4j, or the MCP
  * server happens in later steps.
@@ -13,7 +14,7 @@ import type { ParsedFunction } from '../sync/ast-parser.js';
 import { embed as defaultEmbed, type Embedder } from './embed.js';
 import {
   categoryOf,
-  signatureSkeleton,
+  representationText,
   type Category,
   type SkeletonOptions,
 } from './category.js';
@@ -25,9 +26,9 @@ import { knnPoolDistance, DEFAULT_K } from './distance.js';
  * ever compared to structural peers.
  */
 export interface PoolEntry {
-  /** The category this entry belongs to (e.g. `function:signature-skeleton`). */
+  /** The category this entry belongs to (e.g. `function:body`). */
   category: Category;
-  /** The embedding vector for this entry's canonical skeleton. */
+  /** The embedding vector for this entry's canonical representation text. */
   vector: number[];
   /** A stable identifier for the source chunk (e.g. `file.ts:funcName`). */
   identifier: string;
@@ -43,7 +44,7 @@ export type Verdict = 'conforms' | 'outlier';
 export interface Judgment {
   /** The category the chunk was classified into. */
   category: Category;
-  /** The canonical skeleton text that was embedded. */
+  /** The canonical representation text that was embedded (lightly-normalized body). */
   skeleton: string;
   /** Mean cosine distance to the k nearest same-category pool entries. */
   distance: number;
@@ -74,10 +75,11 @@ export const DRAFT_OUTLIER_THRESHOLD = 0.1;
 /**
  * Judge a single parsed chunk against a pool of precomputed peers.
  *
- * Derives the chunk's category and canonical skeleton, embeds the skeleton, and
- * measures the mean cosine distance to the k nearest pool entries OF THE SAME
- * CATEGORY. Returns a typed {@link Judgment}. Throws if no same-category peers
- * exist (there is nothing to conform to).
+ * Derives the chunk's category and canonical representation text (lightly-
+ * normalized whole body), embeds it, and measures the mean cosine distance to
+ * the k nearest pool entries OF THE SAME CATEGORY. Returns a typed
+ * {@link Judgment}. Throws if no same-category peers exist (there is nothing to
+ * conform to).
  */
 export async function judgeChunk(
   fn: ParsedFunction,
@@ -88,7 +90,7 @@ export async function judgeChunk(
   const k = opts.k ?? DEFAULT_K;
 
   const category = categoryOf(fn);
-  const skeleton = signatureSkeleton(fn, opts);
+  const skeleton = representationText(fn);
 
   const peers = pool.filter((e) => e.category === category);
   if (peers.length === 0) {

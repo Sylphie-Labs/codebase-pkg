@@ -1,12 +1,13 @@
 /**
  * judge-worktree.ts -- step 4 of the Conformity Judge: the JUDGMENT surface.
  *
- * The descriptive pool (the committed signature-skeleton vectors) is already
- * built by sync/backfill. This module answers the developer-facing question
- * "is what I'm writing like what's already in this codebase?" by parsing the
- * working tree (or a given file), embedding each function's normalized skeleton,
- * and measuring its distance to the COMMITTED pool -- reporting not just a
- * verdict but the nearest existing functions it conforms to / diverges from.
+ * The descriptive pool (the committed whole-body vectors) is already built by
+ * sync/backfill. This module answers the developer-facing question "is what I'm
+ * writing like what's already in this codebase?" by parsing the working tree (or
+ * a given file), embedding each function's representation text (lightly-
+ * normalized whole body), and measuring its distance to the COMMITTED pool --
+ * reporting not just a verdict but the nearest existing functions it conforms to
+ * / diverges from.
  *
  * Self-exclusion: a function already committed has its own vector in the pool.
  * Judging it against that vector would report a perfect self-match, which is
@@ -25,7 +26,7 @@
 
 import type { ParsedFunction } from '../sync/ast-parser.js';
 import { embed as defaultEmbed, type Embedder } from './embed.js';
-import { categoryOf, signatureSkeleton } from './category.js';
+import { categoryOf, representationText } from './category.js';
 import { knnPoolDistance, knnNearest, DEFAULT_K } from './distance.js';
 import { DRAFT_OUTLIER_THRESHOLD, type Verdict, type PoolEntry } from './judge.js';
 import {
@@ -42,7 +43,7 @@ import { parseFiles, clearProjectCache } from '../sync/parser.js';
 export interface Neighbor {
   /** Stable node id of the existing function (`<filePath>::<name>`). */
   nodeId: string;
-  /** Cosine distance from the judged function's skeleton, in [0, 2]. */
+  /** Cosine distance from the judged function's representation, in [0, 2]. */
   distance: number;
 }
 
@@ -56,7 +57,7 @@ export interface FunctionJudgment {
   nodeId: string;
   /** The conformity category it was classified into. */
   category: string;
-  /** The canonical skeleton text that was embedded. */
+  /** The canonical representation text that was embedded (lightly-normalized body). */
   skeleton: string;
   /** Mean cosine distance to the k nearest pool entries, or null if no peers. */
   distance: number | null;
@@ -118,7 +119,7 @@ async function judgeAgainstPool(
   k: number,
 ): Promise<FunctionJudgment> {
   const category = categoryOf(fn);
-  const skeleton = signatureSkeleton(fn, { normalized: true });
+  const skeleton = representationText(fn);
   const nodeId = nodeIdOf(fn);
 
   const peers = pool.filter((e) => e.category === category);
@@ -176,7 +177,8 @@ async function judgeAgainstPool(
  *
  * For each function: derive its category, load that category's committed pool
  * from the store, EXCLUDE the function's own node id (so it is judged against
- * OTHER code), embed the skeleton, and compute kNN distance + nearest neighbors.
+ * OTHER code), embed the representation text, and compute kNN distance + nearest
+ * neighbors.
  *
  * Gated: if conformity is disabled or Postgres is unreachable, returns
  * {@link UnavailableResult} rather than throwing.

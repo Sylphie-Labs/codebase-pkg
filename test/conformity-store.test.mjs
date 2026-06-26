@@ -76,10 +76,17 @@ test('upsertVectors rejects wrong-dimension vectors', async () => {
       store.upsertVectors([
         { nodeId: 'bad', category: 'c', vector: [1, 2, 3], model: 'm' },
       ]),
-    /length 3, expected 512/,
+    /length 3, expected 768/,
   );
   // Nothing should have been sent to the DB.
   assert.equal(runner.calls.length, 0);
+
+  // A correct EMBEDDING_DIM-length (768) vector is accepted and reaches the DB.
+  assert.equal(EMBEDDING_DIM, 768);
+  await store.upsertVectors([
+    { nodeId: 'ok', category: 'c', vector: vec(0.3), model: 'm' },
+  ]);
+  assert.equal(runner.calls.length, 1);
 });
 
 test('loadPool: first call hits runner, second is served from cache', async () => {
@@ -204,7 +211,7 @@ test('coldNearest emits the cosine <=> query and parses distances', async () => 
 test('coldNearest rejects wrong-dimension query vector', async () => {
   const runner = makeFakeRunner();
   const store = new ConformityStore(runner);
-  await assert.rejects(() => store.coldNearest('c', [1, 2], 5), /expected 512/);
+  await assert.rejects(() => store.coldNearest('c', [1, 2], 5), /expected 768/);
 });
 
 test('clearHotCache forces the next loadPool to re-read', async () => {

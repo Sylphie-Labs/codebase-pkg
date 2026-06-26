@@ -30,6 +30,7 @@ import * as crypto from 'node:crypto';
 import { parseFiles } from '../dist/sync/ast-parser.js';
 import {
   collapseWhitespace,
+  normalizedBody,
   rawSignature,
   normalizedSignature,
   signatureText,
@@ -41,7 +42,9 @@ import {
 } from '../dist/conformity/distance.js';
 import {
   categoryOf,
+  representationText,
   signatureSkeleton,
+  FUNCTION_BODY,
   FUNCTION_SIGNATURE_SKELETON,
   CATEGORIES,
 } from '../dist/conformity/category.js';
@@ -98,6 +101,70 @@ function fakeEmbedder(dim = 16) {
 
 test('collapseWhitespace squashes runs and trims', () => {
   assert.equal(collapseWhitespace('  a\n\t b   c '), 'a b c');
+});
+
+// --------------------------------------------------------------------------
+// normalizedBody / representationText -- the CURRENT embedding path
+// --------------------------------------------------------------------------
+
+test('normalizedBody strips line comments and collapses whitespace', () => {
+  const body = `{
+    // add the two operands
+    return first + second; // result
+  }`;
+  // Identifiers and literals are KEPT; only comments + whitespace are normalized.
+  assert.equal(normalizedBody({ bodyText: body }), '{ return first + second; }');
+});
+
+test('normalizedBody strips block comments (including multi-line)', () => {
+  const body = `{
+    /* a
+       multi-line
+       block comment */
+    return x /* inline */ * 2;
+  }`;
+  assert.equal(normalizedBody({ bodyText: body }), '{ return x * 2; }');
+});
+
+test('normalizedBody keeps identifiers and literals (does NOT skeletonize)', () => {
+  const out = normalizedBody({ bodyText: '{ const greeting = "hello world"; return greeting; }' });
+  assert.ok(out.includes('greeting'), 'identifier kept');
+  assert.ok(out.includes('"hello world"'), 'string literal kept');
+  // Sanity: it is NOT collapsed to a NAME/ARG skeleton.
+  assert.ok(!out.includes('ARG'));
+  assert.ok(!out.includes('TYPE'));
+});
+
+test('normalizedBody: empty / missing body -> empty string', () => {
+  assert.equal(normalizedBody({ bodyText: '' }), '');
+  assert.equal(normalizedBody({}), '');
+});
+
+test('two byte-identical bodies normalize identically', () => {
+  const body = '{\n  return a + b;\n}';
+  assert.equal(normalizedBody({ bodyText: body }), normalizedBody({ bodyText: body }));
+});
+
+test('cosmetically-equivalent bodies (comments/whitespace only) normalize identically', () => {
+  const a = '{ return a + b; }';
+  const b = `{
+      // sum them
+      return a + b;
+  }`;
+  assert.equal(normalizedBody({ bodyText: a }), normalizedBody({ bodyText: b }));
+});
+
+test('two DIFFERENT bodies normalize differently', () => {
+  const a = normalizedBody({ bodyText: '{ return a + b; }' });
+  const b = normalizedBody({ bodyText: '{ return a * b; }' });
+  assert.notEqual(a, b);
+});
+
+test('representationText is normalizedBody of the parsed function', () => {
+  const add = functions.find((f) => f.name === 'add');
+  assert.equal(representationText(add), normalizedBody(add));
+  // The parsed body keeps the real `return first + second` expression.
+  assert.ok(representationText(add).includes('first + second'));
 });
 
 test('rawSignature keeps real names and types', () => {
@@ -228,13 +295,16 @@ test('knnPoolDistance throws on empty pool', () => {
 // category derivation
 // --------------------------------------------------------------------------
 
-test('categoryOf returns the signature-skeleton category for functions', () => {
+test('categoryOf returns the whole-body category for functions', () => {
   const add = functions.find((f) => f.name === 'add');
-  assert.equal(categoryOf(add), FUNCTION_SIGNATURE_SKELETON);
-  assert.ok(CATEGORIES.includes(FUNCTION_SIGNATURE_SKELETON));
+  assert.equal(categoryOf(add), FUNCTION_BODY);
+  assert.ok(CATEGORIES.includes(FUNCTION_BODY));
+  // The abandoned skeleton category is no longer the active category.
+  assert.ok(!CATEGORIES.includes(FUNCTION_SIGNATURE_SKELETON));
 });
 
-test('signatureSkeleton defaults to normalized, honors { normalized: false }', () => {
+test('signatureSkeleton (legacy) still defaults to normalized, honors { normalized: false }', () => {
+  // Kept for back-compat/diagnostics; no longer the embedding path.
   const add = functions.find((f) => f.name === 'add');
   assert.equal(signatureSkeleton(add), normalizedSignature(add));
   assert.equal(signatureSkeleton(add, { normalized: false }), rawSignature(add));
@@ -244,23 +314,23 @@ test('signatureSkeleton defaults to normalized, honors { normalized: false }', (
 // judgeChunk orchestration (injected fake embedder -- NO model)
 // --------------------------------------------------------------------------
 
-test('judgeChunk derives category + skeleton and measures pool distance', async () => {
+test('judgeChunk derives category + representation text and measures pool distance', async () => {
   const add = functions.find((f) => f.name === 'add');
   const embed = fakeEmbedder();
-  // Build a same-category pool. One entry uses the EXACT skeleton of `add` so a
-  // nearest neighbor is at distance ~0.
-  const skeleton = signatureSkeleton(add);
-  const [matchVec] = await embed([skeleton]);
-  const [otherVec] = await embed(['NAME(ARG): RET']);
+  // Build a same-category pool. One entry uses the EXACT representation text of
+  // `add` so a nearest neighbor is at distance ~0.
+  const text = representationText(add);
+  const [matchVec] = await embed([text]);
+  const [otherVec] = await embed(['{ return x; }']);
   const pool = [
-    { category: FUNCTION_SIGNATURE_SKELETON, vector: matchVec, identifier: 'twin' },
-    { category: FUNCTION_SIGNATURE_SKELETON, vector: otherVec, identifier: 'other' },
+    { category: FUNCTION_BODY, vector: matchVec, identifier: 'twin' },
+    { category: FUNCTION_BODY, vector: otherVec, identifier: 'other' },
   ];
 
   // k=1 -> distance is to the single nearest neighbor (the exact twin -> ~0).
   const j = await judgeChunk(add, pool, { embed, k: 1 });
-  assert.equal(j.category, FUNCTION_SIGNATURE_SKELETON);
-  assert.equal(j.skeleton, skeleton);
+  assert.equal(j.category, FUNCTION_BODY);
+  assert.equal(j.skeleton, text);
   assert.equal(j.poolSize, 2);
   assert.equal(j.k, 1);
   assert.ok(j.distance < 1e-9, `exact twin is the nearest neighbor -> ~0 (got ${j.distance})`);
@@ -270,12 +340,12 @@ test('judgeChunk derives category + skeleton and measures pool distance', async 
 test('judgeChunk filters the pool to the chunk category', async () => {
   const add = functions.find((f) => f.name === 'add');
   const embed = fakeEmbedder();
-  const skeleton = signatureSkeleton(add);
-  const [matchVec] = await embed([skeleton]);
+  const text = representationText(add);
+  const [matchVec] = await embed([text]);
   const pool = [
     // a wrong-category entry that should be ignored entirely
     { category: 'some:other-category', vector: [9, 9, 9], identifier: 'wrong' },
-    { category: FUNCTION_SIGNATURE_SKELETON, vector: matchVec, identifier: 'twin' },
+    { category: FUNCTION_BODY, vector: matchVec, identifier: 'twin' },
   ];
   const j = await judgeChunk(add, pool, { embed });
   assert.equal(j.poolSize, 1, 'only the same-category entry counts');
@@ -299,8 +369,8 @@ test('judgeChunk flags an outlier when distance exceeds the draft threshold', as
   // Embedder that returns a fixed query vector but distant pool vectors.
   const embed = async (texts) => texts.map(() => [1, 0, 0]);
   const pool = [
-    { category: FUNCTION_SIGNATURE_SKELETON, vector: [0, 1, 0], identifier: 'far1' },
-    { category: FUNCTION_SIGNATURE_SKELETON, vector: [0, 0, 1], identifier: 'far2' },
+    { category: FUNCTION_BODY, vector: [0, 1, 0], identifier: 'far1' },
+    { category: FUNCTION_BODY, vector: [0, 0, 1], identifier: 'far2' },
   ];
   const j = await judgeChunk(add, pool, { embed });
   assert.ok(j.distance > DRAFT_OUTLIER_THRESHOLD, `distance ${j.distance} should exceed threshold`);

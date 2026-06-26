@@ -3,8 +3,8 @@
  * and the knnNearest helper (dist/conformity/distance.js).
  *
  * PURE logic only -- no Postgres, no model download. A fake ConformityStore
- * returns a canned pool; a deterministic offline embedder maps known skeletons
- * to known vectors so "near" vs "far" is exact and reproducible.
+ * returns a canned pool; a deterministic offline embedder maps known body
+ * representation texts to known vectors so "near" vs "far" is exact.
  *
  * Covered:
  *   - knnNearest: ordering, k clamp, empty pool
@@ -24,7 +24,7 @@ import {
   judgeFunctions,
   isUnavailable,
 } from '../dist/conformity/judge-worktree.js';
-import { FUNCTION_SIGNATURE_SKELETON } from '../dist/conformity/category.js';
+import { FUNCTION_BODY, representationText } from '../dist/conformity/category.js';
 
 // --------------------------------------------------------------------------
 // knnNearest
@@ -62,11 +62,13 @@ test('knnNearest on an empty pool returns [] (does not throw)', () => {
 // Fakes for the judgment surface
 // --------------------------------------------------------------------------
 
-const CAT = FUNCTION_SIGNATURE_SKELETON;
+const CAT = FUNCTION_BODY;
 
 /**
- * Deterministic embedder driven by an explicit text->vector map. Any skeleton
- * not in the map embeds to a fixed "far" vector so we control near/far exactly.
+ * Deterministic embedder driven by an explicit text->vector map. Any text not
+ * in the map embeds to a fixed "far" vector so we control near/far exactly. The
+ * map is keyed on the EMBEDDED text -- now the function's representation text
+ * (lightly-normalized whole body), not the old signature skeleton.
  */
 function mapEmbedder(map, fallback = [0, 0, 1]) {
   return async (texts) => texts.map((t) => map[t] ?? fallback);
@@ -86,8 +88,12 @@ const runnerUp = { async query() { return { rows: [] }; } };
 /** Gate runner that fails the readiness probe -> conformity unavailable. */
 const runnerDown = { async query() { throw new Error('no pg'); } };
 
-/** Build a minimal ParsedFunction whose normalized skeleton we can predict. */
-function fn(name, filePath, args, returnType) {
+/**
+ * Build a minimal ParsedFunction whose representation text we can predict. The
+ * embedding path is now the lightly-normalized whole body, so callers pass a
+ * `bodyText`; it defaults to BODY_1 so most tests share one predictable text.
+ */
+function fn(name, filePath, args, returnType, bodyText = BODY_1_SRC) {
   return {
     name,
     filePath,
@@ -96,7 +102,7 @@ function fn(name, filePath, args, returnType) {
     args: args.map((a) => ({ name: a.name, type: a.type, hasDefault: false })),
     returnType,
     jsDoc: '',
-    bodyText: '',
+    bodyText,
     isExported: true,
     isAsync: false,
     decorators: [],
@@ -106,8 +112,10 @@ function fn(name, filePath, args, returnType) {
   };
 }
 
-// A single-arg function -> skeleton "NAME(ARG: TYPE): RET".
-const SKEL_1 = 'NAME(ARG: TYPE): RET';
+// A shared body source and its normalized representation text (the embedded
+// key). representationText strips comments + collapses whitespace.
+const BODY_1_SRC = '{\n  // sum\n  return a + b;\n}';
+const BODY_1 = representationText({ bodyText: BODY_1_SRC });
 
 // --------------------------------------------------------------------------
 // Judgment surface
@@ -119,7 +127,7 @@ test('a function near the pool conforms; a far one is an outlier', async () => {
     { category: CAT, identifier: 'b.ts::b', vector: [1, 0, 0] },
   ];
   // "near" embeds onto the pool direction; "far" embeds orthogonal.
-  const embedder = mapEmbedder({ [SKEL_1]: [1, 0, 0] });
+  const embedder = mapEmbedder({ [BODY_1]: [1, 0, 0] });
 
   const near = fn('near', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
   const resNear = await judgeFunctions([near], {
@@ -134,7 +142,7 @@ test('a function near the pool conforms; a far one is an outlier', async () => {
   const far = fn('far', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
   const resFar = await judgeFunctions([far], {
     store: fakeStore({ [CAT]: pool }),
-    embedder: mapEmbedder({ [SKEL_1]: [0, 0, 1] }), // orthogonal -> distance ~1
+    embedder: mapEmbedder({ [BODY_1]: [0, 0, 1] }), // orthogonal -> distance ~1
     runner: runnerUp,
   });
   assert.equal(resFar[0].verdict, 'outlier');
@@ -150,7 +158,7 @@ test('nearest neighbors are ranked and returned with nodeId + distance', async (
   const f = fn('q', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
   const res = await judgeFunctions([f], {
     store: fakeStore({ [CAT]: pool }),
-    embedder: mapEmbedder({ [SKEL_1]: [1, 0, 0] }),
+    embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
     runner: runnerUp,
     k: 2,
   });
@@ -175,7 +183,7 @@ test("the function's OWN nodeId is excluded from its judgment pool", async () =>
   ];
   const res = await judgeFunctions([f], {
     store: fakeStore({ [CAT]: pool }),
-    embedder: mapEmbedder({ [SKEL_1]: [1, 0, 0] }),
+    embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
     runner: runnerUp,
   });
   assert.ok(!isUnavailable(res));
@@ -194,7 +202,7 @@ test('empty same-category pool yields an unjudged result (no throw)', async () =
   const f = fn('lonely', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
   const res = await judgeFunctions([f], {
     store: fakeStore({ [CAT]: [] }),
-    embedder: mapEmbedder({ [SKEL_1]: [1, 0, 0] }),
+    embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
     runner: runnerUp,
   });
   assert.ok(!isUnavailable(res));
@@ -210,7 +218,7 @@ test('a pool of only the function itself excludes self -> unjudged', async () =>
   const pool = [{ category: CAT, identifier: 'work.ts::solo', vector: [1, 0, 0] }];
   const res = await judgeFunctions([f], {
     store: fakeStore({ [CAT]: pool }),
-    embedder: mapEmbedder({ [SKEL_1]: [1, 0, 0] }),
+    embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
     runner: runnerUp,
   });
   assert.ok(!isUnavailable(res));
@@ -236,16 +244,15 @@ test('outliers sort ahead of conformers in the result order', async () => {
     { category: CAT, identifier: 'p.ts::p', vector: [1, 0, 0] },
     { category: CAT, identifier: 'q.ts::q', vector: [1, 0, 0] },
   ];
-  // Two functions with the SAME skeleton but we drive embeddings by skeleton,
-  // so use distinct arity to get distinct skeletons -> distinct vectors.
-  const conformer = fn('c', 'work.ts', [{ name: 'a', type: 'number' }], 'number');
-  const outlier = fn('o', 'work.ts',
-    [{ name: 'a', type: 'number' }, { name: 'b', type: 'number' }], 'number');
-  const skelConformer = 'NAME(ARG: TYPE): RET';
-  const skelOutlier = 'NAME(ARG: TYPE, ARG: TYPE): RET';
+  // Two functions with DISTINCT bodies -> distinct representation texts ->
+  // distinct vectors (embeddings are now driven by the lightly-normalized body).
+  const conformerSrc = '{ return a + b; }';
+  const outlierSrc = '{ return a * b * c; }';
+  const conformer = fn('c', 'work.ts', [{ name: 'a', type: 'number' }], 'number', conformerSrc);
+  const outlier = fn('o', 'work.ts', [{ name: 'a', type: 'number' }], 'number', outlierSrc);
   const embedder = mapEmbedder({
-    [skelConformer]: [1, 0, 0], // matches pool -> conforms
-    [skelOutlier]: [0, 0, 1],   // orthogonal -> outlier
+    [representationText({ bodyText: conformerSrc })]: [1, 0, 0], // matches pool -> conforms
+    [representationText({ bodyText: outlierSrc })]: [0, 0, 1],   // orthogonal -> outlier
   });
   const res = await judgeFunctions([conformer, outlier], {
     store: fakeStore({ [CAT]: pool }),

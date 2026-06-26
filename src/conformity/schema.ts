@@ -7,21 +7,24 @@
  * a fixed-width pgvector column, so the dimension is part of the schema.
  *
  * IMPORTANT: the embedding dimension and model are baked into the column type
- * (`vector(512)`). Changing the model to one with a different dimension -- or
- * changing EMBEDDING_DIM -- requires an explicit migration (ALTER the column /
- * re-embed every row); `CREATE TABLE IF NOT EXISTS` will NOT migrate an existing
- * table. Today's primary model is jina-embeddings-v2-small-en, which emits
- * 512-dim vectors.
+ * (`vector(EMBEDDING_DIM)`). Changing the model to one with a different
+ * dimension -- or changing EMBEDDING_DIM -- requires an explicit migration
+ * (ALTER the column / re-embed every row); `CREATE TABLE IF NOT EXISTS` will NOT
+ * migrate an existing table. Today's primary model is
+ * jinaai/jina-embeddings-v2-base-code, which emits 768-dim vectors. (Nothing is
+ * deployed yet, so no migration script is needed -- but keep this guarantee.)
  */
 
 import type { PgRunner } from './pg-client.js';
 
 /**
- * Embedding dimension for the cold store's pgvector column. Matches the primary
- * conformity model (jina-embeddings-v2-small-en, 512-dim). Changing this is a
- * schema migration, not a config flip -- see the file header.
+ * Embedding dimension for the cold store's pgvector column. Single source of
+ * truth: the CREATE TABLE DDL below and the store's dimension guard both read
+ * this constant. Matches the primary conformity model
+ * (jinaai/jina-embeddings-v2-base-code, 768-dim). Changing this is a schema
+ * migration, not a config flip -- see the file header.
  */
-export const EMBEDDING_DIM = 512;
+export const EMBEDDING_DIM = 768;
 
 /** Name of the cold-store table. */
 export const VECTORS_TABLE = 'cfm_vectors';

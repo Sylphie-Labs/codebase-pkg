@@ -1,11 +1,19 @@
 /**
- * normalize.ts -- signature derivation + structural canonicalization.
+ * normalize.ts -- function text canonicalization for embedding.
  *
- * Category under test: `function:signature-skeleton`.
+ * CURRENT embedding path: `normalizedBody` (the whole function body, lightly
+ * normalized). Controlled experiments (experiments/conformity-controlled,
+ * experiments/conformity-corpus) showed the old `function:signature-skeleton`
+ * representation collapsed every distinct function to the SAME string
+ * (`"NAME(ARG: TYPE): RET"`), so everything embedded to ~0 distance and the
+ * judge could not separate anything. Embedding the WHOLE BODY (lightly
+ * normalized, identifiers/literals KEPT) with the code embedding model recovers
+ * similarity cleanly. So `normalizedBody` is now the canonical text to embed.
  *
- * We derive a function's signature from its parsed `args` (name + type +
- * hasDefault) and `returnType` ONLY -- never the body. We then expose TWO
- * renderings:
+ * LEGACY signature path (kept for back-compat / diagnostics, NO LONGER the
+ * embedding path). We derive a function's signature from its parsed `args`
+ * (name + type + hasDefault) and `returnType` ONLY -- never the body -- and
+ * expose two renderings:
  *
  *   - raw        : a readable signature string keeping identifiers, types,
  *                  and default values verbatim.
@@ -14,11 +22,8 @@
  *                  DEFAULT, and the return to RET/VOID, with whitespace
  *                  collapsed.
  *
- * Two functions that are structurally identical (same arity, same default
- * positions, same "has a return type or not") produce the SAME normalized
- * skeleton regardless of identifier or concrete type spelling. Cosmetic edits
- * (rename a param, reformat) therefore map to an identical skeleton -- the crux
- * property the Conformity Judge relies on.
+ * These signature renderings are the reason the old representation failed: they
+ * abstract away exactly the identifiers/literals that distinguish functions.
  */
 
 import type { ParsedArgument, ParsedFunction } from '../sync/ast-parser.js';
@@ -37,6 +42,43 @@ export interface SignatureLike {
 /** Collapse runs of whitespace to single spaces and trim. */
 export function collapseWhitespace(s: string): string {
   return String(s).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * The minimal shape {@link normalizedBody} needs: a function's source body
+ * text. Real parsed functions (`ParsedFunction`) carry `bodyText`; synthetic
+ * shapes can supply it directly.
+ */
+export interface BodyLike {
+  bodyText?: string;
+}
+
+/**
+ * Canonical "text to embed" for a function: its WHOLE BODY, LIGHTLY normalized.
+ *
+ * Light normalization (validated path):
+ *   - strip line comments (`// ...`) and block comments (`/* ... *\/`)
+ *   - collapse runs of whitespace / blank lines to a single space
+ *   - trim
+ *
+ * Crucially we KEEP identifiers and literals -- we do NOT skeletonize or
+ * abstract names. That is the whole point of the representation switch: the old
+ * signature skeleton threw away exactly the tokens that distinguish functions,
+ * collapsing everything to one string. Two byte-identical bodies normalize to
+ * the same string; two different bodies normalize differently.
+ *
+ * Comment stripping is intentionally simple/textual (not a real lexer): it does
+ * not try to honor `//` or `/* *\/` sequences that appear inside string or
+ * regex literals. For the purpose of feeding a code embedding model this is an
+ * acceptable approximation -- the cost is at worst a few extra/fewer tokens,
+ * never a correctness issue downstream.
+ */
+export function normalizedBody(fn: BodyLike): string {
+  const raw = fn.bodyText ?? '';
+  // Strip block comments first (they can span lines), then line comments.
+  const noBlock = raw.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const noComments = noBlock.replace(/\/\/[^\n\r]*/g, ' ');
+  return collapseWhitespace(noComments);
 }
 
 /**

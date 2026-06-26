@@ -6,14 +6,16 @@
  * Default backend is @xenova/transformers running fully in-process and
  * offline (after first-run weight download), mean-pooled + L2-normalized.
  *
- * Model: validation (see experiments/conformity-probe/README.md) showed that
- * on the signature-skeleton category the small general model
- * jina-embeddings-v2-small-en (~33MB, 8192-ctx) SEPARATES the edit tiers ~9x
- * wider than the 162MB code model jina-embeddings-v2-base-code, which
- * near-saturated and discretized on the short canonical skeletons. So we use
- * the small general model as primary; the code model remains in the chain only
- * as an option for future whole-body categories. The chosen model id is printed
- * once on first load.
+ * Model: the embedding REPRESENTATION is now the whole function body (lightly
+ * normalized), not the old signature skeleton. Controlled validation
+ * (experiments/conformity-controlled, experiments/conformity-corpus) showed
+ * that on whole-body text the code model jinaai/jina-embeddings-v2-base-code
+ * (768-dim) recovers similarity cleanly and separates functions, whereas the
+ * earlier small GENERAL model (jina-embeddings-v2-small-en) only looked better
+ * on the now-abandoned skeletons (short canonical strings that collapsed every
+ * function to ~0 distance). So the code model is now PRIMARY; the small general
+ * model and MiniLM remain only as fallbacks if it cannot load. The chosen model
+ * id is printed once on first load.
  *
  * Swap the backend by passing a different `Embedder` anywhere this is used; the
  * unit tests, for example, never touch this module so they need no model.
@@ -27,14 +29,18 @@
 export type Embedder = (texts: string[]) => Promise<number[][]>;
 
 /**
- * Ordered model preference list. The first that loads wins. Primary is the
- * small general model (best separation + smallest download per validation); the
- * jina code model follows as an option for whole-body work; MiniLM is the last
- * resort. Exported so init/download tooling can reuse the exact same chain.
+ * Ordered model preference list. The first that loads wins. Primary is the jina
+ * code model (768-dim): validation showed whole-body embedding with the code
+ * model recovers similarity, which is the representation the judge now uses. The
+ * small general model and MiniLM follow only as fallbacks. Exported so
+ * init/download tooling can reuse the exact same chain.
+ *
+ * NOTE: the primary emits 768-dim vectors -- EMBEDDING_DIM in schema.ts must
+ * match. Changing the primary model's dimension is a schema migration.
  */
 export const MODEL_CANDIDATES: readonly string[] = [
-  'Xenova/jina-embeddings-v2-small-en',
   'jinaai/jina-embeddings-v2-base-code',
+  'Xenova/jina-embeddings-v2-small-en',
   'Xenova/all-MiniLM-L6-v2',
 ];
 
