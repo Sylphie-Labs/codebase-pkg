@@ -103,7 +103,7 @@ After the initial seed, run `codebase-pkg sync` to update only the deltas since 
 | `getConstraints(scope)` | Architectural invariants from `constraints.json` and the graph |
 | `getLogContext(query?, service?, severity?, since?)` | Query log files on disk |
 | `searchContent(pattern, fileFilter?, maxResults?)` | Structured grep that returns code-entity context, not just byte offsets |
-| `judgeConformity(filePath?, maxResults?)` | How well your working-tree functions fit the codebase's existing patterns — per-function category, distance, provisional verdict, and nearest existing functions (see [Conformity Judge](#conformity-judge)) |
+| `judgeConformity(filePath?, maxResults?)` | How well your working-tree functions fit the codebase's existing patterns — per-function category, distance, verdict (with the threshold used and whether it was calibrated), and nearest existing functions (see [Conformity Judge](#conformity-judge)) |
 
 ## Configuration
 
@@ -137,9 +137,9 @@ See `constraints.example.json` for the format.
 
 ## Conformity Judge
 
-The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. For each function it embeds the function's *normalized signature skeleton* — the structural shape of the signature, with identifiers, types, and default-value positions collapsed to placeholders — and measures the cosine distance from that vector to the committed pool of same-category functions. It is **not a linter or a gate**; it is an instrument. Use it to see what your in-progress code is diverging from (or matching), not to pass/fail a build.
+The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. For each function it embeds the function's **whole body, lightly normalized** — comments stripped and whitespace collapsed, but identifiers and literals kept — and measures the cosine distance from that vector to the committed pool of same-category functions. It is **not a linter or a gate**; it is an instrument. Use it to see what your in-progress code is diverging from (or matching), not to pass/fail a build.
 
-It runs **fully local**: a local embedding model (`jina-embeddings-v2-small-en` via `@xenova/transformers`, ~33 MB, downloaded once then run in-process and offline). No external API, no tokens, no cost.
+It runs **fully local**: a code-specific embedding model (`jinaai/jina-embeddings-v2-base-code` via `@xenova/transformers`, ~162 MB, 768-dimensional, downloaded once then run in-process and offline), with `Xenova/jina-embeddings-v2-small-en` and MiniLM as fallbacks. No external API, no tokens, no cost. Note the one-time download is larger than the earlier small general model — the code model is what makes whole-body similarity separate cleanly.
 
 ### Architecture
 
@@ -155,7 +155,8 @@ docker compose -f docker-compose.codebase-pkg.yml up -d
 # 2. Seed the Neo4j graph as usual
 codebase-pkg seed
 
-# 3. One-time: embed every committed function to build the descriptive pool
+# 3. One-time: embed every committed function into the descriptive pool AND
+#    calibrate the per-category outlier threshold from that pool
 codebase-pkg conformity-backfill
 
 # 4. Judge your working-tree code against that pool
@@ -163,17 +164,21 @@ codebase-pkg conformity-judge            # all uncommitted changes in watched di
 codebase-pkg conformity-judge src/foo.ts # or a single file
 ```
 
+`conformity-backfill` embeds every committed function and, as its final step, **calibrates** the verdict: per category it takes the 95th percentile of the leave-one-out kNN distances over the in-repo pool, so roughly 95% of the codebase's own code reads as "conforms". That threshold is stored in a `cfm_calibration` table. If you later tune the calibration or grow the pool via sync and want to refresh thresholds **without re-embedding**, run `codebase-pkg conformity-calibrate` — it re-reads the stored vectors and recomputes the thresholds (no model load).
+
 After the one-time backfill, normal `codebase-pkg sync` keeps the pool fresh: it re-embeds changed functions and removes vectors for deleted ones as a best-effort, non-fatal step (a failure or unreachable Postgres warns but never blocks the sync cursor). You can also judge from a Claude Code session via the `judgeConformity` MCP tool.
 
 ### The `judgeConformity` MCP tool
 
-The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs; `maxResults` caps the nearest neighbors reported per function and the kNN window, default 5). Returns, per function, its category, distance, a provisional verdict (`conforms`/`outlier`), and the nearest existing functions — leading with the outliers. Each function is judged against the pool *minus its own committed vector*, so a committed function is compared to other code, never to itself. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
+The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs; `maxResults` caps the nearest neighbors reported per function and the kNN window, default 5). Returns, per function, its category, distance, a verdict (`conforms`/`outlier`), the **threshold** the verdict was decided against and whether that threshold was **calibrated**, and the nearest existing functions — leading with the outliers. Each function is judged against the pool *minus its own committed vector*, so a committed function is compared to other code, never to itself. Before `conformity-backfill`/`conformity-calibrate` has run there is no calibrated threshold, so verdicts fall back to a default and are flagged `calibrated: false` — in that state the distance and nearest-neighbor list remain the trustworthy signal. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
 
 ### Caveats
 
-- **Verdict thresholds are provisional and uncalibrated.** The distance and the nearest-neighbor list are the trustworthy signal; the `conforms`/`outlier` label is a draft derived from a placeholder cut point. Treat it as a hint, not a gate.
-- **Category coverage is function signatures only** right now (`function:signature-skeleton`). Whole-body and class-shape categories are future work.
-- **The Python parser does not yet capture default-parameter values** in the skeleton — only TypeScript/TSX functions surface default-position information. Python signatures are still embedded, just without that one structural distinction.
+- **One category for now** (`function:body`). Every function maps to the single whole-body category; class-shape and other categories are future work.
+- **The conformity signal separates best against genuinely different code.** In our validation it cleanly distinguishes unrelated code, but is more modest against same-author / same-domain code that already looks alike. Read the distance and nearest-neighbor list, not just the label.
+- **Before backfill/calibration the threshold is uncalibrated.** A judged function reports `calibrated: false` and falls back to a default cut until `conformity-backfill` (or `conformity-calibrate`) has run; in that state the distance and nearest neighbors are the trustworthy signal.
+- **The Python parser does not yet capture default-parameter values** — only TypeScript/TSX functions surface default-position information. This is unrelated to the whole-body embedding (which uses the body text directly), but the parser distinction still stands.
+- **End-to-end against live Neo4j + Postgres still wants a smoke test.** The engine is unit-tested with fakes; a full run against provisioned services has not been exercised here.
 
 ## CLI reference
 
@@ -193,7 +198,8 @@ codebase-pkg backfill-changes     # populate Change nodes from git history
 codebase-pkg add-constraint --file constraints.json [--validate]
 
 # Conformity Judge (see below)
-codebase-pkg conformity-backfill  # one-time: embed all committed functions into the pool
+codebase-pkg conformity-backfill  # one-time: embed all committed functions into the pool, then calibrate
+codebase-pkg conformity-calibrate # recompute per-category outlier thresholds (no re-embed)
 codebase-pkg conformity-judge [file]  # judge working-tree code (or one file) against the pool
 ```
 
