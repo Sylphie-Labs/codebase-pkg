@@ -1,0 +1,54 @@
+/**
+ * schema.ts -- idempotent pgvector schema bootstrap for the Conformity Judge
+ * cold store.
+ *
+ * The cold store is a single table `cfm_vectors` holding one embedding per code
+ * node, keyed by a stable node id (see nodeIdOf in store.ts). Embeddings live in
+ * a fixed-width pgvector column, so the dimension is part of the schema.
+ *
+ * IMPORTANT: the embedding dimension and model are baked into the column type
+ * (`vector(512)`). Changing the model to one with a different dimension -- or
+ * changing EMBEDDING_DIM -- requires an explicit migration (ALTER the column /
+ * re-embed every row); `CREATE TABLE IF NOT EXISTS` will NOT migrate an existing
+ * table. Today's primary model is jina-embeddings-v2-small-en, which emits
+ * 512-dim vectors.
+ */
+
+import type { PgRunner } from './pg-client.js';
+
+/**
+ * Embedding dimension for the cold store's pgvector column. Matches the primary
+ * conformity model (jina-embeddings-v2-small-en, 512-dim). Changing this is a
+ * schema migration, not a config flip -- see the file header.
+ */
+export const EMBEDDING_DIM = 512;
+
+/** Name of the cold-store table. */
+export const VECTORS_TABLE = 'cfm_vectors';
+
+/**
+ * Create the pgvector extension, the cfm_vectors table, and the category index
+ * if they do not already exist. Safe to call repeatedly (idempotent).
+ *
+ * Statements are issued separately because some Postgres setups disallow
+ * multiple commands in a single simple-query when params are involved, and
+ * because `CREATE EXTENSION` may need its own statement boundary.
+ */
+export async function ensureSchema(runner: PgRunner): Promise<void> {
+  await runner.query('CREATE EXTENSION IF NOT EXISTS vector;');
+
+  await runner.query(
+    `CREATE TABLE IF NOT EXISTS ${VECTORS_TABLE} (
+       node_id    text PRIMARY KEY,
+       category   text NOT NULL,
+       embedding  vector(${EMBEDDING_DIM}) NOT NULL,
+       model      text NOT NULL,
+       updated_at timestamptz NOT NULL DEFAULT now()
+     );`,
+  );
+
+  await runner.query(
+    `CREATE INDEX IF NOT EXISTS cfm_vectors_category_idx
+       ON ${VECTORS_TABLE} (category);`,
+  );
+}

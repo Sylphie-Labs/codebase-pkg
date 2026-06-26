@@ -47,3 +47,21 @@ export type {
   Verdict,
   JudgeOptions,
 } from './judge.js';
+
+// Vector data layer (step 2a): pgvector cold store + in-memory hot cache.
+// Postgres connection surface.
+export {
+  getPgPool,
+  closePgPool,
+  pgQuery,
+  resolvePgConfig,
+  realPgRunner,
+} from './pg-client.js';
+export type { PgRunner } from './pg-client.js';
+
+// Schema bootstrap.
+export { ensureSchema, EMBEDDING_DIM, VECTORS_TABLE } from './schema.js';
+
+// Store: upsert/delete/loadPool/coldNearest + nodeIdOf helper.
+export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';
+export type { VectorRecord, NearestHit } from './store.js';
