@@ -24,9 +24,8 @@
  * no Postgres, no model download.
  */
 
-import type { ParsedFunction } from '../sync/ast-parser.js';
 import { embed as defaultEmbed, type Embedder } from './embed.js';
-import { categoryOf, representationText } from './category.js';
+import { categoryOf, representationText, type ParsedChunk } from './category.js';
 import { knnPoolDistance, knnNearest, DEFAULT_K } from './distance.js';
 import { FALLBACK_OUTLIER_THRESHOLD, type Verdict, type PoolEntry } from './judge.js';
 import {
@@ -124,16 +123,16 @@ function gateReason(): string {
  * The function's own node id is excluded from `pool` BEFORE this is called.
  */
 async function judgeAgainstPool(
-  fn: ParsedFunction,
+  chunk: ParsedChunk,
   pool: readonly PoolEntry[],
   embed: Embedder,
   k: number,
   threshold: number,
   calibrated: boolean,
 ): Promise<FunctionJudgment> {
-  const category = categoryOf(fn);
-  const skeleton = representationText(fn);
-  const nodeId = nodeIdOf(fn);
+  const category = categoryOf(chunk);
+  const skeleton = representationText(chunk);
+  const nodeId = nodeIdOf(chunk);
 
   const peers = pool.filter((e) => e.category === category);
 
@@ -141,8 +140,8 @@ async function judgeAgainstPool(
   // throws here; the surface must keep going across many functions.)
   if (peers.length === 0) {
     return {
-      name: fn.name,
-      filePath: fn.filePath,
+      name: chunk.name,
+      filePath: chunk.filePath,
       nodeId,
       category,
       skeleton,
@@ -174,8 +173,8 @@ async function judgeAgainstPool(
   const verdict: Verdict = distance > threshold ? 'outlier' : 'conforms';
 
   return {
-    name: fn.name,
-    filePath: fn.filePath,
+    name: chunk.name,
+    filePath: chunk.filePath,
     nodeId,
     category,
     skeleton,
@@ -189,22 +188,25 @@ async function judgeAgainstPool(
 }
 
 /**
- * Judge a list of parsed working-tree functions against the committed pool.
+ * Judge a list of parsed working-tree chunks (functions AND types/classes)
+ * against the committed pool.
  *
- * For each function: derive its category, load that category's committed pool
- * from the store, EXCLUDE the function's own node id (so it is judged against
- * OTHER code), embed the representation text, and compute kNN distance + nearest
- * neighbors.
+ * For each chunk: derive its category (function:body / type:body), load that
+ * category's committed pool from the store, EXCLUDE the chunk's own node id (so
+ * it is judged against OTHER code), embed the representation text, and compute
+ * kNN distance + nearest neighbors. Because the category is per-chunk, a type is
+ * only ever compared to other types and a function only to functions.
  *
  * Gated: if conformity is disabled or Postgres is unreachable, returns
  * {@link UnavailableResult} rather than throwing.
  *
  * Per-category pools are loaded once and cached for this call (the store also
- * hot-caches), so judging many functions of the same category hits Postgres
- * once.
+ * hot-caches), so judging many chunks of the same category hits Postgres once.
+ *
+ * (Named `judgeFunctions` for back-compat; it accepts functions and types.)
  */
 export async function judgeFunctions(
-  functions: ParsedFunction[],
+  chunks: ParsedChunk[],
   opts: JudgeWorktreeOptions = {},
 ): Promise<JudgeResult> {
   const runner = opts.runner ?? realPgRunner;
@@ -251,15 +253,15 @@ export async function judgeFunctions(
   };
 
   const judgments: FunctionJudgment[] = [];
-  for (const fn of functions) {
-    const category = categoryOf(fn);
+  for (const chunk of chunks) {
+    const category = categoryOf(chunk);
     const fullPool = await loadPool(category);
     const { threshold, calibrated } = await resolveThreshold(category);
-    const selfId = nodeIdOf(fn);
-    // Self-exclusion: judge against OTHER code, not the function's own committed
+    const selfId = nodeIdOf(chunk);
+    // Self-exclusion: judge against OTHER code, not the chunk's own committed
     // vector (which would report a perfect self-match).
     const pool = fullPool.filter((e) => e.identifier !== selfId);
-    judgments.push(await judgeAgainstPool(fn, pool, embed, k, threshold, calibrated));
+    judgments.push(await judgeAgainstPool(chunk, pool, embed, k, threshold, calibrated));
   }
 
   // Lead with the outliers: highest distance first, then unjudged, then the
@@ -315,8 +317,9 @@ async function judgeParsedFiles(
   const parsed = parseFiles(files);
   clearProjectCache();
 
-  const functions: ParsedFunction[] = [];
-  for (const f of parsed) functions.push(...f.functions);
+  // Judge BOTH functions and types/classes; each routes to its own category.
+  const chunks: ParsedChunk[] = [];
+  for (const f of parsed) chunks.push(...f.functions, ...f.types);
 
-  return judgeFunctions(functions, opts);
+  return judgeFunctions(chunks, opts);
 }

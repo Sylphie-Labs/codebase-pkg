@@ -8,30 +8,32 @@
  * Postgres (or with conformity explicitly disabled) silently does nothing
  * rather than erroring on every sync.
  *
- * Pure selection logic (which functions to embed, which node ids to delete) is
- * split into small helpers -- {@link functionsToEmbed} / {@link deletedFunctionIds}
+ * Pure selection logic (which chunks to embed, which node ids to delete) is
+ * split into small helpers -- {@link chunksToEmbed} / {@link deletedChunkIds}
  * -- so it can be unit-tested directly against a Changeset without running the
- * whole pipeline, a DB, or a model.
+ * whole pipeline, a DB, or a model. The legacy {@link functionsToEmbed} /
+ * {@link deletedFunctionIds} names remain as thin wrappers for back-compat.
  */
 
 import type { Changeset, NodeCreate, NodeUpdate } from '../sync/graph-differ.js';
 import type { ParsedFunction } from '../sync/ast-parser.js';
+import type { ParsedChunk } from './category.js';
 import { createConformityStore, nodeIdOf, type ConformityStore } from './store.js';
-import { embedAndStoreFunctions } from './embed-functions.js';
+import { embedAndStoreChunks } from './embed-functions.js';
 import { realPgRunner, type PgRunner } from './pg-client.js';
 
 /**
- * The created + updated functions in a changeset, in creation order, as
- * ParsedFunction[]. These are the chunks whose descriptive vectors must be
- * (re)written. Type nodes are ignored -- conformity currently only covers
- * function signature skeletons.
+ * The created + updated code chunks in a changeset, in creation order, as
+ * ParsedChunk[] (functions AND types/classes). These are the chunks whose
+ * descriptive vectors must be (re)written; each derives its own category
+ * (function:body / type:body) downstream.
  */
-export function functionsToEmbed(changeset: Changeset): ParsedFunction[] {
-  const out: ParsedFunction[] = [];
+export function chunksToEmbed(changeset: Changeset): ParsedChunk[] {
+  const out: ParsedChunk[] = [];
   const collect = (entries: Array<NodeCreate | NodeUpdate>): void => {
     for (const entry of entries) {
-      if (entry.kind === 'function') {
-        out.push(entry.data as ParsedFunction);
+      if (entry.kind === 'function' || entry.kind === 'type') {
+        out.push(entry.data as ParsedChunk);
       }
     }
   };
@@ -41,15 +43,43 @@ export function functionsToEmbed(changeset: Changeset): ParsedFunction[] {
 }
 
 /**
- * Stable node ids for the deleted function nodes in a changeset -- the vectors
- * to remove from the cold store. Built from the `<filePath>::<name>` convention
- * (see {@link nodeIdOf}) so they line up with the keys written on upsert. Type
- * deletions are ignored.
+ * Stable node ids for the deleted code nodes in a changeset (functions AND
+ * types) -- the vectors to remove from the cold store. Built from the
+ * `<filePath>::<name>` convention (see {@link nodeIdOf}) so they line up with
+ * the keys written on upsert.
+ */
+export function deletedChunkIds(changeset: Changeset): string[] {
+  return changeset.nodesToDelete
+    .filter((n) => n.kind === 'function' || n.kind === 'type')
+    .map((n) => nodeIdOf({ filePath: n.filePath, name: n.name }));
+}
+
+/**
+ * LEGACY (function-only) selection, kept for back-compat with callers/tests that
+ * specifically want functions. The live sync path now uses {@link chunksToEmbed}
+ * so types are covered too; this wrapper keeps the narrow, function-only
+ * contract its name implies.
+ */
+export function functionsToEmbed(changeset: Changeset): ParsedFunction[] {
+  const out: ParsedFunction[] = [];
+  const collect = (entries: Array<NodeCreate | NodeUpdate>): void => {
+    for (const entry of entries) {
+      if (entry.kind === 'function') out.push(entry.data as ParsedFunction);
+    }
+  };
+  collect(changeset.nodesToCreate);
+  collect(changeset.nodesToUpdate);
+  return out;
+}
+
+/**
+ * LEGACY (function-only) delete-id selection, kept for back-compat. The live
+ * sync path uses {@link deletedChunkIds} (functions + types).
  */
 export function deletedFunctionIds(changeset: Changeset): string[] {
   return changeset.nodesToDelete
     .filter((n) => n.kind === 'function')
-    .map((n) => nodeIdOf({ filePath: n.filePath, name: n.name } as ParsedFunction));
+    .map((n) => nodeIdOf({ filePath: n.filePath, name: n.name }));
 }
 
 /**
@@ -126,10 +156,12 @@ export async function runConformityStep(
 
   const store = opts.store ?? createConformityStore(runner);
 
-  const toEmbed = functionsToEmbed(changeset);
-  const toDelete = deletedFunctionIds(changeset);
+  // Embed BOTH functions and types (chunksToEmbed), delete vectors for removed
+  // functions AND types (deletedChunkIds). Each chunk routes to its own category.
+  const toEmbed = chunksToEmbed(changeset);
+  const toDelete = deletedChunkIds(changeset);
 
-  const { embedded, skipped: embedSkipped } = await embedAndStoreFunctions(toEmbed, {
+  const { embedded, skipped: embedSkipped } = await embedAndStoreChunks(toEmbed, {
     store,
     embedder: opts.embedder,
     model: opts.model,

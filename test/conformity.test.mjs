@@ -45,6 +45,7 @@ import {
   representationText,
   signatureSkeleton,
   FUNCTION_BODY,
+  TYPE_BODY,
   FUNCTION_SIGNATURE_SKELETON,
   CATEGORIES,
 } from '../dist/conformity/category.js';
@@ -59,10 +60,16 @@ export function greet(name: string, loud = false): string {
 }
 
 export function noop(): void {}
+
+export interface UserDto {
+  id: string;
+  name: string;
+}
 `;
 
 let tmpDir;
 let functions;
+let types;
 
 before(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-conformity-'));
@@ -71,6 +78,7 @@ before(() => {
   const parsed = parseFiles([fixturePath]);
   assert.equal(parsed.length, 1, 'fixture parsed');
   functions = parsed[0].functions;
+  types = parsed[0].types;
 });
 
 after(() => {
@@ -301,6 +309,29 @@ test('categoryOf returns the whole-body category for functions', () => {
   assert.ok(CATEGORIES.includes(FUNCTION_BODY));
   // The abandoned skeleton category is no longer the active category.
   assert.ok(!CATEGORIES.includes(FUNCTION_SIGNATURE_SKELETON));
+});
+
+test('categoryOf returns type:body for a parsed type, function:body for a function', () => {
+  const userDto = types.find((t) => t.name === 'UserDto');
+  assert.ok(userDto, 'UserDto type parsed');
+  assert.equal(categoryOf(userDto), TYPE_BODY);
+  assert.ok(CATEGORIES.includes(TYPE_BODY));
+
+  // A function in the same fixture still routes to function:body -- types and
+  // functions are never mixed into one pool.
+  const add = functions.find((f) => f.name === 'add');
+  assert.equal(categoryOf(add), FUNCTION_BODY);
+  assert.notEqual(categoryOf(userDto), categoryOf(add));
+});
+
+test('representationText/normalizedBody work on a type body (declaration source kept)', () => {
+  const userDto = types.find((t) => t.name === 'UserDto');
+  // The parser captured the interface declaration's source as bodyText.
+  assert.ok(userDto.bodyText && userDto.bodyText.length > 0, 'type carries bodyText');
+  assert.equal(representationText(userDto), normalizedBody(userDto));
+  // Identifiers from the declaration are preserved (not skeletonized).
+  assert.ok(representationText(userDto).includes('UserDto'));
+  assert.ok(representationText(userDto).includes('id'));
 });
 
 test('signatureSkeleton (legacy) still defaults to normalized, honors { normalized: false }', () => {

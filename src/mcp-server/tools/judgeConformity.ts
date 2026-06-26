@@ -72,7 +72,7 @@ export async function handleJudgeConformity(
     return (
       `CONFORMITY JUDGE — ${scope}\n` +
       `${'='.repeat(60)}\n\n` +
-      `No functions to judge` +
+      `No code entities to judge` +
       (filePath
         ? ` in ${filePath}.`
         : ` — no uncommitted changes to watched source files.`)
@@ -87,11 +87,11 @@ export async function handleJudgeConformity(
   lines.push(`CONFORMITY JUDGE — ${scope}`);
   lines.push('='.repeat(60));
   lines.push(
-    `Judged ${result.length} function(s): ` +
+    `Judged ${result.length} code entit${result.length === 1 ? 'y' : 'ies'} (functions + types): ` +
       `${outliers.length} outlier, ${conformers.length} conforms` +
       (unjudged.length ? `, ${unjudged.length} unjudged (no peers)` : ''),
   );
-  // Calibration status: if every judged-with-peers function used a calibrated
+  // Calibration status: if every judged-with-peers entity used a calibrated
   // threshold, the verdicts are trustworthy; otherwise note that some fell back.
   const judged = result.filter((j) => j.verdict !== 'unjudged');
   const anyUncalibrated = judged.some((j) => j.calibrated === false);

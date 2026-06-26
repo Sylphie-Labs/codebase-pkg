@@ -19,7 +19,7 @@
  */
 
 import type { ParsedFunction } from '../sync/ast-parser.js';
-import { categoryOf, representationText } from './category.js';
+import { categoryOf, representationText, type ParsedChunk } from './category.js';
 import { embed as realEmbed, CHOSEN_MODEL, MODEL_CANDIDATES, type Embedder } from './embed.js';
 import {
   createConformityStore,
@@ -52,44 +52,49 @@ export interface EmbedAndStoreOptions {
 
 /** Result of an embed-and-store pass. */
 export interface EmbedAndStoreResult {
-  /** Functions whose representation text was embedded and upserted. */
+  /** Chunks whose representation text was embedded and upserted. */
   embedded: number;
-  /** Functions skipped (e.g. empty derived representation text). */
+  /** Chunks skipped (e.g. empty derived representation text). */
   skipped: number;
 }
 
 /**
- * Derive category + representation text (lightly-normalized whole body) for each
- * function, batch-embed it, and upsert one vector per function into the store.
+ * CORE: derive category + representation text (lightly-normalized whole body)
+ * for each parsed chunk -- a function OR a type/class -- batch-embed it, and
+ * upsert one vector per chunk into the store. The category is derived PER CHUNK
+ * via {@link categoryOf}, so functions land in `function:body` and types in
+ * `type:body` from the SAME pipeline; the store keys/judges each pool
+ * independently. This is the engine-agnostic path; {@link embedAndStoreFunctions}
+ * is a thin function-typed wrapper kept for existing callers/tests.
  *
  * The model id stamped on each row is captured AFTER embedding from
  * {@link CHOSEN_MODEL} (the model the real backend actually loaded), falling
  * back to MODEL_CANDIDATES[0] when it is still null (e.g. an injected fake
  * embedder never set it). An explicit `opts.model` overrides both.
  */
-export async function embedAndStoreFunctions(
-  functions: ParsedFunction[],
+export async function embedAndStoreChunks(
+  chunks: ParsedChunk[],
   opts: EmbedAndStoreOptions = {},
 ): Promise<EmbedAndStoreResult> {
   const store = opts.store ?? createConformityStore();
   const embedder = opts.embedder ?? realEmbed;
 
-  // Derive (nodeId, category, text) for every function up front. Functions
-  // whose representation text comes back empty (e.g. an empty body) are skipped
+  // Derive (nodeId, category, text) for every chunk up front. Chunks whose
+  // representation text comes back empty (e.g. an empty body) are skipped
   // (nothing meaningful to embed).
   type Pending = { nodeId: string; category: string; text: string };
   const pending: Pending[] = [];
   let skipped = 0;
 
-  for (const fn of functions) {
-    const text = representationText(fn);
+  for (const chunk of chunks) {
+    const text = representationText(chunk);
     if (!text || text.trim() === '') {
       skipped++;
       continue;
     }
     pending.push({
-      nodeId: nodeIdOf(fn),
-      category: categoryOf(fn),
+      nodeId: nodeIdOf(chunk),
+      category: categoryOf(chunk),
       text,
     });
   }
@@ -106,7 +111,7 @@ export async function embedAndStoreFunctions(
 
     if (vectors.length !== batch.length) {
       throw new Error(
-        `embedAndStoreFunctions: embedder returned ${vectors.length} vectors ` +
+        `embedAndStoreChunks: embedder returned ${vectors.length} vectors ` +
           `for ${batch.length} inputs`,
       );
     }
@@ -128,4 +133,16 @@ export async function embedAndStoreFunctions(
   }
 
   return { embedded, skipped };
+}
+
+/**
+ * Embed and store a list of parsed FUNCTIONS. Thin wrapper over
+ * {@link embedAndStoreChunks} kept for existing callers/tests; functions route
+ * through the same core and derive `function:body` via {@link categoryOf}.
+ */
+export async function embedAndStoreFunctions(
+  functions: ParsedFunction[],
+  opts: EmbedAndStoreOptions = {},
+): Promise<EmbedAndStoreResult> {
+  return embedAndStoreChunks(functions, opts);
 }

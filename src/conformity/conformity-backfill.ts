@@ -17,16 +17,15 @@
 
 import { getAllWatchedFiles } from '../sync/git-diff.js';
 import { parseFiles, clearProjectCache } from '../sync/parser.js';
-import { embedAndStoreFunctions } from './embed-functions.js';
+import { embedAndStoreChunks } from './embed-functions.js';
 import { isConformityEnabled } from './sync-hook.js';
 import { ensureSchema } from './schema.js';
 import { realPgRunner, closePgPool } from './pg-client.js';
 import { createConformityStore, type ConformityStore } from './store.js';
 import { computeCalibration } from './calibration.js';
-import { categoryOf } from './category.js';
+import { categoryOf, type ParsedChunk } from './category.js';
 import { CHOSEN_MODEL, MODEL_CANDIDATES } from './embed.js';
 import type { PoolEntry } from './judge.js';
-import type { ParsedFunction } from '../sync/ast-parser.js';
 
 /**
  * Compute per-category calibration over the committed pool and persist it (step
@@ -98,26 +97,39 @@ export async function runConformityBackfill(): Promise<void> {
   const parsed = parseFiles(files);
   clearProjectCache();
 
-  const functions: ParsedFunction[] = [];
-  for (const f of parsed) functions.push(...f.functions);
+  // Embed BOTH functions AND types/classes. Each chunk derives its own category
+  // (function:body / type:body) inside the shared core, so functions are judged
+  // against functions and types against types.
+  const chunks: ParsedChunk[] = [];
+  let functionCount = 0;
+  let typeCount = 0;
+  for (const f of parsed) {
+    chunks.push(...f.functions, ...f.types);
+    functionCount += f.functions.length;
+    typeCount += f.types.length;
+  }
 
-  console.log(`Parsed ${parsed.length} file(s), ${functions.length} function(s).`);
-  console.log('Embedding function bodies (first run downloads the model)...');
+  console.log(
+    `Parsed ${parsed.length} file(s), ${functionCount} function(s), ${typeCount} type(s).`,
+  );
+  console.log('Embedding function + type bodies (first run downloads the model)...');
 
   // Use an explicit store so we can reuse its hot cache for the calibration pass
   // that follows (no second round-trip per category beyond the loadPool reads).
   const store = createConformityStore(realPgRunner);
-  const { embedded, skipped } = await embedAndStoreFunctions(functions, { store });
+  const { embedded, skipped } = await embedAndStoreChunks(chunks, { store });
 
   console.log('');
   console.log('=== Conformity backfill complete ===');
-  console.log(`  Functions embedded : ${embedded}`);
-  console.log(`  Functions skipped  : ${skipped} (empty body)`);
+  console.log(`  Chunks embedded : ${embedded} (functions + types)`);
+  console.log(`  Chunks skipped  : ${skipped} (empty body)`);
 
   // Step R2: calibrate the outlier threshold on the codebase's own distance
-  // distribution, per category, and persist it.
+  // distribution, per category, and persist it. Both function:body and type:body
+  // flow in here (calibrateFromStore loads every distinct category's pool), so
+  // each gets its OWN calibrated threshold.
   const model = CHOSEN_MODEL ?? MODEL_CANDIDATES[0];
-  const categories = new Set(functions.map((fn) => categoryOf(fn)));
+  const categories = new Set(chunks.map((c) => categoryOf(c)));
   const calibrated = await calibrateFromStore(store, categories, model);
   console.log(`  Categories calibrated: ${calibrated}`);
 }
@@ -157,7 +169,10 @@ export async function runConformityCalibrate(): Promise<void> {
   const parsed = parseFiles(files);
   clearProjectCache();
   const categories = new Set<string>();
-  for (const f of parsed) for (const fn of f.functions) categories.add(categoryOf(fn));
+  for (const f of parsed) {
+    for (const fn of f.functions) categories.add(categoryOf(fn));
+    for (const t of f.types) categories.add(categoryOf(t));
+  }
 
   const store = createConformityStore(realPgRunner);
   const model = CHOSEN_MODEL ?? MODEL_CANDIDATES[0];

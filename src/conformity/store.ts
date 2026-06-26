@@ -26,7 +26,6 @@
  */
 
 import * as path from 'node:path';
-import type { ParsedFunction } from '../sync/ast-parser.js';
 import type { PoolEntry } from './judge.js';
 import type { Category } from './category.js';
 import { type PgRunner, realPgRunner } from './pg-client.js';
@@ -87,9 +86,9 @@ export interface StoredCalibration {
  * absolute path (resolving `C:/Users/.../x.ts` yields the same string, modulo
  * separator normalization), so re-canonicalizing a canonical id is a no-op.
  */
-export function nodeIdOf(fn: ParsedFunction): string {
-  const canonicalPath = path.resolve(fn.filePath).replace(/\\/g, '/');
-  return `${canonicalPath}::${fn.name}`;
+export function nodeIdOf(node: { filePath: string; name: string }): string {
+  const canonicalPath = path.resolve(node.filePath).replace(/\\/g, '/');
+  return `${canonicalPath}::${node.name}`;
 }
 
 /**

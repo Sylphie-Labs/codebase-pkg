@@ -14,11 +14,14 @@ import assert from 'node:assert/strict';
 
 import {
   embedAndStoreFunctions,
+  embedAndStoreChunks,
   EMBED_BATCH_SIZE,
 } from '../dist/conformity/embed-functions.js';
 import {
   functionsToEmbed,
   deletedFunctionIds,
+  chunksToEmbed,
+  deletedChunkIds,
   isConformityEnabled,
   runConformityStep,
 } from '../dist/conformity/sync-hook.js';
@@ -26,6 +29,8 @@ import { EMBEDDING_DIM, nodeIdOf } from '../dist/conformity/index.js';
 import {
   categoryOf,
   representationText,
+  FUNCTION_BODY,
+  TYPE_BODY,
 } from '../dist/conformity/category.js';
 
 /**
@@ -85,6 +90,23 @@ function fn(name, filePath, args = [], returnType = 'void', bodyText = '{}') {
     decorators: [],
     callees: [],
     typeRefs: [],
+    contentHash: 'h-' + name,
+  };
+}
+
+/** A minimal ParsedType good enough for category/representation derivation. */
+function ty(name, filePath, kind = 'interface', bodyText = `interface ${name} { id: string; }`) {
+  return {
+    name,
+    filePath,
+    lineNumber: 1,
+    kind,
+    properties: [],
+    bodyText,
+    comment: '',
+    decorators: [],
+    implements: [],
+    constructorParams: [],
     contentHash: 'h-' + name,
   };
 }
@@ -173,6 +195,42 @@ test('embedAndStoreFunctions with empty input does nothing', async () => {
   assert.equal(store.upserts.length, 0);
 });
 
+// --- embedAndStoreChunks: per-kind routing (functions + types) -------------
+
+test('embedAndStoreChunks routes a function to function:body and a type to type:body', async () => {
+  const store = makeFakeStore();
+  const embedder = makeFakeEmbedder();
+
+  const aFn = fn('alpha', 'a.ts', ['x'], 'number', '{ return x; }');
+  const aTy = ty('Widget', 'a.ts', 'interface', 'interface Widget { id: string; }');
+
+  const res = await embedAndStoreChunks([aFn, aTy], { store, embedder, model: 'm' });
+
+  assert.equal(res.embedded, 2);
+  assert.equal(res.skipped, 0);
+
+  // Each chunk was embedded with its representation text (lightly-normalized body).
+  assert.deepEqual(embedder.calls[0], [
+    representationText(aFn),
+    representationText(aTy),
+  ]);
+
+  const recs = store.upserts.flat();
+  const byId = new Map(recs.map((r) => [r.nodeId, r.category]));
+  assert.equal(byId.get(canonId('a.ts', 'alpha')), FUNCTION_BODY);
+  assert.equal(byId.get(canonId('a.ts', 'Widget')), TYPE_BODY);
+});
+
+test('embedAndStoreChunks skips a type with an empty body', async () => {
+  const store = makeFakeStore();
+  const embedder = makeFakeEmbedder();
+  const empty = ty('Empty', 'a.ts', 'type', '');
+  const res = await embedAndStoreChunks([empty], { store, embedder, model: 'm' });
+  assert.equal(res.embedded, 0);
+  assert.equal(res.skipped, 1);
+  assert.equal(store.upserts.length, 0);
+});
+
 // --- sync-hook selection logic ---------------------------------------------
 
 function makeChangeset({ create = [], update = [], del = [] } = {}) {
@@ -204,7 +262,7 @@ test('functionsToEmbed picks creates + updates of kind function, skips types', (
   assert.deepEqual(out.map((f) => f.name), ['a', 'b']);
 });
 
-test('deletedFunctionIds builds canonical node ids, skips type deletes', () => {
+test('deletedFunctionIds (legacy) builds canonical node ids, skips type deletes', () => {
   const cs = makeChangeset({
     del: [
       { kind: 'function', name: 'gone', filePath: 'c.ts' },
@@ -213,10 +271,49 @@ test('deletedFunctionIds builds canonical node ids, skips type deletes', () => {
     ],
   });
 
-  // Deletes must use the SAME canonical id form as upserts so a removed
-  // function's stored vector is actually found and deleted.
+  // The legacy helper stays function-only. Deletes must use the SAME canonical id
+  // form as upserts so a removed function's stored vector is actually deleted.
   assert.deepEqual(deletedFunctionIds(cs), [
     canonId('c.ts', 'gone'),
+    canonId('d.ts', 'alsoGone'),
+  ]);
+});
+
+test('chunksToEmbed picks creates + updates of kind function AND type', () => {
+  const fA = fn('a', 'a.ts');
+  const tT = ty('T', 'a.ts');
+  const fB = fn('b', 'b.ts');
+  const cs = makeChangeset({
+    create: [
+      { kind: 'function', data: fA },
+      { kind: 'type', data: tT },
+    ],
+    update: [{ kind: 'function', data: fB, changedFields: ['full'] }],
+    del: [{ kind: 'function', name: 'gone', filePath: 'c.ts' }],
+  });
+
+  const out = chunksToEmbed(cs);
+  assert.equal(out.length, 3);
+  assert.deepEqual(out.map((c) => c.name), ['a', 'T', 'b']);
+  // The type routes to type:body, the functions to function:body.
+  assert.deepEqual(out.map((c) => categoryOf(c)), [
+    FUNCTION_BODY,
+    TYPE_BODY,
+    FUNCTION_BODY,
+  ]);
+});
+
+test('deletedChunkIds builds canonical node ids for BOTH functions and types', () => {
+  const cs = makeChangeset({
+    del: [
+      { kind: 'function', name: 'gone', filePath: 'c.ts' },
+      { kind: 'type', name: 'OldType', filePath: 'c.ts' },
+      { kind: 'function', name: 'alsoGone', filePath: 'd.ts' },
+    ],
+  });
+  assert.deepEqual(deletedChunkIds(cs), [
+    canonId('c.ts', 'gone'),
+    canonId('c.ts', 'OldType'),
     canonId('d.ts', 'alsoGone'),
   ]);
 });
@@ -280,7 +377,7 @@ test('runConformityStep skips gracefully when Postgres is unreachable', async ()
   }
 });
 
-test('runConformityStep embeds creates+updates and deletes removed function ids', async () => {
+test('runConformityStep embeds creates+updates (functions AND types) and deletes removed function + type ids', async () => {
   const prev = process.env.CODEBASE_PKG_CONFORMITY;
   delete process.env.CODEBASE_PKG_CONFORMITY;
   try {
@@ -289,26 +386,40 @@ test('runConformityStep embeds creates+updates and deletes removed function ids'
     const embedder = makeFakeEmbedder();
 
     const cs = makeChangeset({
-      create: [{ kind: 'function', data: fn('a', 'a.ts') }],
+      create: [
+        { kind: 'function', data: fn('a', 'a.ts') },
+        { kind: 'type', data: ty('T', 'a.ts') },
+      ],
       update: [{ kind: 'function', data: fn('b', 'b.ts'), changedFields: ['full'] }],
       del: [
         { kind: 'function', name: 'gone', filePath: 'c.ts' },
-        { kind: 'type', name: 'T', filePath: 'c.ts' },
+        { kind: 'type', name: 'OldType', filePath: 'c.ts' },
       ],
     });
 
     const res = await runConformityStep(cs, { runner, store, embedder, model: 'm' });
 
     assert.equal(res.skipped, false);
-    assert.equal(res.embedded, 2);
-    assert.equal(res.deleted, 1);
+    // Two functions + one type are now all embedded through the same pipeline.
+    assert.equal(res.embedded, 3);
+    // BOTH the removed function and the removed type are deleted now.
+    assert.equal(res.deleted, 2);
 
-    // Upserted node ids are the two functions.
+    // Upserted node ids are the two functions plus the one type.
     const upsertedIds = store.upserts.flat().map((r) => r.nodeId).sort();
-    assert.deepEqual(upsertedIds, [canonId('a.ts', 'a'), canonId('b.ts', 'b')].sort());
+    assert.deepEqual(
+      upsertedIds,
+      [canonId('a.ts', 'a'), canonId('b.ts', 'b'), canonId('a.ts', 'T')].sort(),
+    );
+    // The type was routed to type:body, the functions to function:body.
+    const byId = new Map(store.upserts.flat().map((r) => [r.nodeId, r.category]));
+    assert.equal(byId.get(canonId('a.ts', 'T')), TYPE_BODY);
+    assert.equal(byId.get(canonId('a.ts', 'a')), FUNCTION_BODY);
 
-    // Deleted exactly the one removed function id (type delete ignored).
-    assert.deepEqual(store.deletes, [[canonId('c.ts', 'gone')]]);
+    // Deleted both the removed function and the removed type id.
+    assert.deepEqual(store.deletes, [
+      [canonId('c.ts', 'gone'), canonId('c.ts', 'OldType')],
+    ]);
   } finally {
     if (prev !== undefined) process.env.CODEBASE_PKG_CONFORMITY = prev;
   }

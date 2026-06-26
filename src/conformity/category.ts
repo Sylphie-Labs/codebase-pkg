@@ -18,7 +18,7 @@
  * a representation renderer -- not rewiring callers.
  */
 
-import type { ParsedFunction } from '../sync/ast-parser.js';
+import type { ParsedFunction, ParsedType } from '../sync/ast-parser.js';
 import {
   normalizedBody,
   signatureText,
@@ -30,6 +30,14 @@ import {
 export const FUNCTION_BODY = 'function:body';
 
 /**
+ * The whole-declaration conformity category for TYPES/CLASSES (interfaces, type
+ * aliases, enums, classes). Like {@link FUNCTION_BODY} for functions, the text
+ * embedded is the declaration's whole source, lightly normalized. Types are only
+ * ever compared to other types, never to functions.
+ */
+export const TYPE_BODY = 'type:body';
+
+/**
  * LEGACY category key. The signature-skeleton representation was abandoned (it
  * collapsed distinct functions to an identical string); kept exported only for
  * back-compat with older callers/tests. Not produced by {@link categoryOf}.
@@ -37,30 +45,47 @@ export const FUNCTION_BODY = 'function:body';
 export const FUNCTION_SIGNATURE_SKELETON = 'function:signature-skeleton';
 
 /** All known category keys, in a stable order. */
-export const CATEGORIES = [FUNCTION_BODY] as const;
+export const CATEGORIES = [FUNCTION_BODY, TYPE_BODY] as const;
 
 /** A conformity category key. */
 export type Category = (typeof CATEGORIES)[number];
 
 /**
- * Derive the conformity category for a parsed chunk.
- *
- * Today every parsed function maps to the single whole-body category. When more
- * categories are added (e.g. class shape), branch here on the chunk's
- * properties and return the appropriate key.
+ * A parsed chunk the conformity engine can judge: a function OR a type/class.
+ * Both carry `bodyText` (the source text to embed); a {@link ParsedType} is
+ * discriminated by its `kind` field, which {@link ParsedFunction} never has.
  */
-export function categoryOf(_fn: ParsedFunction): Category {
-  return FUNCTION_BODY;
+export type ParsedChunk = ParsedFunction | ParsedType;
+
+/**
+ * Type guard: a {@link ParsedType} is discriminated from a {@link ParsedFunction}
+ * by the presence of a `kind` field ('interface' | 'type' | 'enum' | 'class').
+ */
+export function isParsedType(chunk: ParsedChunk): chunk is ParsedType {
+  return typeof (chunk as ParsedType).kind === 'string';
 }
 
 /**
- * The canonical text that represents `fn` within its category -- i.e. the
- * string handed to the embedder. For `function:body` this is the function's
- * whole body, lightly normalized (comments stripped, whitespace collapsed,
- * identifiers/literals kept). This is the validated embedding path.
+ * Derive the conformity category for a parsed chunk.
+ *
+ * Functions map to {@link FUNCTION_BODY}; types/classes (which carry a `kind`
+ * discriminator) map to {@link TYPE_BODY}. Conformity is always measured WITHIN
+ * a category, so functions are only ever compared to functions and types only to
+ * types. Add a case here (and to {@link CATEGORIES}) to introduce a new category.
  */
-export function representationText(fn: ParsedFunction): string {
-  return normalizedBody(fn);
+export function categoryOf(chunk: ParsedChunk): Category {
+  return isParsedType(chunk) ? TYPE_BODY : FUNCTION_BODY;
+}
+
+/**
+ * The canonical text that represents `chunk` within its category -- i.e. the
+ * string handed to the embedder. For both `function:body` and `type:body` this
+ * is the chunk's whole body/declaration source, lightly normalized (comments
+ * stripped, whitespace collapsed, identifiers/literals kept). This is the
+ * validated embedding path.
+ */
+export function representationText(chunk: ParsedChunk): string {
+  return normalizedBody(chunk);
 }
 
 /** Options for {@link signatureSkeleton} (legacy). */

@@ -201,6 +201,24 @@ test('class type entry carries Controller decorator', () => {
   assert.deepEqual(dec.args, ['users']);
 });
 
+test('type entries capture bodyText (declaration source, used to embed for conformity)', () => {
+  // Every parsed type/class carries its declaration's source text as bodyText,
+  // mirroring functions. The conformity judge embeds this (lightly normalized).
+  const iface = parsed.types.find(t => t.name === 'UserDto');
+  assert.ok(iface.bodyText && iface.bodyText.length > 0, 'interface bodyText captured');
+  assert.match(iface.bodyText, /interface UserDto/);
+  assert.match(iface.bodyText, /id: string/);
+
+  const alias = parsed.types.find(t => t.name === 'UserId');
+  assert.ok(alias.bodyText.includes('UserId'), 'type-alias bodyText captured');
+
+  const en = parsed.types.find(t => t.name === 'Color');
+  assert.ok(en.bodyText.includes('Red'), 'enum bodyText captured');
+
+  const cls = parsed.types.find(t => t.name === 'UsersController');
+  assert.ok(cls.bodyText.includes('class UsersController'), 'class bodyText captured');
+});
+
 test('imports: named, default, and namespace forms', () => {
   const bySpec = new Map(parsed.imports.map(i => [i.moduleSpecifier, i]));
 

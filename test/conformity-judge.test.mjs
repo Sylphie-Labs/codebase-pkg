@@ -26,7 +26,11 @@ import {
   isUnavailable,
 } from '../dist/conformity/judge-worktree.js';
 import { nodeIdOf } from '../dist/conformity/store.js';
-import { FUNCTION_BODY, representationText } from '../dist/conformity/category.js';
+import {
+  FUNCTION_BODY,
+  TYPE_BODY,
+  representationText,
+} from '../dist/conformity/category.js';
 
 /** Canonical node id for a (filePath, name) pair -- mirrors what backfill stores. */
 function canonId(filePath, name) {
@@ -119,6 +123,26 @@ function fn(name, filePath, args, returnType, bodyText = BODY_1_SRC) {
   };
 }
 
+/**
+ * Build a minimal ParsedType whose representation text we can predict. The
+ * `kind` discriminator makes categoryOf route it to type:body.
+ */
+function ty(name, filePath, bodyText, kind = 'interface') {
+  return {
+    name,
+    filePath,
+    lineNumber: 1,
+    kind,
+    properties: [],
+    bodyText,
+    comment: '',
+    decorators: [],
+    implements: [],
+    constructorParams: [],
+    contentHash: name,
+  };
+}
+
 // A shared body source and its normalized representation text (the embedded
 // key). representationText strips comments + collapses whitespace.
 const BODY_1_SRC = '{\n  // sum\n  return a + b;\n}';
@@ -154,6 +178,31 @@ test('a function near the pool conforms; a far one is an outlier', async () => {
   });
   assert.equal(resFar[0].verdict, 'outlier');
   assert.ok(resFar[0].distance > 0.9);
+});
+
+test('judgeFunctions judges a TYPE against the type:body pool (not the function pool)', async () => {
+  const typeSrc = 'interface Widget { id: string; }';
+  const typeText = representationText({ bodyText: typeSrc });
+
+  // A function pool entry sits in function:body; a type peer sits in type:body.
+  // The judged type must compare ONLY against the type:body peer.
+  const fnPool = [{ category: FUNCTION_BODY, identifier: 'f.ts::fn', vector: [1, 0, 0] }];
+  const typePool = [{ category: TYPE_BODY, identifier: 'peer.ts::Peer', vector: [1, 0, 0] }];
+
+  const widget = ty('Widget', 'work.ts', typeSrc);
+  const res = await judgeFunctions([widget], {
+    store: fakeStore({ [FUNCTION_BODY]: fnPool, [TYPE_BODY]: typePool }),
+    embedder: mapEmbedder({ [typeText]: [1, 0, 0] }),
+    runner: runnerUp,
+  });
+  assert.ok(!isUnavailable(res));
+  const j = res[0];
+  assert.equal(j.name, 'Widget', 'judgment name is the type name');
+  assert.equal(j.category, TYPE_BODY, 'routed to the type pool');
+  assert.equal(j.poolSize, 1, 'only the single type:body peer counts (function pool ignored)');
+  assert.equal(j.verdict, 'conforms');
+  assert.ok(j.distance < 1e-9);
+  assert.equal(j.nearest[0].nodeId, 'peer.ts::Peer');
 });
 
 test('nearest neighbors are ranked and returned with nodeId + distance', async () => {
