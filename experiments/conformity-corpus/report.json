@@ -1,0 +1,450 @@
+{
+  "meta": {
+    "model": "Xenova/jina-embeddings-v2-small-en",
+    "k": 5,
+    "draftThreshold": 0.1,
+    "sampleCap": 40
+  },
+  "pool": {
+    "size": 219,
+    "categories": {
+      "function:signature-skeleton": 219
+    }
+  },
+  "selfLoo": {
+    "count": 219,
+    "min": -2.220446049250313e-16,
+    "median": 2.220446049250313e-16,
+    "p90": 2.220446049250313e-16,
+    "p95": 0.004902360031152231,
+    "max": 0.02725830684902437,
+    "mean": 0.0006242274291217289,
+    "outlierRateAtDraftThreshold": 0
+  },
+  "editLadder": {
+    "samples": 40,
+    "tierMedianDelta": {
+      "cosmetic": 0,
+      "small-structural": -2.220446049250313e-16,
+      "divergent": 0.029182772986293747
+    },
+    "tierDeltaSummary": {
+      "cosmetic": {
+        "count": 40,
+        "min": 0,
+        "median": 0,
+        "p90": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0
+      },
+      "small-structural": {
+        "count": 40,
+        "min": -2.220446049250313e-16,
+        "median": -2.220446049250313e-16,
+        "p90": 0.008985192128159514,
+        "p95": 0.013926021260367683,
+        "max": 0.013926021260367683,
+        "mean": 0.0029104817662577035
+      },
+      "divergent": {
+        "count": 40,
+        "min": 0.02660440960107124,
+        "median": 0.029182772986293747,
+        "p90": 0.02918277298629397,
+        "p95": 0.02918277298629397,
+        "max": 0.02918277298629397,
+        "mean": 0.029091228471645962
+      }
+    },
+    "monotoneHits": 16,
+    "monotoneRate": 0.4,
+    "rows": [
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/doctor.ts::statusGlyph",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/doctor.ts::checkMcpStanza",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/init.ts::parseFlags",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/init.ts::writeFileContent",
+        "baseDist": 1.1102230246251565e-16,
+        "cosmetic": 0,
+        "small-structural": 0.008985192128159514,
+        "divergent": 0.02918277298629386,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/init.ts::renderComposeFile",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/init.ts::printNextSteps",
+        "baseDist": 1.1102230246251565e-16,
+        "cosmetic": 0,
+        "small-structural": 0.008985192128159514,
+        "divergent": 0.02918277298629386,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/neo4j-config.ts::findFreePort",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/status.ts::formatDuration",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/uninstall.ts::parseFlags",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/cli/upgrade.ts::runUpgrade",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/distance.ts::norm",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/distance.ts::knnNearest",
+        "baseDist": 0.004902360031152231,
+        "cosmetic": 0,
+        "small-structural": 0.008295063524115732,
+        "divergent": 0.02660440960107124,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/judge-worktree.ts::isUnavailable",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/judge-worktree.ts::judgeFile",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.013926021260367683,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/normalize.ts::splitDefault",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/normalize.ts::signatureText",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.013926021260367683,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/store.ts::nodeIdOf",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/store.ts::ConformityStore.invalidateCategories",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/store.ts::ConformityStore.coldNearest",
+        "baseDist": 1.1102230246251565e-16,
+        "cosmetic": 0,
+        "small-structural": 0.008985192128159514,
+        "divergent": 0.02918277298629386,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/conformity/sync-hook.ts::runConformityStep",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.013926021260367683,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/ingestion/backfill-changes.ts::ensureConstraint",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/ingestion/initial-seed.ts::collectSourceFiles",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/ingestion/initial-seed.ts::writeParsedBatch",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/ingestion/manual-constraints.ts::writeConstraint",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/getConstraints.ts::escapeRegex",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/getLogContext.ts::handleGetLogContext",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/getLogContext.ts::buildFilterDescription",
+        "baseDist": 0.001083417200692116,
+        "cosmetic": 0,
+        "small-structural": 0.013244646794470884,
+        "divergent": 0.028099355785601854,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/getRecentChanges.ts::handleGetRecentChanges",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/searchContent.ts::handleSearchContent",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/mcp-server/tools/suggestion-helper.ts::formatDidYouMean",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/ast-parser.ts::extractArgsFromNode",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/ast-parser.ts::extractCallees",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/ast-parser.ts::extractImports",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/change-logger.ts::readCommitInfo",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/domain-classifier.ts::writeDomainLabels",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/git-diff.ts::getDeletedFiles",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/graph-differ.ts::sameImportedNames",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/import-resolver.ts::resolvePythonImportTarget",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/mutation-builder.ts::buildTypeUpdate",
+        "baseDist": 0,
+        "cosmetic": 0,
+        "small-structural": 0.003268240020768154,
+        "divergent": 0.02918277298629397,
+        "monotone": true
+      },
+      {
+        "nodeId": "C:/Users/Jim/OneDrive/desktop/Code/codebase-pkg/src/sync/mutation-builder.ts::buildNodeDelete",
+        "baseDist": 2.220446049250313e-16,
+        "cosmetic": 0,
+        "small-structural": -2.220446049250313e-16,
+        "divergent": 0.029182772986293747,
+        "monotone": false
+      }
+    ]
+  },
+  "foreign": {
+    "memory-pkg": {
+      "skipped": false,
+      "files": 73,
+      "functionsJudged": 171,
+      "count": 171,
+      "min": -2.220446049250313e-16,
+      "median": 2.220446049250313e-16,
+      "p90": 2.220446049250313e-16,
+      "p95": 0.005942837224834507,
+      "max": 0.02125334349953556,
+      "mean": 0.0007930228825192836,
+      "outlierRateVsSelfP95": 0.05847953216374269
+    },
+    "drift-detector": {
+      "skipped": false,
+      "files": 45,
+      "functionsJudged": 175,
+      "count": 175,
+      "min": -2.220446049250313e-16,
+      "median": 2.220446049250313e-16,
+      "p90": 2.220446049250313e-16,
+      "p95": 0.004768596780271262,
+      "max": 0.02125334349953556,
+      "mean": 0.0008771283901960371,
+      "outlierRateVsSelfP95": 0.045714285714285714
+    }
+  },
+  "threshold": {
+    "currentDraft": 0.1,
+    "candidates": [
+      {
+        "label": "self-LOO p90",
+        "value": 2.220446049250313e-16
+      },
+      {
+        "label": "self-LOO p95",
+        "value": 0.004902360031152231
+      }
+    ],
+    "recommended": {
+      "label": "self-LOO p95",
+      "value": 0.004902360031152231
+    },
+    "tradeoffs": [
+      {
+        "label": "self-LOO p90",
+        "threshold": 2.220446049250313e-16,
+        "selfFlag": 0.0776255707762557,
+        "foreign": {
+          "memory-pkg": 0.05847953216374269,
+          "drift-detector": 0.05714285714285714
+        }
+      },
+      {
+        "label": "self-LOO p95",
+        "threshold": 0.004902360031152231,
+        "selfFlag": 0.0410958904109589,
+        "foreign": {
+          "memory-pkg": 0.05847953216374269,
+          "drift-detector": 0.045714285714285714
+        }
+      }
+    ]
+  }
+}

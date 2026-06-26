@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "model": "jinaai/jina-embeddings-v2-base-code",
+    "kKnn": 5,
+    "kLof": 20,
+    "lofMetric": "cosine distance on L2-normalized vectors",
+    "poolSize": 219,
+    "elapsedSec": 66
+  },
+  "pool": {
+    "size": 219,
+    "files": 55
+  },
+  "primitives": {
+    "rowKnn": {
+      "label": "A:kNN",
+      "self": {
+        "count": 219,
+        "median": 0.36127857116832834,
+        "p90": 0.5022991370051431,
+        "p95": 0.5350734364733574,
+        "mean": 0.35882136258348163
+      },
+      "selfThresholdP95": 0.5350734364733574,
+      "selfFlagRate": 0.045662100456621,
+      "perForeign": {
+        "memory-pkg": {
+          "count": 171,
+          "median": 0.4526795615824336,
+          "p90": 0.558246030802974,
+          "p95": 0.5890352017527455,
+          "mean": 0.4290651127777075,
+          "auroc": 0.6837832785922188,
+          "flagRateAtSelfP95": 0.1695906432748538
+        },
+        "drift-detector": {
+          "count": 175,
+          "median": 0.3588241257161906,
+          "p90": 0.5470094952447818,
+          "p95": 0.5717369782482162,
+          "mean": 0.3553077576677949,
+          "auroc": 0.4941682974559687,
+          "flagRateAtSelfP95": 0.12571428571428572
+        }
+      },
+      "aurocPooled": 0.5878797476707049,
+      "foreignFlagRatePooled": 0.14739884393063585
+    },
+    "rowLof": {
+      "label": "A:LOF",
+      "self": {
+        "count": 219,
+        "median": 1.0662363586777435,
+        "p90": 1.1712255484306482,
+        "p95": 1.2022035497387473,
+        "mean": 1.0692671286836797
+      },
+      "selfThresholdP95": 1.2022035497387473,
+      "selfFlagRate": 0.045662100456621,
+      "perForeign": {
+        "memory-pkg": {
+          "count": 171,
+          "median": 1.1043471291291638,
+          "p90": 1.2167449813850635,
+          "p95": 1.252696425495372,
+          "mean": 1.1083678519076643,
+          "auroc": 0.6469331624342439,
+          "flagRateAtSelfP95": 0.12280701754385964
+        },
+        "drift-detector": {
+          "count": 175,
+          "median": 1.0862035758694302,
+          "p90": 1.225693600417116,
+          "p95": 1.2533891332859808,
+          "mean": 1.0981818112439123,
+          "auroc": 0.5918069145466406,
+          "flagRateAtSelfP95": 0.13142857142857142
+        }
+      },
+      "aurocPooled": 0.619051389658722,
+      "foreignFlagRatePooled": 0.12716763005780346
+    },
+    "rowNgram": {
+      "label": "B:ngram-cache",
+      "self": {
+        "count": 219,
+        "median": 6.336324394135278,
+        "p90": 9.394806929998044,
+        "p95": 10.527178486119352,
+        "mean": 6.49879501147368
+      },
+      "selfThresholdP95": 10.527178486119352,
+      "selfFlagRate": 0.045662100456621,
+      "perForeign": {
+        "memory-pkg": {
+          "count": 171,
+          "median": 7.3377659112775495,
+          "p90": 10.16261482770916,
+          "p95": 11.848540964462362,
+          "mean": 7.158595066307272,
+          "auroc": 0.5811370130043526,
+          "flagRateAtSelfP95": 0.08187134502923976
+        },
+        "drift-detector": {
+          "count": 175,
+          "median": 4.230575176911264,
+          "p90": 8.897327996448913,
+          "p95": 9.509840404118586,
+          "mean": 5.476242768821892,
+          "auroc": 0.35131115459882584,
+          "flagRateAtSelfP95": 0.017142857142857144
+        }
+      },
+      "aurocPooled": 0.46489561063161505,
+      "foreignFlagRatePooled": 0.049132947976878616
+    }
+  },
+  "foreign": {
+    "memory-pkg": {
+      "skipped": false,
+      "files": 73,
+      "functions": 171
+    },
+    "drift-detector": {
+      "skipped": false,
+      "files": 45,
+      "functions": 175
+    }
+  },
+  "verdict": "VERDICT: A:LOF separates best (pooled AUROC=0.6191). NO primitive clears AUROC~0.70 -- separation still weak."
+}

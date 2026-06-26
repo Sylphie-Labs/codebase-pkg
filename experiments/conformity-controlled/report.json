@@ -1,0 +1,576 @@
+{
+  "model": "jinaai/jina-embeddings-v2-base-code",
+  "chosenModel": "jinaai/jina-embeddings-v2-base-code",
+  "fixtures": [
+    "c1_mean.ts",
+    "c2_mean.ts",
+    "c3_mean.ts",
+    "c4_mean.ts",
+    "c5_exact.ts",
+    "r1_debounce.ts",
+    "r2_treewalk.ts",
+    "r3_retry.ts",
+    "r4_tokenize.ts",
+    "r5_quicksort.ts"
+  ],
+  "labels": [
+    "c1_mean",
+    "c2_mean",
+    "c3_mean",
+    "c4_mean",
+    "c5_exact",
+    "r1_debounce",
+    "r2_treewalk",
+    "r3_retry",
+    "r4_tokenize",
+    "r5_quicksort"
+  ],
+  "representations": {
+    "body": {
+      "texts": [
+        "{ let sum = 0; for (let i = 0; i < numbers.length; i++) { sum = sum + numbers[i]; } return sum / numbers.length; }",
+        "{ let total = 0 ; for ( let idx = 0 ; idx < values.length ; idx++ ) { total = total + values[ idx ] ; } return total / values.length ; }",
+        "{ let accumulator = 0; for (const value of samples) { accumulator += value; } return accumulator / samples.length; }",
+        "{ if (data.length === 0) { return 0; } let sum = 0; for (let i = 0; i < data.length; i++) { sum += data[i]; } const result = sum / data.length; return result; }",
+        "{ let sum = 0; for (let i = 0; i < numbers.length; i++) { sum = sum + numbers[i]; } return sum / numbers.length; }",
+        "{ let timer: ReturnType<typeof setTimeout> | undefined; return (...args: unknown[]): void => { if (timer !== undefined) { clearTimeout(timer); } timer = setTimeout(() => { fn(...args); }, waitMs); }; }",
+        "{ const collected: number[] = []; if (node === undefined) { return collected; } collected.push(...inOrder(node.left)); collected.push(node.value); collected.push(...inOrder(node.right)); return collected; }",
+        "{ let lastError: unknown; for (let attempt = 0; attempt < attempts; attempt++) { try { return await task(); } catch (err) { lastError = err; const delay = 100 * Math.pow(2, attempt); await new Promise((resolve) => setTimeout(resolve, delay)); } } throw lastError; }",
+        "{ const tokens: string[] = []; const pattern = /[A-Za-z0-9_]+|[^\\sA-Za-z0-9_]/g; let match: RegExpExecArray | null; while ((match = pattern.exec(source)) !== null) { const piece = match[0].trim(); if (piece.length > 0) { tokens.push(piece); } } return tokens; }",
+        "{ if (arr.length <= 1) { return arr; } const pivot = arr[arr.length - 1]; const less: number[] = []; const greater: number[] = []; for (let i = 0; i < arr.length - 1; i++) { if (arr[i] < pivot) { less.push(arr[i]); } else { greater.push(arr[i]); } } return [...quicksort(less), pivot, ...quicksort(greater)]; }"
+      ],
+      "matrix": [
+        [
+          2.220446049250313e-16,
+          0.2017850071104098,
+          0.2645695310833185,
+          0.20954176391091484,
+          2.220446049250313e-16,
+          0.8752868770400211,
+          0.6753880211486215,
+          0.7266627926310949,
+          0.8613102566716451,
+          0.6615870862055827
+        ],
+        [
+          0.2017850071104098,
+          0,
+          0.18007155750432902,
+          0.18284079135905007,
+          0.2017850071104098,
+          0.9506865895440899,
+          0.6629611845695192,
+          0.8353406291419552,
+          0.9157051546481101,
+          0.7497990395249199
+        ],
+        [
+          0.2645695310833185,
+          0.18007155750432902,
+          2.220446049250313e-16,
+          0.22346594681730236,
+          0.2645695310833185,
+          0.904500488068411,
+          0.733519374869458,
+          0.8150044139128435,
+          0.8351636557654131,
+          0.7813030232390153
+        ],
+        [
+          0.20954176391091484,
+          0.18284079135905007,
+          0.22346594681730236,
+          -2.220446049250313e-16,
+          0.20954176391091484,
+          0.8960256124651281,
+          0.6633244656105965,
+          0.7245076225035687,
+          0.8708533593260847,
+          0.6718610923686463
+        ],
+        [
+          2.220446049250313e-16,
+          0.2017850071104098,
+          0.2645695310833185,
+          0.20954176391091484,
+          2.220446049250313e-16,
+          0.8752868770400211,
+          0.6753880211486215,
+          0.7266627926310949,
+          0.8613102566716451,
+          0.6615870862055827
+        ],
+        [
+          0.8752868770400211,
+          0.9506865895440899,
+          0.904500488068411,
+          0.8960256124651281,
+          0.8752868770400211,
+          0,
+          0.9160752499985562,
+          0.5680924544173989,
+          0.8611984436141177,
+          0.8362509620198976
+        ],
+        [
+          0.6753880211486215,
+          0.6629611845695192,
+          0.733519374869458,
+          0.6633244656105965,
+          0.6753880211486215,
+          0.9160752499985562,
+          0,
+          0.9533259106550392,
+          0.8423395009988919,
+          0.5594001072968443
+        ],
+        [
+          0.7266627926310949,
+          0.8353406291419552,
+          0.8150044139128435,
+          0.7245076225035687,
+          0.7266627926310949,
+          0.5680924544173989,
+          0.9533259106550392,
+          0,
+          0.8857302020349014,
+          0.865011959792928
+        ],
+        [
+          0.8613102566716451,
+          0.9157051546481101,
+          0.8351636557654131,
+          0.8708533593260847,
+          0.8613102566716451,
+          0.8611984436141177,
+          0.8423395009988919,
+          0.8857302020349014,
+          -2.220446049250313e-16,
+          0.8477851804019286
+        ],
+        [
+          0.6615870862055827,
+          0.7497990395249199,
+          0.7813030232390153,
+          0.6718610923686463,
+          0.6615870862055827,
+          0.8362509620198976,
+          0.5594001072968443,
+          0.865011959792928,
+          0.8477851804019286,
+          0
+        ]
+      ],
+      "nearestNeighbors": [
+        {
+          "from": "c1_mean",
+          "to": "c5_exact",
+          "distance": 2.220446049250313e-16,
+          "fromIdx": 0,
+          "toIdx": 4
+        },
+        {
+          "from": "c2_mean",
+          "to": "c3_mean",
+          "distance": 0.18007155750432902,
+          "fromIdx": 1,
+          "toIdx": 2
+        },
+        {
+          "from": "c3_mean",
+          "to": "c2_mean",
+          "distance": 0.18007155750432902,
+          "fromIdx": 2,
+          "toIdx": 1
+        },
+        {
+          "from": "c4_mean",
+          "to": "c2_mean",
+          "distance": 0.18284079135905007,
+          "fromIdx": 3,
+          "toIdx": 1
+        },
+        {
+          "from": "c5_exact",
+          "to": "c1_mean",
+          "distance": 2.220446049250313e-16,
+          "fromIdx": 4,
+          "toIdx": 0
+        },
+        {
+          "from": "r1_debounce",
+          "to": "r3_retry",
+          "distance": 0.5680924544173989,
+          "fromIdx": 5,
+          "toIdx": 7
+        },
+        {
+          "from": "r2_treewalk",
+          "to": "r5_quicksort",
+          "distance": 0.5594001072968443,
+          "fromIdx": 6,
+          "toIdx": 9
+        },
+        {
+          "from": "r3_retry",
+          "to": "r1_debounce",
+          "distance": 0.5680924544173989,
+          "fromIdx": 7,
+          "toIdx": 5
+        },
+        {
+          "from": "r4_tokenize",
+          "to": "c3_mean",
+          "distance": 0.8351636557654131,
+          "fromIdx": 8,
+          "toIdx": 2
+        },
+        {
+          "from": "r5_quicksort",
+          "to": "r2_treewalk",
+          "distance": 0.5594001072968443,
+          "fromIdx": 9,
+          "toIdx": 6
+        }
+      ],
+      "checks": {
+        "a": {
+          "pass": true,
+          "exactDist": 2.220446049250313e-16
+        },
+        "b": {
+          "pass": true,
+          "details": [
+            {
+              "from": "c1_mean",
+              "to": "c5_exact",
+              "ok": true
+            },
+            {
+              "from": "c2_mean",
+              "to": "c3_mean",
+              "ok": true
+            },
+            {
+              "from": "c3_mean",
+              "to": "c2_mean",
+              "ok": true
+            },
+            {
+              "from": "c4_mean",
+              "to": "c2_mean",
+              "ok": true
+            },
+            {
+              "from": "c5_exact",
+              "to": "c1_mean",
+              "ok": true
+            }
+          ]
+        },
+        "c": {
+          "pass": true,
+          "maxCluster": 0.18284079135905007,
+          "minRandom": 0.5594001072968443,
+          "margin": 0.37655931593779424
+        },
+        "d": {
+          "pass": true,
+          "rankedNames": [
+            "c1_mean",
+            "c5_exact",
+            "c2_mean",
+            "c3_mean",
+            "c4_mean",
+            "r2_treewalk",
+            "r5_quicksort",
+            "r1_debounce",
+            "r3_retry",
+            "r4_tokenize"
+          ],
+          "bottom5": [
+            "c1_mean",
+            "c5_exact",
+            "c2_mean",
+            "c3_mean",
+            "c4_mean"
+          ]
+        }
+      },
+      "allPass": true
+    },
+    "signature": {
+      "texts": [
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE, ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE, ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET",
+        "NAME(ARG: TYPE): RET"
+      ],
+      "matrix": [
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          2.220446049250313e-16,
+          0.08497560248882685,
+          2.220446049250313e-16,
+          0.08497560248882685,
+          0.08497560248882685
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          0.08497560248882685,
+          2.220446049250313e-16,
+          0.08497560248882685,
+          2.220446049250313e-16,
+          0.08497560248882685,
+          0.08497560248882685
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ],
+        [
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          0.08497560248882685,
+          1.1102230246251565e-16,
+          1.1102230246251565e-16
+        ]
+      ],
+      "nearestNeighbors": [
+        {
+          "from": "c1_mean",
+          "to": "c2_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 0,
+          "toIdx": 1
+        },
+        {
+          "from": "c2_mean",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 1,
+          "toIdx": 0
+        },
+        {
+          "from": "c3_mean",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 2,
+          "toIdx": 0
+        },
+        {
+          "from": "c4_mean",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 3,
+          "toIdx": 0
+        },
+        {
+          "from": "c5_exact",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 4,
+          "toIdx": 0
+        },
+        {
+          "from": "r1_debounce",
+          "to": "r3_retry",
+          "distance": 2.220446049250313e-16,
+          "fromIdx": 5,
+          "toIdx": 7
+        },
+        {
+          "from": "r2_treewalk",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 6,
+          "toIdx": 0
+        },
+        {
+          "from": "r3_retry",
+          "to": "r1_debounce",
+          "distance": 2.220446049250313e-16,
+          "fromIdx": 7,
+          "toIdx": 5
+        },
+        {
+          "from": "r4_tokenize",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 8,
+          "toIdx": 0
+        },
+        {
+          "from": "r5_quicksort",
+          "to": "c1_mean",
+          "distance": 1.1102230246251565e-16,
+          "fromIdx": 9,
+          "toIdx": 0
+        }
+      ],
+      "checks": {
+        "a": {
+          "pass": true,
+          "exactDist": 1.1102230246251565e-16
+        },
+        "b": {
+          "pass": true,
+          "details": [
+            {
+              "from": "c1_mean",
+              "to": "c2_mean",
+              "ok": true
+            },
+            {
+              "from": "c2_mean",
+              "to": "c1_mean",
+              "ok": true
+            },
+            {
+              "from": "c3_mean",
+              "to": "c1_mean",
+              "ok": true
+            },
+            {
+              "from": "c4_mean",
+              "to": "c1_mean",
+              "ok": true
+            },
+            {
+              "from": "c5_exact",
+              "to": "c1_mean",
+              "ok": true
+            }
+          ]
+        },
+        "c": {
+          "pass": false,
+          "maxCluster": 1.1102230246251565e-16,
+          "minRandom": 1.1102230246251565e-16,
+          "margin": 0
+        },
+        "d": {
+          "pass": true,
+          "rankedNames": [
+            "c1_mean",
+            "c2_mean",
+            "c3_mean",
+            "c4_mean",
+            "c5_exact",
+            "r2_treewalk",
+            "r4_tokenize",
+            "r5_quicksort",
+            "r1_debounce",
+            "r3_retry"
+          ],
+          "bottom5": [
+            "c1_mean",
+            "c2_mean",
+            "c3_mean",
+            "c4_mean",
+            "c5_exact"
+          ]
+        }
+      },
+      "allPass": false
+    }
+  }
+}
