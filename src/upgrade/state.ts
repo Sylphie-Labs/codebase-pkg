@@ -48,6 +48,19 @@ export interface InstallState {
     boltPort: number;
     slug: string;
   };
+  /**
+   * Per-instance Postgres (pgvector) settings chosen at `init --docker` time.
+   * Optional and additive: state files written before this field existed remain
+   * valid, and resolvePgConfig falls back to the default DSN when it is absent.
+   * `uri` is a full DSN of the form
+   * `postgres://codebase-pkg:codebase-pkg-local@localhost:<port>/codebase_pkg`.
+   */
+  postgres?: {
+    uri: string;
+    containerName: string;
+    port: number;
+    slug: string;
+  };
 }
 
 export function statePath(cwd: string): string {

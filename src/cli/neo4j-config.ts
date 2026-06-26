@@ -99,6 +99,18 @@ export function deriveBasePorts(slug: string): { http: number; bolt: number } {
 }
 
 /**
+ * Derive a deterministic base host port for this repo's Postgres (pgvector)
+ * container. Uses its own range [5500, 6199] so it never overlaps the Neo4j
+ * http/bolt ranges ([7600, 8299] / [7700, 8399]); a separate hash slice keeps it
+ * decorrelated from those ports. The chosen base is the starting point for the
+ * free-port scan in installDocker, so the actual mapped port may be higher.
+ */
+export function derivePgBasePort(slug: string): number {
+  const h = parseInt(sha256Hex(slug).slice(16, 24), 16);
+  return 5500 + (h % 700);
+}
+
+/**
  * Resolve the effective Neo4j connection settings for the repo at `cwd`.
  *
  * Each value resolves independently with precedence env > state.json > default:

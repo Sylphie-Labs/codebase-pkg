@@ -15,13 +15,14 @@
  */
 
 import { closeDriver } from '../mcp-server/neo4j-client.js';
+import { closePgPool } from '../conformity/pg-client.js';
 
 function printUsage(): void {
   process.stdout.write(
     `Usage:\n` +
       `\n` +
       `Setup & lifecycle:\n` +
-      `  codebase-pkg init [--local] [--docker]   One-time setup in this repo\n` +
+      `  codebase-pkg init [--local] [--docker] [--no-model]   One-time setup in this repo\n` +
       `  codebase-pkg upgrade [--plan] [--confirm] [--force]  Bring repo's config to current version\n` +
       `  codebase-pkg status                       Show install state and drift\n` +
       `  codebase-pkg doctor [--no-network]        Run structural checks\n` +
@@ -150,6 +151,9 @@ async function main(): Promise<number> {
     return 1;
   } finally {
     await closeDriver().catch(() => {
+      // best-effort close
+    });
+    await closePgPool().catch(() => {
       // best-effort close
     });
   }
