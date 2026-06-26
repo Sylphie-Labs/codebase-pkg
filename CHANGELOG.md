@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Conformity Judge.** A local, offline read on how well new code fits the codebase's existing patterns. Each function's *normalized signature skeleton* (the structural shape of its signature, with identifiers/types/default positions collapsed to placeholders) is embedded and measured by cosine distance against the committed pool of same-category functions. It is an instrument, not a linter or a gate. Runs fully local — a local embedding model (`jina-embeddings-v2-small-en` via `@xenova/transformers`, ~33 MB, downloaded once then in-process) with no external API and no token cost.
+- Conformity vectors live in a provisioned **pgvector Postgres** cold store (table `cfm_vectors`, keyed by `<filePath>::<name>` node id) with an in-memory hot cache doing the kNN. `init --docker` now provisions the Postgres/pgvector service in the same compose file alongside Neo4j, bootstraps the schema + an HNSW cosine ANN index once Postgres is reachable, and prefetches the embedding model. The Neo4j graph schema is unchanged — no conformity data lives in the graph.
+- New CLI commands: `conformity-backfill` (one-time: embed every committed function to build the descriptive pool) and `conformity-judge [file]` (judge working-tree changes, or one file, against the pool).
+- New MCP tool `judgeConformity({ filePath?, maxResults? })` (the 8th tool): per-function category, distance, provisional verdict (`conforms`/`outlier`), and nearest existing functions, leading with the outliers; judges each committed function against the pool minus its own vector (no self-match).
+- Normal `codebase-pkg sync` now keeps the pool fresh as a best-effort, non-fatal step (re-embeds changed functions, removes deleted ones); a failure or unreachable Postgres warns but never blocks the sync cursor.
+- The TypeScript parser now captures default-parameter values (`hasDefault` / `defaultText`) on function arguments, feeding the signature skeleton.
+- New env vars/flags: `CODEBASE_PKG_PG_URI` (use an existing Postgres instead of the provisioned one), `CODEBASE_PKG_CONFORMITY=off` (disable the sync hook + judging), and `--no-model` / `CODEBASE_PKG_SKIP_MODEL_PREFETCH=1` (skip the model prefetch at `init`).
+- New runtime dependency `pg` (Postgres client); `@xenova/transformers` provides the local embedding backend.
+
+### Known limitations
+- Conformity verdict thresholds are provisional and uncalibrated — distance and nearest neighbors are the trustworthy signal, the `conforms`/`outlier` label is a draft.
+- Conformity category coverage is function signatures only (`function:signature-skeleton`); whole-body and class-shape categories are future work.
+- The Python parser does not yet capture default-parameter values in the skeleton (TypeScript/TSX only); Python signatures are still embedded without that distinction.
+
 ## [0.4.0] — 2026-06-19
 
 ### Added

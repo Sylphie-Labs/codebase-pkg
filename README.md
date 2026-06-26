@@ -90,6 +90,8 @@ Skills add more on top of the seeded graph (schemaless — no migration or index
 
 After the initial seed, run `codebase-pkg sync` to update only the deltas since the last synced commit. SHA-256 content hashes per entity drive change detection. Sync is a manual command — if you want it automatic, wire it into a `pre-push` git hook or a CI step.
 
+> The [Conformity Judge](#conformity-judge) keeps its embedding vectors in a separate pgvector Postgres, keyed by Neo4j node id. The Neo4j graph schema above is unchanged by that feature.
+
 ## MCP tools
 
 | Tool | What it returns |
@@ -101,6 +103,7 @@ After the initial seed, run `codebase-pkg sync` to update only the deltas since 
 | `getConstraints(scope)` | Architectural invariants from `constraints.json` and the graph |
 | `getLogContext(query?, service?, severity?, since?)` | Query log files on disk |
 | `searchContent(pattern, fileFilter?, maxResults?)` | Structured grep that returns code-entity context, not just byte offsets |
+| `judgeConformity(filePath?, maxResults?)` | How well your working-tree functions fit the codebase's existing patterns — per-function category, distance, provisional verdict, and nearest existing functions (see [Conformity Judge](#conformity-judge)) |
 
 ## Configuration
 
@@ -116,6 +119,9 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 | `CODEBASE_PKG_WORKSPACE_SCOPE` | (none) | npm workspace scope prefix for import resolution (e.g. `@your-org`) |
 | `CODEBASE_PKG_LOGS_DIR` | `<cwd>/logs` | Where `getLogContext` reads log files |
 | `CODEBASE_PKG_DOMAIN_LABELS` | (generic set) | Comma-separated allowed domain labels for `Function.domain` |
+| `CODEBASE_PKG_PG_URI` | (auto) | Postgres/pgvector DSN for the [Conformity Judge](#conformity-judge). Overrides the per-instance DSN recorded in `state.json`; point it at an existing Postgres instead of the provisioned one |
+| `CODEBASE_PKG_CONFORMITY` | (unset) | Set to `off` to disable the conformity sync hook and judging entirely |
+| `CODEBASE_PKG_SKIP_MODEL_PREFETCH` | (unset) | Set to `1` to skip the embedding-model prefetch at `init` (same as `--no-model`) |
 
 ## Constraints
 
@@ -128,6 +134,46 @@ codebase-pkg add-constraint --file constraints.json
 Re-run that after every edit (add `--validate` to check the file without writing).
 
 See `constraints.example.json` for the format.
+
+## Conformity Judge
+
+The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. For each function it embeds the function's *normalized signature skeleton* — the structural shape of the signature, with identifiers, types, and default-value positions collapsed to placeholders — and measures the cosine distance from that vector to the committed pool of same-category functions. It is **not a linter or a gate**; it is an instrument. Use it to see what your in-progress code is diverging from (or matching), not to pass/fail a build.
+
+It runs **fully local**: a local embedding model (`jina-embeddings-v2-small-en` via `@xenova/transformers`, ~33 MB, downloaded once then run in-process and offline). No external API, no tokens, no cost.
+
+### Architecture
+
+Neo4j stays the canonical graph. The conformity vectors live in a separate **pgvector Postgres** (a cold store), keyed by the same node id as the graph (`<filePath>::<name>`), with an in-memory hot cache that serves per-category pools and does the kNN distance. When you run `init --docker`, the Postgres/pgvector service is provisioned in the same compose file alongside Neo4j, the schema (the `cfm_vectors` table plus an HNSW cosine ANN index) is bootstrapped once Postgres is reachable, and the embedding model is prefetched. The Neo4j schema is untouched — no conformity data lives in the graph.
+
+### Workflow
+
+```bash
+# 1. Provision Neo4j + pgvector Postgres and prefetch the model
+codebase-pkg init --docker
+docker compose -f docker-compose.codebase-pkg.yml up -d
+
+# 2. Seed the Neo4j graph as usual
+codebase-pkg seed
+
+# 3. One-time: embed every committed function to build the descriptive pool
+codebase-pkg conformity-backfill
+
+# 4. Judge your working-tree code against that pool
+codebase-pkg conformity-judge            # all uncommitted changes in watched dirs
+codebase-pkg conformity-judge src/foo.ts # or a single file
+```
+
+After the one-time backfill, normal `codebase-pkg sync` keeps the pool fresh: it re-embeds changed functions and removes vectors for deleted ones as a best-effort, non-fatal step (a failure or unreachable Postgres warns but never blocks the sync cursor). You can also judge from a Claude Code session via the `judgeConformity` MCP tool.
+
+### The `judgeConformity` MCP tool
+
+The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs; `maxResults` caps the nearest neighbors reported per function and the kNN window, default 5). Returns, per function, its category, distance, a provisional verdict (`conforms`/`outlier`), and the nearest existing functions — leading with the outliers. Each function is judged against the pool *minus its own committed vector*, so a committed function is compared to other code, never to itself. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
+
+### Caveats
+
+- **Verdict thresholds are provisional and uncalibrated.** The distance and the nearest-neighbor list are the trustworthy signal; the `conforms`/`outlier` label is a draft derived from a placeholder cut point. Treat it as a hint, not a gate.
+- **Category coverage is function signatures only** right now (`function:signature-skeleton`). Whole-body and class-shape categories are future work.
+- **The Python parser does not yet capture default-parameter values** in the skeleton — only TypeScript/TSX functions surface default-position information. Python signatures are still embedded, just without that one structural distinction.
 
 ## CLI reference
 
@@ -145,6 +191,10 @@ codebase-pkg sync                 # incremental sync since last commit
 codebase-pkg validate             # run integrity checks against the graph
 codebase-pkg backfill-changes     # populate Change nodes from git history
 codebase-pkg add-constraint --file constraints.json [--validate]
+
+# Conformity Judge (see below)
+codebase-pkg conformity-backfill  # one-time: embed all committed functions into the pool
+codebase-pkg conformity-judge [file]  # judge working-tree code (or one file) against the pool
 ```
 
 `codebase-pkg-mcp` runs the MCP server directly (Claude Code launches it for you via `.mcp.json`).
