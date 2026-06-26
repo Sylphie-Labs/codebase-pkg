@@ -380,7 +380,14 @@ export function parsePythonFiles(filePaths: string[]): ParsedFile[] {
   }
 
   try {
-    return JSON.parse(result.stdout) as ParsedFile[];
+    const files = JSON.parse(result.stdout) as ParsedFile[];
+    // Module-level constant extraction is not implemented for Python (the
+    // embedded script only emits functions/types/imports). Default the new
+    // `constants` field to [] so consumers that spread `f.constants` are safe.
+    for (const f of files) {
+      if (!Array.isArray(f.constants)) f.constants = [];
+    }
+    return files;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`[python-parser] WARNING: invalid JSON from python parser — ${msg}\n`);

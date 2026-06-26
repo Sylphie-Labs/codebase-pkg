@@ -18,7 +18,7 @@
  * a representation renderer -- not rewiring callers.
  */
 
-import type { ParsedFunction, ParsedType } from '../sync/ast-parser.js';
+import type { ParsedFunction, ParsedType, ParsedConstant } from '../sync/ast-parser.js';
 import {
   normalizedBody,
   signatureText,
@@ -38,6 +38,16 @@ export const FUNCTION_BODY = 'function:body';
 export const TYPE_BODY = 'type:body';
 
 /**
+ * The whole-declaration conformity category for MODULE-LEVEL CONSTANTS (top-level
+ * non-function `const`/`let`/`var` initialized to objects/arrays/literals/calls,
+ * e.g. `export const CONFIG = {...}`, route tables, lookup maps). Like
+ * {@link FUNCTION_BODY}/{@link TYPE_BODY}, the embedded text is the declaration's
+ * whole source, lightly normalized. Constants are only ever compared to other
+ * constants, never to functions or types.
+ */
+export const MODULE_CONST = 'module:const';
+
+/**
  * LEGACY category key. The signature-skeleton representation was abandoned (it
  * collapsed distinct functions to an identical string); kept exported only for
  * back-compat with older callers/tests. Not produced by {@link categoryOf}.
@@ -45,35 +55,50 @@ export const TYPE_BODY = 'type:body';
 export const FUNCTION_SIGNATURE_SKELETON = 'function:signature-skeleton';
 
 /** All known category keys, in a stable order. */
-export const CATEGORIES = [FUNCTION_BODY, TYPE_BODY] as const;
+export const CATEGORIES = [FUNCTION_BODY, TYPE_BODY, MODULE_CONST] as const;
 
 /** A conformity category key. */
 export type Category = (typeof CATEGORIES)[number];
 
 /**
- * A parsed chunk the conformity engine can judge: a function OR a type/class.
- * Both carry `bodyText` (the source text to embed); a {@link ParsedType} is
- * discriminated by its `kind` field, which {@link ParsedFunction} never has.
+ * A parsed chunk the conformity engine can judge: a function, a type/class, OR a
+ * module-level constant. All carry `bodyText` (the source text to embed).
+ * {@link ParsedType} and {@link ParsedConstant} both carry a `kind` field;
+ * a {@link ParsedFunction} never does. {@link ParsedConstant} is further
+ * distinguished by `kind === 'const'`.
  */
-export type ParsedChunk = ParsedFunction | ParsedType;
+export type ParsedChunk = ParsedFunction | ParsedType | ParsedConstant;
+
+/**
+ * Type guard: a {@link ParsedConstant} is discriminated by `kind === 'const'`
+ * (the literal value the parser stamps on module-level constants). A
+ * {@link ParsedType}'s `kind` is one of 'interface' | 'type' | 'enum' | 'class',
+ * so this is unambiguous.
+ */
+export function isParsedConstant(chunk: ParsedChunk): chunk is ParsedConstant {
+  return (chunk as ParsedConstant).kind === 'const';
+}
 
 /**
  * Type guard: a {@link ParsedType} is discriminated from a {@link ParsedFunction}
  * by the presence of a `kind` field ('interface' | 'type' | 'enum' | 'class').
+ * Excludes {@link ParsedConstant} (kind === 'const'), which also has a `kind`.
  */
 export function isParsedType(chunk: ParsedChunk): chunk is ParsedType {
-  return typeof (chunk as ParsedType).kind === 'string';
+  return typeof (chunk as ParsedType).kind === 'string' && !isParsedConstant(chunk);
 }
 
 /**
  * Derive the conformity category for a parsed chunk.
  *
- * Functions map to {@link FUNCTION_BODY}; types/classes (which carry a `kind`
- * discriminator) map to {@link TYPE_BODY}. Conformity is always measured WITHIN
- * a category, so functions are only ever compared to functions and types only to
- * types. Add a case here (and to {@link CATEGORIES}) to introduce a new category.
+ * Module-level constants (kind === 'const') map to {@link MODULE_CONST};
+ * types/classes map to {@link TYPE_BODY}; functions map to {@link FUNCTION_BODY}.
+ * Conformity is always measured WITHIN a category, so constants are only ever
+ * compared to constants, types to types, and functions to functions. Add a case
+ * here (and to {@link CATEGORIES}) to introduce a new category.
  */
 export function categoryOf(chunk: ParsedChunk): Category {
+  if (isParsedConstant(chunk)) return MODULE_CONST;
   return isParsedType(chunk) ? TYPE_BODY : FUNCTION_BODY;
 }
 

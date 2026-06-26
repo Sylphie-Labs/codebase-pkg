@@ -30,6 +30,8 @@ export {
   signatureSkeleton,
   CATEGORIES,
   FUNCTION_BODY,
+  TYPE_BODY,
+  MODULE_CONST,
   FUNCTION_SIGNATURE_SKELETON,
 } from './category.js';
 export type { Category, SkeletonOptions } from './category.js';

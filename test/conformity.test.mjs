@@ -44,8 +44,11 @@ import {
   categoryOf,
   representationText,
   signatureSkeleton,
+  isParsedConstant,
+  isParsedType,
   FUNCTION_BODY,
   TYPE_BODY,
+  MODULE_CONST,
   FUNCTION_SIGNATURE_SKELETON,
   CATEGORIES,
 } from '../dist/conformity/category.js';
@@ -65,11 +68,17 @@ export interface UserDto {
   id: string;
   name: string;
 }
+
+export const CONFIG = {
+  retries: 3,
+  baseUrl: 'https://example.com',
+};
 `;
 
 let tmpDir;
 let functions;
 let types;
+let constants;
 
 before(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-conformity-'));
@@ -79,6 +88,7 @@ before(() => {
   assert.equal(parsed.length, 1, 'fixture parsed');
   functions = parsed[0].functions;
   types = parsed[0].types;
+  constants = parsed[0].constants;
 });
 
 after(() => {
@@ -322,6 +332,37 @@ test('categoryOf returns type:body for a parsed type, function:body for a functi
   const add = functions.find((f) => f.name === 'add');
   assert.equal(categoryOf(add), FUNCTION_BODY);
   assert.notEqual(categoryOf(userDto), categoryOf(add));
+});
+
+test('categoryOf returns module:const for a parsed constant; guards discriminate it', () => {
+  const config = constants.find((c) => c.name === 'CONFIG');
+  assert.ok(config, 'CONFIG constant parsed');
+  assert.equal(categoryOf(config), MODULE_CONST);
+  assert.ok(CATEGORIES.includes(MODULE_CONST));
+
+  // The type guards must classify a constant as a constant, NOT a type, even
+  // though both carry a `kind` field.
+  assert.equal(isParsedConstant(config), true, 'constant recognized by isParsedConstant');
+  assert.equal(isParsedType(config), false, 'constant NOT misclassified as a type');
+
+  // A type in the same fixture must NOT be a constant, and routes to type:body.
+  const userDto = types.find((t) => t.name === 'UserDto');
+  assert.equal(isParsedConstant(userDto), false);
+  assert.equal(categoryOf(userDto), TYPE_BODY);
+
+  // Constants, types, and functions are three distinct pools.
+  const add = functions.find((f) => f.name === 'add');
+  assert.notEqual(categoryOf(config), categoryOf(userDto));
+  assert.notEqual(categoryOf(config), categoryOf(add));
+});
+
+test('representationText/normalizedBody work on a constant body (declaration source kept)', () => {
+  const config = constants.find((c) => c.name === 'CONFIG');
+  assert.ok(config.bodyText && config.bodyText.length > 0, 'constant carries bodyText');
+  assert.equal(representationText(config), normalizedBody(config));
+  // Identifiers/literals from the declaration are preserved (not skeletonized).
+  assert.ok(representationText(config).includes('CONFIG'));
+  assert.ok(representationText(config).includes('retries'));
 });
 
 test('representationText/normalizedBody work on a type body (declaration source kept)', () => {

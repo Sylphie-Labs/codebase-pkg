@@ -97,22 +97,24 @@ export async function runConformityBackfill(): Promise<void> {
   const parsed = parseFiles(files);
   clearProjectCache();
 
-  // Embed BOTH functions AND types/classes. Each chunk derives its own category
-  // (function:body / type:body) inside the shared core, so functions are judged
-  // against functions and types against types.
+  // Embed functions, types/classes, AND module-level constants. Each chunk
+  // derives its own category (function:body / type:body / module:const) inside
+  // the shared core, so each pool is judged only against its own kind.
   const chunks: ParsedChunk[] = [];
   let functionCount = 0;
   let typeCount = 0;
+  let constantCount = 0;
   for (const f of parsed) {
-    chunks.push(...f.functions, ...f.types);
+    chunks.push(...f.functions, ...f.types, ...(f.constants ?? []));
     functionCount += f.functions.length;
     typeCount += f.types.length;
+    constantCount += (f.constants ?? []).length;
   }
 
   console.log(
-    `Parsed ${parsed.length} file(s), ${functionCount} function(s), ${typeCount} type(s).`,
+    `Parsed ${parsed.length} file(s), ${functionCount} function(s), ${typeCount} type(s), ${constantCount} constant(s).`,
   );
-  console.log('Embedding function + type bodies (first run downloads the model)...');
+  console.log('Embedding function + type + constant bodies (first run downloads the model)...');
 
   // Use an explicit store so we can reuse its hot cache for the calibration pass
   // that follows (no second round-trip per category beyond the loadPool reads).
@@ -121,7 +123,7 @@ export async function runConformityBackfill(): Promise<void> {
 
   console.log('');
   console.log('=== Conformity backfill complete ===');
-  console.log(`  Chunks embedded : ${embedded} (functions + types)`);
+  console.log(`  Chunks embedded : ${embedded} (functions + types + constants)`);
   console.log(`  Chunks skipped  : ${skipped} (empty body)`);
 
   // Step R2: calibrate the outlier threshold on the codebase's own distance
@@ -172,6 +174,7 @@ export async function runConformityCalibrate(): Promise<void> {
   for (const f of parsed) {
     for (const fn of f.functions) categories.add(categoryOf(fn));
     for (const t of f.types) categories.add(categoryOf(t));
+    for (const c of f.constants ?? []) categories.add(categoryOf(c));
   }
 
   const store = createConformityStore(realPgRunner);

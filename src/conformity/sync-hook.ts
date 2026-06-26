@@ -24,15 +24,25 @@ import { realPgRunner, type PgRunner } from './pg-client.js';
 
 /**
  * The created + updated code chunks in a changeset, in creation order, as
- * ParsedChunk[] (functions AND types/classes). These are the chunks whose
- * descriptive vectors must be (re)written; each derives its own category
- * (function:body / type:body) downstream.
+ * ParsedChunk[] (functions, types/classes, AND module-level constants). These
+ * are the chunks whose descriptive vectors must be (re)written; each derives its
+ * own category (function:body / type:body / module:const) downstream.
+ *
+ * NOTE on constants: the graph differ/changeset (graph-differ.ts) currently only
+ * emits node kinds 'function' and 'type' -- it does NOT track module-level
+ * constants (that plumbing was intentionally left untouched so the graph
+ * pipeline and its tests are not disturbed). So in practice the incremental sync
+ * path never carries a 'const' entry, and constants are embedded only by the
+ * cold-start backfill / judged from the working tree. This filter recognizes
+ * 'const' defensively so the conformity step is forward-compatible IF the graph
+ * differ ever starts emitting constants -- no fabricated plumbing is added here.
  */
 export function chunksToEmbed(changeset: Changeset): ParsedChunk[] {
   const out: ParsedChunk[] = [];
   const collect = (entries: Array<NodeCreate | NodeUpdate>): void => {
     for (const entry of entries) {
-      if (entry.kind === 'function' || entry.kind === 'type') {
+      const kind = entry.kind as string;
+      if (kind === 'function' || kind === 'type' || kind === 'const') {
         out.push(entry.data as ParsedChunk);
       }
     }
@@ -43,14 +53,20 @@ export function chunksToEmbed(changeset: Changeset): ParsedChunk[] {
 }
 
 /**
- * Stable node ids for the deleted code nodes in a changeset (functions AND
- * types) -- the vectors to remove from the cold store. Built from the
- * `<filePath>::<name>` convention (see {@link nodeIdOf}) so they line up with
- * the keys written on upsert.
+ * Stable node ids for the deleted code nodes in a changeset (functions, types,
+ * AND module-level constants if present) -- the vectors to remove from the cold
+ * store. Built from the `<filePath>::<name>` convention (see {@link nodeIdOf}) so
+ * they line up with the keys written on upsert.
+ *
+ * Same limitation as {@link chunksToEmbed}: the changeset doesn't currently carry
+ * constant deletes, so 'const' is matched defensively/forward-compatibly only.
  */
 export function deletedChunkIds(changeset: Changeset): string[] {
   return changeset.nodesToDelete
-    .filter((n) => n.kind === 'function' || n.kind === 'type')
+    .filter((n) => {
+      const kind = n.kind as string;
+      return kind === 'function' || kind === 'type' || kind === 'const';
+    })
     .map((n) => nodeIdOf({ filePath: n.filePath, name: n.name }));
 }
 

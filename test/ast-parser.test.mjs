@@ -46,6 +46,21 @@ export const fetchUser = async (id: string): Promise<UserDto> => {
   return JSON.parse(raw) as UserDto;
 };
 
+export const CONFIG = {
+  retries: 3,
+  baseUrl: 'https://example.com',
+  flags: ['a', 'b'],
+};
+
+const MAX_ITEMS = 5;
+
+const { alpha, beta } = CONFIG;
+
+function usesLocals(): number {
+  const localOnly = 42;
+  return localOnly + MAX_ITEMS;
+}
+
 export interface UserDto {
   id: string;
   name: string;
@@ -237,4 +252,58 @@ test('imports: named, default, and namespace forms', () => {
   for (const imp of parsed.imports) {
     assert.equal(imp.fromFile, fwd(fixturePath), 'fromFile is the normalized fixture path');
   }
+});
+
+// ---------------------------------------------------------------------------
+// module-level constants (additive: parsed.constants)
+// ---------------------------------------------------------------------------
+
+test('constants: exported object const captured with name/bodyText/isExported/kind/hash', () => {
+  const config = parsed.constants.find(c => c.name === 'CONFIG');
+  assert.ok(config, 'CONFIG captured as a module constant');
+  assert.equal(config.kind, 'const');
+  assert.equal(config.isExported, true, 'export keyword on the statement -> isExported true');
+  assert.equal(config.filePath, fwd(fixturePath));
+  // bodyText is the declaration source (the `CONFIG = {...}` text), not the body.
+  assert.match(config.bodyText, /CONFIG = \{/);
+  assert.match(config.bodyText, /retries: 3/);
+  assert.match(config.bodyText, /baseUrl: 'https:\/\/example\.com'/);
+  assert.match(config.contentHash, HASH_RE);
+  assert.ok(config.lineNumber >= 1, 'lineNumber >= 1');
+  assert.ok(config.endLine >= config.lineNumber, 'endLine >= lineNumber');
+});
+
+test('constants: plain non-exported literal const captured with isExported false', () => {
+  const max = parsed.constants.find(c => c.name === 'MAX_ITEMS');
+  assert.ok(max, 'MAX_ITEMS captured');
+  assert.equal(max.kind, 'const');
+  assert.equal(max.isExported, false, 'no export keyword -> isExported false');
+  assert.match(max.bodyText, /MAX_ITEMS = 5/);
+});
+
+test('constants: arrow-function consts are NOT captured as constants (they stay functions)', () => {
+  // fetchUser is an arrow function const -> belongs to parsed.functions, NOT constants.
+  assert.ok(
+    !parsed.constants.some(c => c.name === 'fetchUser'),
+    'arrow-function const excluded from constants',
+  );
+  assert.ok(
+    parsed.functions.some(f => f.name === 'fetchUser'),
+    'arrow-function const still present as a function',
+  );
+});
+
+test('constants: in-function locals are NOT captured (top-level only)', () => {
+  assert.ok(
+    !parsed.constants.some(c => c.name === 'localOnly'),
+    'a const declared inside a function body is not a module constant',
+  );
+});
+
+test('constants: destructuring patterns are skipped (no simple name)', () => {
+  // `const { alpha, beta } = CONFIG;` has no single stable identifier -> skipped.
+  assert.ok(
+    !parsed.constants.some(c => c.name === 'alpha' || c.name === 'beta'),
+    'destructured bindings are not captured as module constants',
+  );
 });

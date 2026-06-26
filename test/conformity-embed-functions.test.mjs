@@ -31,6 +31,7 @@ import {
   representationText,
   FUNCTION_BODY,
   TYPE_BODY,
+  MODULE_CONST,
 } from '../dist/conformity/category.js';
 
 /**
@@ -107,6 +108,20 @@ function ty(name, filePath, kind = 'interface', bodyText = `interface ${name} { 
     decorators: [],
     implements: [],
     constructorParams: [],
+    contentHash: 'h-' + name,
+  };
+}
+
+/** A minimal ParsedConstant good enough for category/representation derivation. */
+function ct(name, filePath, bodyText = `${name} = { a: 1 }`) {
+  return {
+    name,
+    filePath,
+    lineNumber: 1,
+    endLine: 2,
+    bodyText,
+    isExported: true,
+    kind: 'const',
     contentHash: 'h-' + name,
   };
 }
@@ -219,6 +234,32 @@ test('embedAndStoreChunks routes a function to function:body and a type to type:
   const byId = new Map(recs.map((r) => [r.nodeId, r.category]));
   assert.equal(byId.get(canonId('a.ts', 'alpha')), FUNCTION_BODY);
   assert.equal(byId.get(canonId('a.ts', 'Widget')), TYPE_BODY);
+});
+
+test('embedAndStoreChunks routes a module constant to module:const', async () => {
+  const store = makeFakeStore();
+  const embedder = makeFakeEmbedder();
+
+  const aFn = fn('alpha', 'a.ts', ['x'], 'number', '{ return x; }');
+  const aTy = ty('Widget', 'a.ts', 'interface', 'interface Widget { id: string; }');
+  const aConst = ct('CONFIG', 'a.ts', 'CONFIG = { retries: 3 }');
+
+  const res = await embedAndStoreChunks([aFn, aTy, aConst], { store, embedder, model: 'm' });
+
+  assert.equal(res.embedded, 3);
+  assert.equal(res.skipped, 0);
+
+  assert.deepEqual(embedder.calls[0], [
+    representationText(aFn),
+    representationText(aTy),
+    representationText(aConst),
+  ]);
+
+  const recs = store.upserts.flat();
+  const byId = new Map(recs.map((r) => [r.nodeId, r.category]));
+  assert.equal(byId.get(canonId('a.ts', 'alpha')), FUNCTION_BODY);
+  assert.equal(byId.get(canonId('a.ts', 'Widget')), TYPE_BODY);
+  assert.equal(byId.get(canonId('a.ts', 'CONFIG')), MODULE_CONST);
 });
 
 test('embedAndStoreChunks skips a type with an empty body', async () => {

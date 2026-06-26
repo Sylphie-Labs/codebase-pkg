@@ -29,6 +29,7 @@ import { nodeIdOf } from '../dist/conformity/store.js';
 import {
   FUNCTION_BODY,
   TYPE_BODY,
+  MODULE_CONST,
   representationText,
 } from '../dist/conformity/category.js';
 
@@ -143,6 +144,23 @@ function ty(name, filePath, bodyText, kind = 'interface') {
   };
 }
 
+/**
+ * Build a minimal ParsedConstant whose representation text we can predict. The
+ * `kind === 'const'` discriminator makes categoryOf route it to module:const.
+ */
+function ct(name, filePath, bodyText) {
+  return {
+    name,
+    filePath,
+    lineNumber: 1,
+    endLine: 2,
+    bodyText,
+    isExported: true,
+    kind: 'const',
+    contentHash: name,
+  };
+}
+
 // A shared body source and its normalized representation text (the embedded
 // key). representationText strips comments + collapses whitespace.
 const BODY_1_SRC = '{\n  // sum\n  return a + b;\n}';
@@ -203,6 +221,36 @@ test('judgeFunctions judges a TYPE against the type:body pool (not the function 
   assert.equal(j.verdict, 'conforms');
   assert.ok(j.distance < 1e-9);
   assert.equal(j.nearest[0].nodeId, 'peer.ts::Peer');
+});
+
+test('judgeFunctions judges a CONSTANT against the module:const pool only', async () => {
+  const constSrc = 'CONFIG = { retries: 3 }';
+  const constText = representationText({ bodyText: constSrc });
+
+  // Pools for all three categories; the judged constant must compare ONLY
+  // against the module:const peer (function + type pools are ignored).
+  const fnPool = [{ category: FUNCTION_BODY, identifier: 'f.ts::fn', vector: [1, 0, 0] }];
+  const typePool = [{ category: TYPE_BODY, identifier: 't.ts::T', vector: [1, 0, 0] }];
+  const constPool = [{ category: MODULE_CONST, identifier: 'peer.ts::OTHER', vector: [1, 0, 0] }];
+
+  const config = ct('CONFIG', 'work.ts', constSrc);
+  const res = await judgeFunctions([config], {
+    store: fakeStore({
+      [FUNCTION_BODY]: fnPool,
+      [TYPE_BODY]: typePool,
+      [MODULE_CONST]: constPool,
+    }),
+    embedder: mapEmbedder({ [constText]: [1, 0, 0] }),
+    runner: runnerUp,
+  });
+  assert.ok(!isUnavailable(res));
+  const j = res[0];
+  assert.equal(j.name, 'CONFIG', 'judgment name is the constant name');
+  assert.equal(j.category, MODULE_CONST, 'routed to the module:const pool');
+  assert.equal(j.poolSize, 1, 'only the single module:const peer counts');
+  assert.equal(j.verdict, 'conforms');
+  assert.ok(j.distance < 1e-9);
+  assert.equal(j.nearest[0].nodeId, 'peer.ts::OTHER');
 });
 
 test('nearest neighbors are ranked and returned with nodeId + distance', async () => {

@@ -90,6 +90,29 @@ export interface ParsedImport {
   moduleSpecifier: string;
 }
 
+/**
+ * A MODULE-LEVEL (top-level) constant declaration whose initializer is NOT a
+ * function/arrow (those are captured as {@link ParsedFunction}). Captures
+ * object/array/literal/call-initialized top-level `const`/`let`/`var` such as
+ * `export const CONFIG = {...}`, route tables, lookup maps, sentinels, etc. --
+ * declarations that were previously invisible to the graph and to conformity.
+ *
+ * Mirrors the relevant subset of {@link ParsedFunction} (it has no args /
+ * returnType). `bodyText` is the declaration's source text (capped at 8000
+ * chars, like functions/types) and is what the conformity engine embeds.
+ */
+export interface ParsedConstant {
+  name: string;
+  filePath: string;
+  lineNumber: number;
+  endLine: number;
+  bodyText: string;
+  isExported: boolean;
+  /** Discriminator: always `'const'`. Distinguishes it from ParsedType's kinds. */
+  kind: 'const';
+  contentHash: string;
+}
+
 export interface ParsedFile {
   filePath: string;
   fileName: string;
@@ -98,6 +121,7 @@ export interface ParsedFile {
   functions: ParsedFunction[];
   types: ParsedType[];
   imports: ParsedImport[];
+  constants: ParsedConstant[];
 }
 
 // ---------------------------------------------------------------------------
@@ -391,6 +415,70 @@ function extractFunctions(sourceFile: SourceFile, filePath: string): ParsedFunct
 }
 
 // ---------------------------------------------------------------------------
+// Extraction: module-level constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract MODULE-LEVEL (top-level) NON-FUNCTION constant declarations.
+ *
+ * This is the exact inverse of the variable-declaration branch in
+ * {@link extractFunctions}: that branch captures top-level vars whose
+ * initializer IS an arrow/function-expression (and treats them as functions);
+ * this one captures the rest -- vars initialized to objects, arrays, literals,
+ * `new`/call expressions, etc. So nothing is double-counted.
+ *
+ * Top-level detection: a variable declaration is at module level when its
+ * grandparent (VariableDeclaration -> VariableDeclarationList -> ?) is a
+ * VariableStatement whose parent is the SourceFile (not a function body, block,
+ * or other nested scope). `isExported` is read from that VariableStatement.
+ *
+ * Destructuring: declarations with no simple name (object/array binding
+ * patterns, e.g. `export const { a, b } = obj`) are SKIPPED -- there is no
+ * single stable identifier to key the node/vector on, and synthesizing one from
+ * the pattern text would collide poorly. Documented as a deferred limitation.
+ */
+function extractModuleConstants(sourceFile: SourceFile, filePath: string): ParsedConstant[] {
+  const results: ParsedConstant[] = [];
+
+  for (const varDecl of sourceFile.getVariableDeclarations()) {
+    const initializer = varDecl.getInitializer();
+    // No initializer -> nothing to embed/value to capture; skip.
+    if (!initializer) continue;
+
+    // Inverse of extractFunctions: skip arrow/function-expression inits (those
+    // are already captured as functions). Keep everything else.
+    if (Node.isArrowFunction(initializer) || Node.isFunctionExpression(initializer)) {
+      continue;
+    }
+
+    // Top-level only: VariableDeclaration -> VariableDeclarationList ->
+    // VariableStatement, and that statement must sit directly on the SourceFile.
+    const declarationList = varDecl.getParent();
+    const statement = declarationList?.getParent();
+    if (!statement || !Node.isVariableStatement(statement)) continue;
+    if (!Node.isSourceFile(statement.getParent())) continue;
+
+    // Destructuring patterns have no simple name -> skip (documented limitation).
+    const name = varDecl.getName();
+    if (!name || /[{}[\],]/.test(name)) continue;
+
+    const declText = varDecl.getText().slice(0, 8000);
+    results.push({
+      name,
+      filePath,
+      lineNumber: varDecl.getStartLineNumber(),
+      endLine: varDecl.getEndLineNumber(),
+      bodyText: declText,
+      isExported: statement.isExported(),
+      kind: 'const',
+      contentHash: sha256(varDecl.getText()),
+    });
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Extraction: types
 // ---------------------------------------------------------------------------
 
@@ -595,6 +683,7 @@ export function parseFiles(filePaths: string[]): ParsedFile[] {
         functions: extractFunctions(sourceFile, filePath),
         types: extractTypes(sourceFile, filePath),
         imports: extractImports(sourceFile, filePath),
+        constants: extractModuleConstants(sourceFile, filePath),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

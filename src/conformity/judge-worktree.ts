@@ -317,9 +317,10 @@ async function judgeParsedFiles(
   const parsed = parseFiles(files);
   clearProjectCache();
 
-  // Judge BOTH functions and types/classes; each routes to its own category.
+  // Judge functions, types/classes, AND module-level constants; each routes to
+  // its own category (function:body / type:body / module:const).
   const chunks: ParsedChunk[] = [];
-  for (const f of parsed) chunks.push(...f.functions, ...f.types);
+  for (const f of parsed) chunks.push(...f.functions, ...f.types, ...(f.constants ?? []));
 
   return judgeFunctions(chunks, opts);
 }
