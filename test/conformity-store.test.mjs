@@ -14,6 +14,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as path from 'node:path';
 
 import {
   ConformityStore,
@@ -40,9 +41,43 @@ function vec(val) {
   return new Array(EMBEDDING_DIM).fill(val);
 }
 
-test('nodeIdOf formats as filePath::name', () => {
+test('nodeIdOf formats as <canonicalPath>::name (absolute, forward slashes)', () => {
   const fn = { filePath: 'src/foo.ts', name: 'doThing' };
-  assert.equal(nodeIdOf(fn), 'src/foo.ts::doThing');
+  const expected = `${path.resolve('src/foo.ts').replace(/\\/g, '/')}::doThing`;
+  assert.equal(nodeIdOf(fn), expected);
+  // The id is absolute and uses forward slashes regardless of platform.
+  assert.ok(path.isAbsolute(nodeIdOf(fn).split('::')[0]));
+  assert.ok(!nodeIdOf(fn).includes('\\'));
+});
+
+test('nodeIdOf: a relative path and the equivalent absolute path yield the SAME id', () => {
+  // The core bug: backfill parses absolute paths, the judge parses relative
+  // ones. Both must canonicalize to one id so self-exclusion lines up.
+  const rel = nodeIdOf({ filePath: 'src/conformity/distance.ts', name: 'dot' });
+  const abs = nodeIdOf({
+    filePath: path.resolve('src/conformity/distance.ts'),
+    name: 'dot',
+  });
+  assert.equal(rel, abs);
+});
+
+test('nodeIdOf normalizes backslashes to forward slashes', () => {
+  // A Windows-style absolute path with backslashes must produce the same id as
+  // its forward-slash form (the stored ids use forward slashes).
+  const abs = path.resolve('src/conformity/distance.ts');
+  const back = abs.replace(/\//g, '\\'); // force backslashes
+  const id = nodeIdOf({ filePath: back, name: 'dot' });
+  assert.ok(!id.includes('\\'), 'no backslashes survive in the canonical id');
+  assert.equal(id, nodeIdOf({ filePath: abs, name: 'dot' }));
+});
+
+test('nodeIdOf is idempotent on an already-canonical path', () => {
+  // Re-canonicalizing a canonical id (absolute + forward slashes) is a no-op.
+  const canonical = path.resolve('src/conformity/distance.ts').replace(/\\/g, '/');
+  const once = nodeIdOf({ filePath: canonical, name: 'dot' });
+  const twice = nodeIdOf({ filePath: once.split('::')[0], name: 'dot' });
+  assert.equal(once, `${canonical}::dot`);
+  assert.equal(once, twice);
 });
 
 test('upsertVectors issues an ON CONFLICT upsert with correct params', async () => {

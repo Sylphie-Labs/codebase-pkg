@@ -22,11 +22,19 @@ import {
   isConformityEnabled,
   runConformityStep,
 } from '../dist/conformity/sync-hook.js';
-import { EMBEDDING_DIM } from '../dist/conformity/index.js';
+import { EMBEDDING_DIM, nodeIdOf } from '../dist/conformity/index.js';
 import {
   categoryOf,
   representationText,
 } from '../dist/conformity/category.js';
+
+/**
+ * Canonical node id, mirroring store.nodeIdOf -- ids are absolute + forward-
+ * slashed so backfill (absolute paths) and the judge (relative paths) agree.
+ */
+function canonId(filePath, name) {
+  return nodeIdOf({ filePath, name });
+}
 
 // --- Fakes -----------------------------------------------------------------
 
@@ -114,8 +122,8 @@ test('embedAndStoreFunctions derives category/representation text, nodeIds, and 
   const recs = store.upserts[0];
   assert.equal(recs.length, 2);
 
-  assert.equal(recs[0].nodeId, 'a.ts::alpha');
-  assert.equal(recs[1].nodeId, 'b.ts::beta');
+  assert.equal(recs[0].nodeId, canonId('a.ts', 'alpha'));
+  assert.equal(recs[1].nodeId, canonId('b.ts', 'beta'));
   assert.equal(recs[0].category, categoryOf(fns[0]));
   assert.equal(recs[0].model, 'test-model');
   assert.equal(recs[1].model, 'test-model');
@@ -196,7 +204,7 @@ test('functionsToEmbed picks creates + updates of kind function, skips types', (
   assert.deepEqual(out.map((f) => f.name), ['a', 'b']);
 });
 
-test('deletedFunctionIds builds filePath::name ids, skips type deletes', () => {
+test('deletedFunctionIds builds canonical node ids, skips type deletes', () => {
   const cs = makeChangeset({
     del: [
       { kind: 'function', name: 'gone', filePath: 'c.ts' },
@@ -205,7 +213,12 @@ test('deletedFunctionIds builds filePath::name ids, skips type deletes', () => {
     ],
   });
 
-  assert.deepEqual(deletedFunctionIds(cs), ['c.ts::gone', 'd.ts::alsoGone']);
+  // Deletes must use the SAME canonical id form as upserts so a removed
+  // function's stored vector is actually found and deleted.
+  assert.deepEqual(deletedFunctionIds(cs), [
+    canonId('c.ts', 'gone'),
+    canonId('d.ts', 'alsoGone'),
+  ]);
 });
 
 // --- the gate --------------------------------------------------------------
@@ -292,10 +305,10 @@ test('runConformityStep embeds creates+updates and deletes removed function ids'
 
     // Upserted node ids are the two functions.
     const upsertedIds = store.upserts.flat().map((r) => r.nodeId).sort();
-    assert.deepEqual(upsertedIds, ['a.ts::a', 'b.ts::b']);
+    assert.deepEqual(upsertedIds, [canonId('a.ts', 'a'), canonId('b.ts', 'b')].sort());
 
     // Deleted exactly the one removed function id (type delete ignored).
-    assert.deepEqual(store.deletes, [['c.ts::gone']]);
+    assert.deepEqual(store.deletes, [[canonId('c.ts', 'gone')]]);
   } finally {
     if (prev !== undefined) process.env.CODEBASE_PKG_CONFORMITY = prev;
   }

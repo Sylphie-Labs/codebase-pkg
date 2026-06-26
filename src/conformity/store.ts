@@ -25,6 +25,7 @@
  * provisioning, or the MCP server -- that wiring comes in later steps.
  */
 
+import * as path from 'node:path';
 import type { ParsedFunction } from '../sync/ast-parser.js';
 import type { PoolEntry } from './judge.js';
 import type { Category } from './category.js';
@@ -67,12 +68,28 @@ export interface StoredCalibration {
 
 /**
  * Stable id for a parsed function, matching the convention used elsewhere for
- * node identity (`<filePath>::<name>`). Vectors are keyed by this so the cold
- * store lines up with Neo4j node identity. Reuse this anywhere a node id is
+ * node identity (`<canonicalPath>::<name>`). Vectors are keyed by this so the
+ * cold store lines up with Neo4j node identity. Reuse this anywhere a node id is
  * needed rather than re-deriving the format.
+ *
+ * CANONICALIZATION (path-form independence): the SAME source file may be parsed
+ * with different path forms depending on the entry point -- backfill /
+ * getAllWatchedFiles parse with ABSOLUTE paths, while `conformity-judge
+ * <relative-path>` parses with a RELATIVE path. A naive `${fn.filePath}::${name}`
+ * would then mint two different ids for one function, so the judge's
+ * self-exclusion (which removes the function's own id from the pool before kNN)
+ * would silently fail and the function's own committed vector (cosine distance
+ * ~0) would be averaged into its own score.
+ *
+ * To make both sides agree we resolve the path to ABSOLUTE form and normalize
+ * separators to forward slashes -- matching the form already stored by backfill
+ * (e.g. `C:/Users/.../x.ts`). `path.resolve` is idempotent on an already-
+ * absolute path (resolving `C:/Users/.../x.ts` yields the same string, modulo
+ * separator normalization), so re-canonicalizing a canonical id is a no-op.
  */
 export function nodeIdOf(fn: ParsedFunction): string {
-  return `${fn.filePath}::${fn.name}`;
+  const canonicalPath = path.resolve(fn.filePath).replace(/\\/g, '/');
+  return `${canonicalPath}::${fn.name}`;
 }
 
 /**

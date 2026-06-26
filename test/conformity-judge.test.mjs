@@ -18,13 +18,20 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as path from 'node:path';
 
 import { knnNearest, cosineDistance } from '../dist/conformity/distance.js';
 import {
   judgeFunctions,
   isUnavailable,
 } from '../dist/conformity/judge-worktree.js';
+import { nodeIdOf } from '../dist/conformity/store.js';
 import { FUNCTION_BODY, representationText } from '../dist/conformity/category.js';
+
+/** Canonical node id for a (filePath, name) pair -- mirrors what backfill stores. */
+function canonId(filePath, name) {
+  return nodeIdOf({ filePath, name });
+}
 
 // --------------------------------------------------------------------------
 // knnNearest
@@ -176,7 +183,7 @@ test("the function's OWN nodeId is excluded from its judgment pool", async () =>
   // identical to its skeleton embedding. If NOT excluded, the nearest neighbor
   // would be itself at distance ~0. Exclusion must drop it.
   const f = fn('self', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
-  const selfId = 'work.ts::self';
+  const selfId = canonId('work.ts', 'self'); // canonical, as backfill would store it
   const pool = [
     { category: CAT, identifier: selfId, vector: [1, 0, 0] },      // self
     { category: CAT, identifier: 'other.ts::o', vector: [0, 1, 0] }, // the only real peer
@@ -198,6 +205,47 @@ test("the function's OWN nodeId is excluded from its judgment pool", async () =>
   assert.ok(j.distance > 0.9);
 });
 
+test('self-exclusion works ACROSS path forms (relative fn vs absolute pool id)', async () => {
+  // The live-smoke bug: backfill stores the self vector under an ABSOLUTE
+  // canonical id, but the judge parses the same file via a RELATIVE path. With
+  // raw `${filePath}::${name}` ids these two forms differ, so exclusion silently
+  // fails and the function's own vector (distance ~0) gets averaged in. With
+  // canonicalized nodeIdOf, the relative fn and the absolute pool entry resolve
+  // to the SAME id, so the self copy is excluded.
+  const relPath = 'src/widget.ts';
+  const absPath = path.resolve(relPath); // the form backfill would have parsed
+  const f = fn('self', relPath, [{ name: 'x', type: 'number' }], 'number');
+
+  // The pool stores the self entry under the ABSOLUTE canonical id, IDENTICAL
+  // to the judged function's embedding ([1,0,0]) -- a distance-0 self copy.
+  const selfPoolId = canonId(absPath, 'self');
+  const otherId = 'other.ts::o';
+  const pool = [
+    { category: CAT, identifier: selfPoolId, vector: [1, 0, 0] },  // self (abs form)
+    { category: CAT, identifier: otherId, vector: [0, 1, 0] },     // the only real peer
+  ];
+  // Sanity: the two path forms really are different strings (so this test is
+  // meaningful) but canonicalize to the same id.
+  assert.notEqual(relPath, absPath);
+  assert.equal(canonId(relPath, 'self'), selfPoolId);
+
+  const res = await judgeFunctions([f], {
+    store: fakeStore({ [CAT]: pool }),
+    embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
+    runner: runnerUp,
+  });
+  assert.ok(!isUnavailable(res));
+  const j = res[0];
+  assert.equal(j.poolSize, 1, 'self (absolute-id copy) excluded -> only 1 peer');
+  assert.ok(
+    j.nearest.every((n) => n.nodeId !== selfPoolId),
+    'the absolute-form self copy must not appear among neighbors',
+  );
+  assert.equal(j.nearest[0].nodeId, otherId);
+  // Judged against the OTHER (orthogonal) function, NOT a ~0 self-match.
+  assert.ok(j.distance > 0.9, 'distance reflects OTHER code, not the self copy');
+});
+
 test('empty same-category pool yields an unjudged result (no throw)', async () => {
   const f = fn('lonely', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
   const res = await judgeFunctions([f], {
@@ -215,7 +263,7 @@ test('empty same-category pool yields an unjudged result (no throw)', async () =
 
 test('a pool of only the function itself excludes self -> unjudged', async () => {
   const f = fn('solo', 'work.ts', [{ name: 'x', type: 'number' }], 'number');
-  const pool = [{ category: CAT, identifier: 'work.ts::solo', vector: [1, 0, 0] }];
+  const pool = [{ category: CAT, identifier: canonId('work.ts', 'solo'), vector: [1, 0, 0] }];
   const res = await judgeFunctions([f], {
     store: fakeStore({ [CAT]: pool }),
     embedder: mapEmbedder({ [BODY_1]: [1, 0, 0] }),
