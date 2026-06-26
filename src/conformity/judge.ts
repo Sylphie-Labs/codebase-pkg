@@ -35,8 +35,9 @@ export interface PoolEntry {
 }
 
 /**
- * PROVISIONAL verdict label. Thresholds are NOT calibrated yet -- see the TODO
- * on {@link DRAFT_OUTLIER_THRESHOLD}. Treat `verdict` as a hint, not a gate.
+ * Verdict label. The conforms/outlier boundary is the calibrated per-category
+ * threshold (step R2) when one exists; otherwise it falls back to
+ * {@link FALLBACK_OUTLIER_THRESHOLD} and the judgment is flagged uncalibrated.
  */
 export type Verdict = 'conforms' | 'outlier';
 
@@ -52,8 +53,15 @@ export interface Judgment {
   poolSize: number;
   /** Number of nearest neighbors averaged into `distance`. */
   k: number;
-  /** PROVISIONAL verdict derived from a placeholder threshold. */
+  /** Verdict: `outlier` if `distance > threshold`, else `conforms`. */
   verdict: Verdict;
+  /** The threshold the verdict was decided against (calibrated or fallback). */
+  threshold: number;
+  /**
+   * Whether `threshold` came from a real calibrated value. False means the
+   * fallback was used and the verdict should be treated as a weak hint.
+   */
+  calibrated: boolean;
 }
 
 /** Options for {@link judgeChunk}. */
@@ -62,15 +70,30 @@ export interface JudgeOptions extends SkeletonOptions {
   embed?: Embedder;
   /** Nearest-neighbor count for the pool distance. Defaults to {@link DEFAULT_K}. */
   k?: number;
+  /**
+   * Explicit outlier threshold. {@link judgeChunk} is store-free, so it cannot
+   * look up the calibrated value itself -- a caller that has one passes it here.
+   * When omitted, {@link FALLBACK_OUTLIER_THRESHOLD} is used and the result is
+   * NOT marked calibrated.
+   */
+  threshold?: number;
 }
 
 /**
- * TODO(calibration): this threshold is a placeholder. The probe established
- * that distance tracks edit magnitude monotonically, but the cut point between
- * "conforms" and "outlier" must be calibrated against real per-category pools
- * before any caller treats the verdict as authoritative.
+ * Fallback outlier threshold used ONLY when no calibrated per-category value is
+ * available (step R2 calibration not yet run, or a category never seen at
+ * calibration time). Research and corpus data showed real in-repo distances are
+ * tiny, so this fallback is intentionally conservative; any judgment decided by
+ * it is flagged `calibrated: false`. Prefer running `conformity-backfill` /
+ * `conformity-calibrate` so the calibrated threshold is used instead.
  */
-export const DRAFT_OUTLIER_THRESHOLD = 0.1;
+export const FALLBACK_OUTLIER_THRESHOLD = 0.1;
+
+/**
+ * @deprecated Use {@link FALLBACK_OUTLIER_THRESHOLD}. Retained as an alias so
+ * existing imports keep working; the value is the uncalibrated fallback.
+ */
+export const DRAFT_OUTLIER_THRESHOLD = FALLBACK_OUTLIER_THRESHOLD;
 
 /**
  * Judge a single parsed chunk against a pool of precomputed peers.
@@ -80,6 +103,10 @@ export const DRAFT_OUTLIER_THRESHOLD = 0.1;
  * the k nearest pool entries OF THE SAME CATEGORY. Returns a typed
  * {@link Judgment}. Throws if no same-category peers exist (there is nothing to
  * conform to).
+ *
+ * The conforms/outlier cut is `opts.threshold` when supplied (a caller that has
+ * a calibrated value passes it), else {@link FALLBACK_OUTLIER_THRESHOLD}, in
+ * which case the result is flagged `calibrated: false`.
  */
 export async function judgeChunk(
   fn: ParsedFunction,
@@ -110,9 +137,11 @@ export async function judgeChunk(
     k,
   );
 
-  // PROVISIONAL -- see DRAFT_OUTLIER_THRESHOLD TODO.
-  const verdict: Verdict =
-    distance > DRAFT_OUTLIER_THRESHOLD ? 'outlier' : 'conforms';
+  // judgeChunk is store-free: it cannot load the calibrated threshold. Use the
+  // caller-supplied threshold if any; otherwise the fallback (flagged below).
+  const calibrated = opts.threshold !== undefined;
+  const threshold = opts.threshold ?? FALLBACK_OUTLIER_THRESHOLD;
+  const verdict: Verdict = distance > threshold ? 'outlier' : 'conforms';
 
   return {
     category,
@@ -121,5 +150,7 @@ export async function judgeChunk(
     poolSize: peers.length,
     k: Math.min(k, peers.length),
     verdict,
+    threshold,
+    calibrated,
   };
 }

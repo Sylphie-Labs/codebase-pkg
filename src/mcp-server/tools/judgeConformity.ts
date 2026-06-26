@@ -5,9 +5,10 @@
  * codebase?" by parsing the working tree (or one file), embedding each
  * function's normalized signature skeleton, and measuring its distance to the
  * COMMITTED descriptive pool (the vectors sync/backfill wrote to Postgres). Per
- * function it reports category, distance, a PROVISIONAL verdict, and the nearest
- * existing functions -- so the developer can see what they're diverging from (or
- * matching).
+ * function it reports category, distance, a verdict (decided against the
+ * calibrated per-category threshold, or a fallback flagged as uncalibrated), and
+ * the nearest existing functions -- so the developer can see what they're
+ * diverging from (or matching).
  *
  * Unlike the other MCP tools, this one reads the conformity Postgres store (not
  * Neo4j). It is GATED: if conformity is disabled or Postgres is unreachable, it
@@ -90,10 +91,16 @@ export async function handleJudgeConformity(
       `${outliers.length} outlier, ${conformers.length} conforms` +
       (unjudged.length ? `, ${unjudged.length} unjudged (no peers)` : ''),
   );
-  lines.push(
-    `Verdicts are PROVISIONAL (the conforms/outlier threshold is not yet calibrated);`,
-  );
-  lines.push(`treat distance + nearest neighbors as the signal.`);
+  // Calibration status: if every judged-with-peers function used a calibrated
+  // threshold, the verdicts are trustworthy; otherwise note that some fell back.
+  const judged = result.filter((j) => j.verdict !== 'unjudged');
+  const anyUncalibrated = judged.some((j) => j.calibrated === false);
+  if (judged.length > 0 && anyUncalibrated) {
+    lines.push(
+      `Some verdicts are UNCALIBRATED (no calibrated threshold for the category — ` +
+        `run \`codebase-pkg conformity-backfill\`); treat those as a weak hint.`,
+    );
+  }
 
   const section = (title: string, items: FunctionJudgment[]): void => {
     if (items.length === 0) return;
@@ -119,6 +126,14 @@ function renderJudgment(j: FunctionJudgment): string[] {
   const dist = j.distance == null ? 'n/a' : j.distance.toFixed(4);
   out.push('');
   out.push(`  ${j.name}   [${j.verdict}]  distance=${dist}`);
+  if (j.verdict !== 'unjudged' && j.threshold != null) {
+    const thr = j.threshold.toFixed(4);
+    out.push(
+      j.calibrated
+        ? `    Threshold: ${thr} (calibrated)`
+        : `    Threshold: ${thr} (uncalibrated — run conformity-backfill)`,
+    );
+  }
   out.push(`    File: ${j.filePath}`);
   out.push(`    Category: ${j.category}  (compared against ${j.poolSize} peer(s))`);
   out.push(`    Skeleton: ${j.skeleton}`);

@@ -34,6 +34,7 @@ function printUsage(): void {
       `  codebase-pkg validate           Run integrity checks\n` +
       `  codebase-pkg backfill-changes   Populate Change nodes from git history\n` +
       `  codebase-pkg conformity-backfill  Build the conformity descriptive pool\n` +
+      `  codebase-pkg conformity-calibrate Recompute outlier thresholds (no re-embed)\n` +
       `  codebase-pkg conformity-judge [file]  Judge working-tree code against the pool\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
       `\n` +
@@ -132,6 +133,12 @@ async function main(): Promise<number> {
       case 'conformity-backfill': {
         const { runConformityBackfill } = await import('../conformity/conformity-backfill.js');
         await runConformityBackfill();
+        return 0;
+      }
+
+      case 'conformity-calibrate': {
+        const { runConformityCalibrate } = await import('../conformity/conformity-backfill.js');
+        await runConformityCalibrate();
         return 0;
       }
 

@@ -47,13 +47,25 @@ export {
 export type { VectorEntry, NearestNeighbor } from './distance.js';
 
 // Orchestrator
-export { judgeChunk, DRAFT_OUTLIER_THRESHOLD } from './judge.js';
+export {
+  judgeChunk,
+  FALLBACK_OUTLIER_THRESHOLD,
+  DRAFT_OUTLIER_THRESHOLD,
+} from './judge.js';
 export type {
   PoolEntry,
   Judgment,
   Verdict,
   JudgeOptions,
 } from './judge.js';
+
+// Calibration (step R2): in-distribution outlier-threshold computation.
+export {
+  computeCalibration,
+  percentile,
+  DEFAULT_PERCENTILE,
+} from './calibration.js';
+export type { CalibrationRow, CalibrationOptions } from './calibration.js';
 
 // Vector data layer (step 2a): pgvector cold store + in-memory hot cache.
 // Postgres connection surface.
@@ -67,11 +79,17 @@ export {
 export type { PgRunner } from './pg-client.js';
 
 // Schema bootstrap.
-export { ensureSchema, EMBEDDING_DIM, VECTORS_TABLE } from './schema.js';
+export { ensureSchema, EMBEDDING_DIM, VECTORS_TABLE, CALIBRATION_TABLE } from './schema.js';
 
-// Store: upsert/delete/loadPool/coldNearest + nodeIdOf helper.
+// Store: upsert/delete/loadPool/coldNearest + calibration + nodeIdOf helper.
 export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';
-export type { VectorRecord, NearestHit } from './store.js';
+export type { VectorRecord, NearestHit, StoredCalibration } from './store.js';
+
+// Calibration command surface (backfill computes it; calibrate recomputes it).
+export {
+  runConformityBackfill,
+  runConformityCalibrate,
+} from './conformity-backfill.js';
 
 // Judgment surface (step 4): judge working-tree code against the committed pool.
 export {

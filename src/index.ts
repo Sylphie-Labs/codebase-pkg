@@ -10,7 +10,10 @@ export { runSync } from './sync/sync-pipeline.js';
 export { runSeed } from './ingestion/initial-seed.js';
 export { runIntegrityChecks } from './sync/integrity-checker.js';
 export { runBackfillChanges } from './ingestion/backfill-changes.js';
-export { runConformityBackfill } from './conformity/conformity-backfill.js';
+export {
+  runConformityBackfill,
+  runConformityCalibrate,
+} from './conformity/conformity-backfill.js';
 export { embedAndStoreFunctions } from './conformity/embed-functions.js';
 export type {
   EmbedAndStoreOptions,
@@ -82,6 +85,7 @@ export {
   FUNCTION_SIGNATURE_SKELETON,
   DEFAULT_K,
   DRAFT_OUTLIER_THRESHOLD,
+  FALLBACK_OUTLIER_THRESHOLD,
   judgeFunctions,
   judgeWorkingTree,
   judgeFile,

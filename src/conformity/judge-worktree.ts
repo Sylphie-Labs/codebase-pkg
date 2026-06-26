@@ -28,7 +28,7 @@ import type { ParsedFunction } from '../sync/ast-parser.js';
 import { embed as defaultEmbed, type Embedder } from './embed.js';
 import { categoryOf, representationText } from './category.js';
 import { knnPoolDistance, knnNearest, DEFAULT_K } from './distance.js';
-import { DRAFT_OUTLIER_THRESHOLD, type Verdict, type PoolEntry } from './judge.js';
+import { FALLBACK_OUTLIER_THRESHOLD, type Verdict, type PoolEntry } from './judge.js';
 import {
   createConformityStore,
   nodeIdOf,
@@ -61,12 +61,23 @@ export interface FunctionJudgment {
   skeleton: string;
   /** Mean cosine distance to the k nearest pool entries, or null if no peers. */
   distance: number | null;
-  /** PROVISIONAL verdict; `unjudged` when there were no peers to compare to. */
+  /** Verdict; `unjudged` when there were no peers to compare to. */
   verdict: Verdict | 'unjudged';
   /** Nearest existing functions, ascending by distance (excludes self). */
   nearest: Neighbor[];
   /** How many same-category peers were available AFTER self-exclusion. */
   poolSize: number;
+  /**
+   * The threshold the verdict was decided against (calibrated per-category value
+   * when one exists, else {@link FALLBACK_OUTLIER_THRESHOLD}). Null when unjudged.
+   */
+  threshold: number | null;
+  /**
+   * Whether the verdict used a real calibrated threshold. False means the
+   * fallback was used (run conformity-backfill / conformity-calibrate). Null when
+   * unjudged.
+   */
+  calibrated: boolean | null;
 }
 
 /** Returned when conformity can't run (disabled / Postgres unreachable). */
@@ -117,6 +128,8 @@ async function judgeAgainstPool(
   pool: readonly PoolEntry[],
   embed: Embedder,
   k: number,
+  threshold: number,
+  calibrated: boolean,
 ): Promise<FunctionJudgment> {
   const category = categoryOf(fn);
   const skeleton = representationText(fn);
@@ -137,6 +150,8 @@ async function judgeAgainstPool(
       verdict: 'unjudged',
       nearest: [],
       poolSize: 0,
+      threshold: null,
+      calibrated: null,
     };
   }
 
@@ -155,9 +170,8 @@ async function judgeAgainstPool(
     distance: n.distance,
   }));
 
-  // PROVISIONAL -- see DRAFT_OUTLIER_THRESHOLD TODO in judge.ts.
-  const verdict: Verdict =
-    distance > DRAFT_OUTLIER_THRESHOLD ? 'outlier' : 'conforms';
+  // Calibrated per-category cut (step R2) when available; fallback otherwise.
+  const verdict: Verdict = distance > threshold ? 'outlier' : 'conforms';
 
   return {
     name: fn.name,
@@ -169,6 +183,8 @@ async function judgeAgainstPool(
     verdict,
     nearest: neighbors,
     poolSize: peers.length,
+    threshold,
+    calibrated,
   };
 }
 
@@ -211,15 +227,39 @@ export async function judgeFunctions(
     return pool;
   };
 
+  // Resolve the calibrated threshold per category (step R2). The store caches
+  // per-instance too; this just avoids an await on every function. A missing row
+  // (calibration not run, or category unseen) falls back to a constant and the
+  // judgment is flagged uncalibrated so the surface can say so.
+  const thresholdByCategory = new Map<string, { threshold: number; calibrated: boolean }>();
+  const resolveThreshold = async (
+    category: string,
+  ): Promise<{ threshold: number; calibrated: boolean }> => {
+    const cached = thresholdByCategory.get(category);
+    if (cached) return cached;
+    // A minimal injected store may not implement getCalibration (e.g. some
+    // fakes) -> treat as "no calibration" and fall back.
+    const calibration =
+      typeof store.getCalibration === 'function'
+        ? await store.getCalibration(category)
+        : null;
+    const resolved = calibration
+      ? { threshold: calibration.threshold, calibrated: true }
+      : { threshold: FALLBACK_OUTLIER_THRESHOLD, calibrated: false };
+    thresholdByCategory.set(category, resolved);
+    return resolved;
+  };
+
   const judgments: FunctionJudgment[] = [];
   for (const fn of functions) {
     const category = categoryOf(fn);
     const fullPool = await loadPool(category);
+    const { threshold, calibrated } = await resolveThreshold(category);
     const selfId = nodeIdOf(fn);
     // Self-exclusion: judge against OTHER code, not the function's own committed
     // vector (which would report a perfect self-match).
     const pool = fullPool.filter((e) => e.identifier !== selfId);
-    judgments.push(await judgeAgainstPool(fn, pool, embed, k));
+    judgments.push(await judgeAgainstPool(fn, pool, embed, k, threshold, calibrated));
   }
 
   // Lead with the outliers: highest distance first, then unjudged, then the

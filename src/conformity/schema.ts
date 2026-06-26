@@ -29,6 +29,9 @@ export const EMBEDDING_DIM = 768;
 /** Name of the cold-store table. */
 export const VECTORS_TABLE = 'cfm_vectors';
 
+/** Name of the per-category calibration table. */
+export const CALIBRATION_TABLE = 'cfm_calibration';
+
 /**
  * Create the pgvector extension, the cfm_vectors table, and the category index
  * if they do not already exist. Safe to call repeatedly (idempotent).
@@ -53,5 +56,21 @@ export async function ensureSchema(runner: PgRunner): Promise<void> {
   await runner.query(
     `CREATE INDEX IF NOT EXISTS cfm_vectors_category_idx
        ON ${VECTORS_TABLE} (category);`,
+  );
+
+  // Per-category calibrated outlier threshold (step R2). One row per category;
+  // `threshold` is the `percentile`-quantile of leave-one-out kNN distances over
+  // that category's in-repo pool, so ~`percentile` of in-repo code reads as
+  // "conforms". Recomputed by conformity-backfill / conformity-calibrate.
+  await runner.query(
+    `CREATE TABLE IF NOT EXISTS ${CALIBRATION_TABLE} (
+       category    text PRIMARY KEY,
+       threshold   double precision NOT NULL,
+       percentile  double precision NOT NULL,
+       k           int NOT NULL,
+       sample_size int NOT NULL,
+       model       text NOT NULL,
+       updated_at  timestamptz NOT NULL DEFAULT now()
+     );`,
   );
 }

@@ -21,7 +21,50 @@ import { embedAndStoreFunctions } from './embed-functions.js';
 import { isConformityEnabled } from './sync-hook.js';
 import { ensureSchema } from './schema.js';
 import { realPgRunner, closePgPool } from './pg-client.js';
+import { createConformityStore, type ConformityStore } from './store.js';
+import { computeCalibration } from './calibration.js';
+import { categoryOf } from './category.js';
+import { CHOSEN_MODEL, MODEL_CANDIDATES } from './embed.js';
+import type { PoolEntry } from './judge.js';
 import type { ParsedFunction } from '../sync/ast-parser.js';
+
+/**
+ * Compute per-category calibration over the committed pool and persist it (step
+ * R2). Loads each category's vectors from the store (re-reads, so this works
+ * both right after a backfill and as a standalone recompute), runs the pure
+ * {@link computeCalibration}, and upserts the resulting thresholds stamped with
+ * `model`. Logs the per-category threshold + sample size. Returns the number of
+ * categories calibrated.
+ */
+async function calibrateFromStore(
+  store: ConformityStore,
+  categories: Iterable<string>,
+  model: string,
+): Promise<number> {
+  const entries: PoolEntry[] = [];
+  for (const category of new Set(categories)) {
+    const pool = await store.loadPool(category);
+    entries.push(...pool);
+  }
+
+  if (entries.length === 0) {
+    console.log('[conformity] No vectors found — nothing to calibrate.');
+    return 0;
+  }
+
+  const rows = computeCalibration(entries);
+  await store.setCalibration(rows.map((r) => ({ ...r, model })));
+
+  console.log('');
+  console.log('Calibrated per-category outlier thresholds (95th pct of leave-one-out kNN distance):');
+  for (const r of rows) {
+    console.log(
+      `  ${r.category}: threshold=${r.threshold.toFixed(6)} ` +
+        `(samples=${r.sampleSize}, k=${r.k})`,
+    );
+  }
+  return rows.length;
+}
 
 /**
  * Build (or refresh) the conformity descriptive pool from every committed,
@@ -59,14 +102,70 @@ export async function runConformityBackfill(): Promise<void> {
   for (const f of parsed) functions.push(...f.functions);
 
   console.log(`Parsed ${parsed.length} file(s), ${functions.length} function(s).`);
-  console.log('Embedding function signature skeletons (first run downloads the model)...');
+  console.log('Embedding function bodies (first run downloads the model)...');
 
-  const { embedded, skipped } = await embedAndStoreFunctions(functions);
+  // Use an explicit store so we can reuse its hot cache for the calibration pass
+  // that follows (no second round-trip per category beyond the loadPool reads).
+  const store = createConformityStore(realPgRunner);
+  const { embedded, skipped } = await embedAndStoreFunctions(functions, { store });
 
   console.log('');
   console.log('=== Conformity backfill complete ===');
   console.log(`  Functions embedded : ${embedded}`);
-  console.log(`  Functions skipped  : ${skipped} (empty skeleton)`);
+  console.log(`  Functions skipped  : ${skipped} (empty body)`);
+
+  // Step R2: calibrate the outlier threshold on the codebase's own distance
+  // distribution, per category, and persist it.
+  const model = CHOSEN_MODEL ?? MODEL_CANDIDATES[0];
+  const categories = new Set(functions.map((fn) => categoryOf(fn)));
+  const calibrated = await calibrateFromStore(store, categories, model);
+  console.log(`  Categories calibrated: ${calibrated}`);
+}
+
+/**
+ * Recompute and persist the per-category calibration WITHOUT re-embedding.
+ *
+ * Cheap to re-run: it re-loads the already-stored vectors via the store (no
+ * model load, no parsing of bodies for embedding), recomputes the leave-one-out
+ * kNN distance distribution per category, and upserts fresh thresholds. Use it
+ * after tuning `k`/`percentile`, or to refresh calibration on a pool that grew
+ * via incremental sync. Gated the same way as the backfill.
+ *
+ * Entry point: `codebase-pkg conformity-calibrate`.
+ */
+export async function runConformityCalibrate(): Promise<void> {
+  console.log('=== Codebase PKG — Conformity calibration ===');
+
+  if (!(await isConformityEnabled(realPgRunner))) {
+    const off = (process.env.CODEBASE_PKG_CONFORMITY ?? '').toLowerCase() === 'off';
+    console.log(
+      off
+        ? '[conformity] Skipped — CODEBASE_PKG_CONFORMITY=off.'
+        : '[conformity] Skipped — Postgres not configured/reachable.',
+    );
+    return;
+  }
+
+  await ensureSchema(realPgRunner);
+
+  // Recompute calibration over the categories actually present in the repo's
+  // watched source (so we don't depend on a separate category catalog). We parse
+  // for categories only -- NOT to embed -- which is cheap and avoids loading the
+  // model.
+  console.log('Scanning watched files to determine categories...');
+  const files = getAllWatchedFiles();
+  const parsed = parseFiles(files);
+  clearProjectCache();
+  const categories = new Set<string>();
+  for (const f of parsed) for (const fn of f.functions) categories.add(categoryOf(fn));
+
+  const store = createConformityStore(realPgRunner);
+  const model = CHOSEN_MODEL ?? MODEL_CANDIDATES[0];
+  const calibrated = await calibrateFromStore(store, categories, model);
+
+  console.log('');
+  console.log('=== Conformity calibration complete ===');
+  console.log(`  Categories calibrated: ${calibrated}`);
 }
 
 import { fileURLToPath } from 'url';
