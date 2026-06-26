@@ -71,6 +71,7 @@ export {
   signatureText,
   cosineDistance,
   knnPoolDistance,
+  knnNearest,
   embed as embedSkeletons,
   CHOSEN_MODEL,
   MODEL_CANDIDATES,
@@ -78,6 +79,11 @@ export {
   FUNCTION_SIGNATURE_SKELETON,
   DEFAULT_K,
   DRAFT_OUTLIER_THRESHOLD,
+  judgeFunctions,
+  judgeWorkingTree,
+  judgeFile,
+  isUnavailable,
+  runConformityJudge,
 } from './conformity/index.js';
 export type {
   Embedder,
@@ -89,4 +95,11 @@ export type {
   Judgment,
   Verdict,
   JudgeOptions,
+  VectorEntry,
+  NearestNeighbor,
+  FunctionJudgment,
+  Neighbor,
+  UnavailableResult,
+  JudgeResult,
+  JudgeWorktreeOptions,
 } from './conformity/index.js';

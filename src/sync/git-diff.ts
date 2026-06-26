@@ -208,6 +208,55 @@ export function getChangedFiles(): DiffResult {
   return { changedFiles, currentCommit, isInitialRun: false };
 }
 
+/**
+ * Watched source files with UNCOMMITTED changes in the working tree -- staged,
+ * unstaged, and untracked -- as absolute forward-slashed paths.
+ *
+ * Unlike {@link getChangedFiles} (which diffs the sync cursor against HEAD, i.e.
+ * committed-to-committed), this answers "what am I editing right now that isn't
+ * committed yet" -- the input the Conformity Judge scores against the committed
+ * pool. Uses `git status --porcelain` so it captures the same set git considers
+ * dirty, then filters to watched source files and to paths that still exist on
+ * disk (a pure deletion has nothing to parse).
+ *
+ * Returns [] on any git failure (e.g. not a repo) rather than throwing -- the
+ * judge degrades to "nothing to judge" instead of crashing.
+ */
+export function getWorkingTreeFiles(): string[] {
+  let output: string;
+  try {
+    // --porcelain: stable, script-friendly. -uall: list untracked files
+    // individually (not just their directory). -z would be safer for exotic
+    // paths, but the line form matches the rest of this module.
+    output = git('status --porcelain -uall');
+  } catch {
+    return [];
+  }
+  if (!output) return [];
+
+  const rels = new Set<string>();
+  for (const line of output.split('\n')) {
+    if (line.trim().length === 0) continue;
+    // Porcelain v1 line: XY<space>path  (path starts at column 3). Renames show
+    // "orig -> new"; take the post-rename path (the file that exists now).
+    let pathPart = line.slice(3).trim();
+    const arrow = pathPart.indexOf(' -> ');
+    if (arrow >= 0) pathPart = pathPart.slice(arrow + 4);
+    // git may quote paths containing special chars; strip surrounding quotes.
+    if (pathPart.startsWith('"') && pathPart.endsWith('"')) {
+      pathPart = pathPart.slice(1, -1);
+    }
+    rels.add(pathPart);
+  }
+
+  return [...rels]
+    .filter((relativePath) => isWatchedFile(relativePath))
+    .map((relativePath) =>
+      path.join(REPO_ROOT, relativePath).replace(/\\/g, '/'),
+    )
+    .filter((absPath) => fs.existsSync(absPath));
+}
+
 export function writeLastSyncCommit(commitHash: string): void {
   fs.mkdirSync(path.dirname(LAST_SYNC_FILE), { recursive: true });
   fs.writeFileSync(LAST_SYNC_FILE, commitHash, 'utf-8');

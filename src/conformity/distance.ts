@@ -64,3 +64,42 @@ export function knnPoolDistance(
   for (let i = 0; i < take; i++) s += dists[i]!;
   return s / take;
 }
+
+/** A pool member with the vector the judge measures it by. */
+export interface VectorEntry {
+  /** Vector to measure distance against. */
+  vector: readonly number[];
+}
+
+/** A nearest-neighbor result: the matched entry plus its cosine distance. */
+export interface NearestNeighbor<E> {
+  entry: E;
+  /** Cosine distance from the query vector to this entry, in [0, 2]. */
+  distance: number;
+}
+
+/**
+ * The k nearest pool entries to `vec`, each WITH its cosine distance, ascending
+ * by distance. Unlike {@link knnPoolDistance} (which averages distances into a
+ * single score), this preserves identity so callers can report "what you're
+ * closest to / diverging from."
+ *
+ * `k` is clamped to the pool size. Returns [] for an empty pool (rather than
+ * throwing, since the natural answer to "the nearest neighbors" is "none").
+ *
+ * Ties (equal distance) preserve the pool's input order, since the sort below
+ * is stable for equal keys in V8.
+ */
+export function knnNearest<E extends VectorEntry>(
+  vec: readonly number[],
+  pool: readonly E[],
+  k: number = DEFAULT_K,
+): NearestNeighbor<E>[] {
+  if (pool.length === 0) return [];
+  const scored = pool.map((entry) => ({
+    entry,
+    distance: cosineDistance(vec, entry.vector),
+  }));
+  scored.sort((a, b) => a.distance - b.distance);
+  return scored.slice(0, Math.max(0, Math.min(k, scored.length)));
+}

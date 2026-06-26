@@ -34,6 +34,7 @@ function printUsage(): void {
       `  codebase-pkg validate           Run integrity checks\n` +
       `  codebase-pkg backfill-changes   Populate Change nodes from git history\n` +
       `  codebase-pkg conformity-backfill  Build the conformity descriptive pool\n` +
+      `  codebase-pkg conformity-judge [file]  Judge working-tree code against the pool\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
       `\n` +
       `  codebase-pkg --version          Print package version\n` +
@@ -132,6 +133,13 @@ async function main(): Promise<number> {
         const { runConformityBackfill } = await import('../conformity/conformity-backfill.js');
         await runConformityBackfill();
         return 0;
+      }
+
+      case 'conformity-judge': {
+        const { runConformityJudge } = await import('../conformity/judge-cli.js');
+        // First non-flag positional arg is an optional file path.
+        const filePath = rest.find((a) => !a.startsWith('-'));
+        return await runConformityJudge(filePath);
       }
 
       case 'add-constraint': {

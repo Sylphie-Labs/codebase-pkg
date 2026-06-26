@@ -2,7 +2,7 @@
 /**
  * index.ts -- MCP server entry point for the Codebase PKG.
  *
- * Registers 7 tools that let Claude Code agents query codebase structure
+ * Registers 8 tools that let Claude Code agents query codebase structure
  * from a Neo4j graph rather than reading files directly. Uses stdio transport
  * so Claude Code can spawn this as a subprocess.
  *
@@ -14,6 +14,7 @@
  *   getConstraints     — architectural invariants for a scope
  *   getLogContext      — query log files on disk
  *   searchContent      — search function/type source code via CodeBlock nodes
+ *   judgeConformity    — does my working-tree code fit the codebase's patterns?
  *
  * Usage:
  *   node dist/mcp-server/index.js
@@ -40,6 +41,7 @@ import { handleGetRecentChanges, GetRecentChangesInput } from './tools/getRecent
 import { handleGetConstraints, GetConstraintsInput } from './tools/getConstraints.js';
 import { handleGetLogContext, GetLogContextInput } from './tools/getLogContext.js';
 import { handleSearchContent, SearchContentInput } from './tools/searchContent.js';
+import { handleJudgeConformity, JudgeConformityInput } from './tools/judgeConformity.js';
 
 // ---------------------------------------------------------------------------
 // Tool definitions (schema shown to Claude)
@@ -200,6 +202,33 @@ const TOOLS: Tool[] = [
       required: ['pattern'],
     },
   },
+  {
+    name: 'judgeConformity',
+    description:
+      'Judge whether the code you are writing fits the patterns already in this codebase. ' +
+      'Parses your working-tree changes (or one file), embeds each function\'s normalized signature ' +
+      'skeleton, and measures its distance to the committed "descriptive pool" of existing functions. ' +
+      'Returns per function: category, distance, a provisional verdict (conforms/outlier), and the ' +
+      'nearest existing functions — so you can see what you are diverging from or matching. ' +
+      'Leads with the outliers. Requires the conformity pool (run `codebase-pkg init` then ' +
+      '`codebase-pkg conformity-backfill`); says so plainly if unavailable.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description:
+            'Optional file to judge. If given, only that file is judged; otherwise the uncommitted ' +
+            'working-tree changes (staged + unstaged + untracked source files) are judged.',
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Max nearest neighbors to report per function (also the kNN window). Default 5.',
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -263,6 +292,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 
       case 'searchContent':
         result = await handleSearchContent(args as unknown as SearchContentInput);
+        break;
+
+      case 'judgeConformity':
+        result = await handleJudgeConformity(args as unknown as JudgeConformityInput);
         break;
 
       default:

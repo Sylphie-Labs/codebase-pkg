@@ -36,8 +36,10 @@ export {
   cosineSimilarity,
   cosineDistance,
   knnPoolDistance,
+  knnNearest,
   DEFAULT_K,
 } from './distance.js';
+export type { VectorEntry, NearestNeighbor } from './distance.js';
 
 // Orchestrator
 export { judgeChunk, DRAFT_OUTLIER_THRESHOLD } from './judge.js';
@@ -65,3 +67,19 @@ export { ensureSchema, EMBEDDING_DIM, VECTORS_TABLE } from './schema.js';
 // Store: upsert/delete/loadPool/coldNearest + nodeIdOf helper.
 export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';
 export type { VectorRecord, NearestHit } from './store.js';
+
+// Judgment surface (step 4): judge working-tree code against the committed pool.
+export {
+  judgeFunctions,
+  judgeWorkingTree,
+  judgeFile,
+  isUnavailable,
+} from './judge-worktree.js';
+export type {
+  FunctionJudgment,
+  Neighbor,
+  UnavailableResult,
+  JudgeResult,
+  JudgeWorktreeOptions,
+} from './judge-worktree.js';
+export { runConformityJudge } from './judge-cli.js';
