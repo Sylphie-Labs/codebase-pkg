@@ -33,6 +33,7 @@ function printUsage(): void {
       `  codebase-pkg sync               Incremental sync since last commit\n` +
       `  codebase-pkg validate           Run integrity checks\n` +
       `  codebase-pkg backfill-changes   Populate Change nodes from git history\n` +
+      `  codebase-pkg conformity-backfill  Build the conformity descriptive pool\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
       `\n` +
       `  codebase-pkg --version          Print package version\n` +
@@ -124,6 +125,12 @@ async function main(): Promise<number> {
       case 'backfill-changes': {
         const { runBackfillChanges } = await import('../ingestion/backfill-changes.js');
         await runBackfillChanges();
+        return 0;
+      }
+
+      case 'conformity-backfill': {
+        const { runConformityBackfill } = await import('../conformity/conformity-backfill.js');
+        await runConformityBackfill();
         return 0;
       }
 

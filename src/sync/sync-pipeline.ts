@@ -21,6 +21,7 @@ import { buildMutations, applyMutations } from './mutation-builder.js';
 import { logChange } from './change-logger.js';
 import { runIntegrityChecks } from './integrity-checker.js';
 import { getDriver, closeDriver } from '../mcp-server/neo4j-client.js';
+import { closePgPool } from '../conformity/pg-client.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,6 +123,26 @@ async function runSync(): Promise<void> {
     }
   }
 
+  // Conformity (auxiliary, best-effort): build the descriptive pool from the
+  // functions that just changed. This runs AFTER mutations are committed and is
+  // wrapped so that NOTHING here can fail the sync or block the cursor advance.
+  // It gates itself off when Postgres isn't reachable or conformity is disabled.
+  try {
+    const { runConformityStep } = await import('../conformity/sync-hook.js');
+    const result = await runConformityStep(changeset);
+    if (result.skipped) {
+      console.log(`       Conformity: skipped (${result.reason}).`);
+    } else {
+      printSummary(
+        'Conformity vectors:',
+        `${result.embedded} embedded, ${result.deleted} deleted`,
+      );
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[sync] WARNING: conformity step failed — ${msg} (non-fatal)`);
+  }
+
   // Step 6: Record Change node
   printStep(++currentStep, TOTAL_STEPS, 'Recording Change node');
   try {
@@ -156,6 +177,11 @@ async function runSync(): Promise<void> {
   printSummary('Integrity warnings:', integrityResult.issues.filter(i => i.severity === 'warning').length);
 
   await closeDriver();
+  // The conformity step may have opened the pg pool via realPgRunner; close it
+  // best-effort so the process can exit cleanly. Never let this affect the sync.
+  await closePgPool().catch(() => {
+    // best-effort close
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +192,7 @@ import { fileURLToPath } from 'url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runSync().catch(err => {
     console.error('[sync] Fatal error:', err instanceof Error ? err.message : String(err));
-    closeDriver().finally(() => process.exit(1));
+    Promise.allSettled([closeDriver(), closePgPool()]).finally(() => process.exit(1));
   });
 }
 

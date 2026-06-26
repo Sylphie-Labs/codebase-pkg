@@ -113,7 +113,7 @@ function isWatchedFile(relativePath: string): boolean {
   return true;
 }
 
-function getAllWatchedFiles(): string[] {
+export function getAllWatchedFiles(): string[] {
   const results: string[] = [];
 
   function walk(dir: string): void {

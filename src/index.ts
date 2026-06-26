@@ -10,6 +10,18 @@ export { runSync } from './sync/sync-pipeline.js';
 export { runSeed } from './ingestion/initial-seed.js';
 export { runIntegrityChecks } from './sync/integrity-checker.js';
 export { runBackfillChanges } from './ingestion/backfill-changes.js';
+export { runConformityBackfill } from './conformity/conformity-backfill.js';
+export { embedAndStoreFunctions } from './conformity/embed-functions.js';
+export type {
+  EmbedAndStoreOptions,
+  EmbedAndStoreResult,
+} from './conformity/embed-functions.js';
+export {
+  runConformityStep,
+  functionsToEmbed,
+  deletedFunctionIds,
+  isConformityEnabled,
+} from './conformity/sync-hook.js';
 export { runAddConstraints, loadConstraints } from './ingestion/manual-constraints.js';
 export type {
   ConstraintDefinition,
