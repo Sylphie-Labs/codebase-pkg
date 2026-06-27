@@ -87,7 +87,7 @@ export async function handleJudgeConformity(
   lines.push(`CONFORMITY JUDGE — ${scope}`);
   lines.push('='.repeat(60));
   lines.push(
-    `Judged ${result.length} code entit${result.length === 1 ? 'y' : 'ies'} (functions + types): ` +
+    `Judged ${result.length} code entit${result.length === 1 ? 'y' : 'ies'} (functions, types, constants): ` +
       `${outliers.length} outlier, ${conformers.length} conforms` +
       (unjudged.length ? `, ${unjudged.length} unjudged (no peers)` : ''),
   );
