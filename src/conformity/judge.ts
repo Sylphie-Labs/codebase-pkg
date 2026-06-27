@@ -66,7 +66,7 @@ export interface Judgment {
 
 /** Options for {@link judgeChunk}. */
 export interface JudgeOptions extends SkeletonOptions {
-  /** Embedding backend to use. Defaults to the in-process @xenova model. */
+  /** Embedding backend to use. Defaults to the in-process @huggingface/transformers model. */
   embed?: Embedder;
   /** Nearest-neighbor count for the pool distance. Defaults to {@link DEFAULT_K}. */
   k?: number;

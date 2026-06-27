@@ -4,6 +4,13 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] — 2026-06-27
+
+### Changed
+- **Embedding backend migrated from `@xenova/transformers` (v2, legacy) to `@huggingface/transformers` (v4), the maintained successor.** This is a supply-chain hygiene change: the legacy package's dependency tree tripped a large number of Socket.dev "unmaintained/legacy" supply-chain signals. The model (`jinaai/jina-embeddings-v2-base-code`), the 768-dim output, and the mean-pooled + L2-normalized contract are unchanged; the pipeline now loads with `dtype: 'q8'` for output parity with the previous quantized default. Verified end-to-end (model loads, 768-dim, L2 norm 1.0). `npm audit` remains at 0 vulnerabilities (the patched `protobufjs` override still applies to the new `onnxruntime-web` chain).
+- **Recommended after upgrading:** re-run `codebase-pkg conformity-backfill` once so the conformity pool is rebuilt uniformly with the new backend's vectors. Not required — the model and dimensionality are identical — but it keeps the pool internally consistent.
+- Registered a no-op `0.5.1 -> 0.5.2` migration so `upgrade` bridges without a blocker (no managed-file changes).
+
 ## [0.5.1] — 2026-06-27
 
 ### Added

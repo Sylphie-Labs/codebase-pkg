@@ -176,7 +176,9 @@ The decision axes are extracted with ts-morph, so they cover **TypeScript/TSX on
 
 The novelty lens judges three kinds of code entity, each against a pool of its own kind: functions and methods (`function:body`), types — classes, interfaces, enums, and type aliases (`type:body`), and module-level constant/config declarations (`module:const`). For each entity it embeds the entity's **whole body, lightly normalized** — comments stripped and whitespace collapsed, but identifiers and literals kept — and measures the cosine distance from that vector to the committed pool of same-category entities. Each category carries its own in-distribution calibrated threshold.
 
-It runs **fully local**: a code-specific embedding model (`jinaai/jina-embeddings-v2-base-code` via `@xenova/transformers`, ~162 MB, 768-dimensional, downloaded once then run in-process and offline), with `Xenova/jina-embeddings-v2-small-en` and MiniLM as fallbacks. No external API, no tokens, no cost. Note the one-time download is larger than the earlier small general model — the code model is what makes whole-body similarity separate cleanly.
+It runs **fully local**: a code-specific embedding model (`jinaai/jina-embeddings-v2-base-code` via `@huggingface/transformers`, ~162 MB, 768-dimensional, downloaded once then run in-process and offline), with `Xenova/jina-embeddings-v2-small-en` and MiniLM as fallbacks. No external API, no tokens, no cost. Note the one-time download is larger than the earlier small general model — the code model is what makes whole-body similarity separate cleanly.
+
+> **Note:** the embedding backend was migrated from the legacy `@xenova/transformers` to its maintained successor `@huggingface/transformers` (Transformers.js v4). The model and 768-dim output are unchanged, but because the underlying runtime changed, any conformity pool built with the old backend should be rebuilt with `conformity-backfill` for vector consistency.
 
 ### Architecture
 

@@ -3,7 +3,7 @@
  *
  * Contract:  embed(texts: string[]): Promise<number[][]>
  *
- * Default backend is @xenova/transformers running fully in-process and
+ * Default backend is @huggingface/transformers running fully in-process and
  * offline (after first-run weight download), mean-pooled + L2-normalized.
  *
  * Model: the embedding REPRESENTATION is now the whole function body (lightly
@@ -67,18 +67,23 @@ async function getPipeline(): Promise<FeatureExtractor> {
       delete process.env.HF_ACCESS_TOKEN;
       delete process.env.HUGGINGFACE_HUB_TOKEN;
 
-      // @xenova/transformers is a devDependency / optional runtime backend, so
-      // it is imported dynamically and typed loosely to avoid a hard build dep.
-      const transformers = await import('@xenova/transformers' as string);
+      // @huggingface/transformers is a devDependency / optional runtime backend,
+      // so it is imported dynamically and typed loosely to avoid a hard build dep.
+      const transformers = await import('@huggingface/transformers' as string);
       const pipeline = transformers.pipeline as (
         task: string,
         model: string,
+        opts?: { dtype?: string },
       ) => Promise<FeatureExtractor>;
 
+      // dtype 'q8' is the closest match to the old @xenova quantized default,
+      // chosen for output parity with embeddings already in the pool. Under
+      // Transformers.js v3+ the default dtype/quantization changed, so we pin it
+      // explicitly; the spike confirmed 768-dim, L2-normalized output with q8.
       let lastErr: unknown;
       for (const model of MODEL_CANDIDATES) {
         try {
-          const extractor = await pipeline('feature-extraction', model);
+          const extractor = await pipeline('feature-extraction', model, { dtype: 'q8' });
           CHOSEN_MODEL = model;
           console.error(`[embed] using model: ${model}`);
           return extractor;
@@ -97,7 +102,7 @@ async function getPipeline(): Promise<FeatureExtractor> {
 
 /**
  * Embed an array of strings into an array of vectors using the default
- * @xenova/transformers backend (mean-pooled + L2-normalized).
+ * @huggingface/transformers backend (mean-pooled + L2-normalized).
  */
 export const embed: Embedder = async (texts: string[]): Promise<number[][]> => {
   if (!Array.isArray(texts)) throw new TypeError('embed expects string[]');

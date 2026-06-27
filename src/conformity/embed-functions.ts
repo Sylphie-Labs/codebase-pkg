@@ -11,7 +11,8 @@
  * Injectability: both the store and the embedder are injectable, so unit tests
  * exercise the selection/derivation logic with a deterministic fake embedder
  * and a fake store -- no live Postgres and no model download required. The real
- * defaults (the in-process @xenova embedder + the real pool-backed store) are
+ * defaults (the in-process @huggingface/transformers embedder + the real
+ * pool-backed store) are
  * only constructed when no override is supplied.
  *
  * This module deliberately does NOT build any judgment/query surface (that is
@@ -30,7 +31,8 @@ import {
 
 /**
  * Maximum number of texts handed to the embedder in a single call. The real
- * @xenova backend embeds sequentially internally, but capping the batch keeps
+ * @huggingface/transformers backend embeds sequentially internally, but capping
+ * the batch keeps
  * memory bounded and gives predictable progress on large repos.
  */
 export const EMBED_BATCH_SIZE = 64;
@@ -39,7 +41,7 @@ export const EMBED_BATCH_SIZE = 64;
 export interface EmbedAndStoreOptions {
   /** Vector store to upsert into. Defaults to the real pool-backed store. */
   store?: ConformityStore;
-  /** Embedding backend. Defaults to the real in-process @xenova embedder. */
+  /** Embedding backend. Defaults to the real in-process @huggingface/transformers embedder. */
   embedder?: Embedder;
   /**
    * Explicit model id to record on each row. Normally omitted: the model is

@@ -97,7 +97,7 @@ export function isUnavailable(r: JudgeResult): r is UnavailableResult {
 export interface JudgeWorktreeOptions {
   /** Vector store to load committed pools from. Defaults to the real store. */
   store?: ConformityStore;
-  /** Embedding backend. Defaults to the real in-process @xenova embedder. */
+  /** Embedding backend. Defaults to the real in-process @huggingface/transformers embedder. */
   embedder?: Embedder;
   /** Pg runner used only by the availability gate. Defaults to the real runner. */
   runner?: PgRunner;
