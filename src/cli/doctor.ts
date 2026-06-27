@@ -12,9 +12,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { detectDrift, readState } from '../upgrade/state.js';
+import { detectDrift, getManagedFiles, readState } from '../upgrade/state.js';
 import { compareVersions } from '../upgrade/runner.js';
 import { resolveNeo4jConfig } from './neo4j-config.js';
+import { resolveRoot } from './resolve-root.js';
 
 type CheckResult = { name: string; status: 'pass' | 'warn' | 'fail'; message: string };
 
@@ -41,7 +42,9 @@ async function checkStateFile(cwd: string): Promise<CheckResult> {
   return {
     name: 'state.json',
     status: 'pass',
-    message: `version ${state.version} installed ${state.installedAt} (${state.installMode})`,
+    message:
+      `version ${state.version} installed ${state.installedAt} (${state.installMode}); ` +
+      `root ${state.root ?? cwd}`,
   };
 }
 
@@ -66,9 +69,10 @@ async function checkVersionMatch(cwd: string): Promise<CheckResult> {
 async function checkManagedFiles(cwd: string): Promise<CheckResult> {
   const state = readState(cwd);
   if (!state) return { name: 'managed-files', status: 'warn', message: 'no state file; skipped' };
+  const managedFiles = getManagedFiles(state).files;
   const missing: string[] = [];
   const modified: string[] = [];
-  for (const f of state.managedFiles) {
+  for (const f of managedFiles) {
     const d = detectDrift(cwd, f);
     if (d === 'missing') missing.push(f.path);
     else if (d === 'modified') modified.push(f.path);
@@ -77,7 +81,7 @@ async function checkManagedFiles(cwd: string): Promise<CheckResult> {
     return {
       name: 'managed-files',
       status: 'pass',
-      message: `${state.managedFiles.length}/${state.managedFiles.length} files unchanged`,
+      message: `${managedFiles.length}/${managedFiles.length} files unchanged`,
     };
   }
   const parts: string[] = [];
@@ -166,7 +170,7 @@ async function checkNeo4j(cwd: string): Promise<CheckResult> {
 
 export async function runDoctor(args: string[]): Promise<number> {
   const noNetwork = args.includes('--no-network');
-  const cwd = process.cwd();
+  const cwd = resolveRoot(args);
 
   process.stdout.write(`codebase-pkg doctor — running checks in ${cwd}\n\n`);
 

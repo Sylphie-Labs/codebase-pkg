@@ -111,19 +111,30 @@ export function derivePgBasePort(slug: string): number {
 }
 
 /**
- * Resolve the effective Neo4j connection settings for the repo at `cwd`.
+ * Resolve the effective Neo4j connection settings for the install at `root`.
  *
- * Each value resolves independently with precedence env > state.json > default:
- *   uri:      CODEBASE_PKG_NEO4J_URI      > state.neo4j.uri > bolt://localhost:7687
+ * `root` is the resolved filesystem root (see resolveRoot) whose
+ * `.codebase-pkg/state.json` is consulted. Each value resolves independently:
+ *   uri:      overrideUri (flag) > CODEBASE_PKG_NEO4J_URI > state.neo4j.uri > bolt://localhost:7687
  *   user:     CODEBASE_PKG_NEO4J_USER     > neo4j
  *   password: CODEBASE_PKG_NEO4J_PASSWORD > codebase-pkg-local
+ *
+ * @param root        - Install root dir whose state.json supplies the fallback URI.
+ * @param overrideUri - Highest-precedence URI, e.g. from a `--neo4j-uri` flag.
  */
-export function resolveNeo4jConfig(cwd: string): { uri: string; user: string; password: string } {
-  const state = readState(cwd);
+export function resolveNeo4jConfig(
+  root: string,
+  overrideUri?: string,
+): { uri: string; user: string; password: string } {
+  const state = readState(root);
   const stateUri = state?.neo4j?.uri;
 
   return {
-    uri: process.env.CODEBASE_PKG_NEO4J_URI ?? stateUri ?? 'bolt://localhost:7687',
+    uri:
+      overrideUri ??
+      process.env.CODEBASE_PKG_NEO4J_URI ??
+      stateUri ??
+      'bolt://localhost:7687',
     user: process.env.CODEBASE_PKG_NEO4J_USER ?? 'neo4j',
     password: process.env.CODEBASE_PKG_NEO4J_PASSWORD ?? 'codebase-pkg-local',
   };

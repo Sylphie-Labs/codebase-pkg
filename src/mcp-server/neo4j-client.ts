@@ -49,6 +49,36 @@ export function getDriver(): Driver {
 }
 
 /**
+ * Build a NEW Neo4j driver bound to an explicit URI/credentials, independent of
+ * the cwd-bound singleton from {@link getDriver}.
+ *
+ * The singleton resolves NEO4J_URI once at module load (from cwd), so commands
+ * that must target a SPECIFIC endpoint -- e.g. `reset --neo4j-uri ...`, or a
+ * non-cwd `--path` whose state.json points elsewhere -- cannot use it. This
+ * factory reuses the same auth and pool options as the singleton. The caller
+ * OWNS the returned driver and must `close()` it (the dispatcher's finally only
+ * closes the shared singleton).
+ */
+export function createDriver(
+  uri: string,
+  user: string = NEO4J_USER,
+  password: string = NEO4J_PASSWORD,
+): Driver {
+  return neo4j.driver(uri, neo4j.auth.basic(user, password), {
+    maxConnectionPoolSize: 10,
+    connectionAcquisitionTimeout: 5000,
+    logging: {
+      level: 'warn',
+      logger: (level, message) => {
+        if (level === 'error' || level === 'warn') {
+          process.stderr.write(`[neo4j-driver] [${level}] ${message}\n`);
+        }
+      },
+    },
+  });
+}
+
+/**
  * Closes the driver and releases all connections. Call this on process exit.
  */
 export async function closeDriver(): Promise<void> {

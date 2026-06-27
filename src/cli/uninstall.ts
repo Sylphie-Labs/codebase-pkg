@@ -12,7 +12,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { detectDrift, readState, removeState } from '../upgrade/state.js';
+import { detectDrift, getManagedFiles, readState, removeState } from '../upgrade/state.js';
+import { resolveRoot } from './resolve-root.js';
 
 type Flags = {
   dryRun: boolean;
@@ -34,7 +35,7 @@ function timestamp(): string {
 
 export async function runUninstall(args: string[]): Promise<number> {
   const flags = parseFlags(args);
-  const cwd = process.cwd();
+  const cwd = resolveRoot(args);
   const state = readState(cwd);
 
   if (!state) {
@@ -42,11 +43,31 @@ export async function runUninstall(args: string[]): Promise<number> {
     return 0;
   }
 
+  // If the state records the install root and it differs from the root we just
+  // resolved, warn (but proceed) -- the user may be tearing down a copy whose
+  // recorded root no longer matches where it now lives.
+  if (state.root && path.resolve(state.root) !== cwd) {
+    process.stdout.write(
+      `[uninstall] note: resolved root ${cwd} differs from recorded install root ${state.root}\n`,
+    );
+  }
+
   process.stdout.write(`codebase-pkg uninstall — plan:\n\n`);
   const ts = timestamp();
   const plan: Array<{ rel: string; action: 'delete' | 'backup-and-delete' | 'skip-missing' }> = [];
 
-  for (const f of state.managedFiles) {
+  // Old/partial/hand-edited state files may lack `managedFiles` or contain
+  // malformed entries; normalize so we never crash on iteration and never
+  // silently lose a malformed entry.
+  const { files: managedFiles, malformed } = getManagedFiles(state);
+  if (malformed > 0) {
+    process.stdout.write(
+      `  (skipped ${malformed} malformed managedFiles ` +
+        `${malformed === 1 ? 'entry' : 'entries'} in state.json)\n`,
+    );
+  }
+
+  for (const f of managedFiles) {
     const drift = detectDrift(cwd, f);
     if (drift === 'missing' || drift === 'unknown') {
       plan.push({ rel: f.path, action: 'skip-missing' });

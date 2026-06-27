@@ -4,6 +4,17 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-06-27
+
+### Added
+- **`codebase-pkg reset` — data teardown.** The package previously had no command to wipe the Neo4j graph or the conformity Postgres data (`uninstall` only removes installed *files*). `reset` wipes the entire Neo4j graph (`MATCH (n) DETACH DELETE n` in a write transaction) and truncates the conformity tables (`cfm_vectors`, `cfm_calibration`, `cfm_decisions`). Scope flags `--graph-only` / `--conformity-only` (mutually exclusive) narrow what is wiped; `--reseed` rebuilds afterward (`seed` if the graph was wiped, `conformity-backfill` if conformity was). Mirrors `uninstall`'s safety UX: `--confirm` (or `--yes`) required to act, `--dry-run` prints a plan with live node/relationship and per-table row counts, no-op with guidance otherwise. Absent `cfm_*` tables (fresh install) degrade to `absent -> skip`; printed connection URIs are credential-masked.
+- **Location configuration.** A `--path <dir>` / `--root <dir>` flag and `CODEBASE_PKG_ROOT` env var (precedence: flag > env > cwd) let you control where install and teardown happen, honored across the location-aware commands (`init`, `uninstall`, `reset`, `status`, `doctor`, `upgrade`). `init` records the resolved absolute install root in a new optional `state.json` `root` field; `status`/`doctor` display it, and `uninstall`/`reset` warn (without blocking) when the resolved root differs from the recorded one.
+- **Explicit DB teardown targets.** `reset` accepts `--neo4j-uri` / `--pg-uri` to point data teardown at a specific endpoint independent of the file location (precedence: flag > `CODEBASE_PKG_NEO4J_URI`/`CODEBASE_PKG_PG_URI` env > `state.json` > default). `init` accepts the same flags to persist custom endpoints into `state.json` for later reuse. New driver/pool factories (`createDriver`, `createPgPool`/`pgQueryOn`) let `reset` run against the resolved URI rather than the cwd-bound singleton, closing whatever it opens.
+- Registered the missing **`0.4.0 -> 0.5.0`** no-op migration (0.5.0 shipped without one, leaving 0.4.0 installs unable to `upgrade`) and a **`0.5.0 -> 0.5.1`** no-op migration, so `upgrade` bridges both without a blocker. Neither release changes any init-copied managed files. To adopt 0.5.0's conformity Postgres service on an existing install, re-run `init --docker --force`.
+
+### Fixed
+- **Teardown commands are now backwards compatible with old/partial `state.json` files.** `uninstall` iterated `state.managedFiles` directly, so a state file written before that field existed (or a hand-edited/partial one) threw `TypeError: not iterable` and made uninstall impossible. A new centralized `getManagedFiles(state)` accessor normalizes the field (missing/non-array → `[]`, drops malformed entries and reports the count) and is now used by `uninstall`, `status`, `doctor`, and the pass-through migrations, so none of them crash on an old state file. `reset` was already safe via the config resolvers' default fallbacks (verified, no change needed).
+
 ## [0.5.0] — 2026-06-27
 
 ### Added

@@ -9,7 +9,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { detectDrift, readState, type DriftStatus } from '../upgrade/state.js';
+import { detectDrift, getManagedFiles, readState, type DriftStatus } from '../upgrade/state.js';
+import { resolveRoot } from './resolve-root.js';
 
 function readPackageVersion(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -45,8 +46,8 @@ function statusLabel(d: DriftStatus): string {
   }
 }
 
-export async function runStatus(_args: string[]): Promise<number> {
-  const cwd = process.cwd();
+export async function runStatus(args: string[]): Promise<number> {
+  const cwd = resolveRoot(args);
   const state = readState(cwd);
 
   if (!state) {
@@ -63,6 +64,7 @@ export async function runStatus(_args: string[]): Promise<number> {
   );
   process.stdout.write(`Installed:    ${state.installedAt}  (${formatDuration(state.installedAt)})\n`);
   process.stdout.write(`Last upgrade: ${state.lastUpgradedAt}  (${formatDuration(state.lastUpgradedAt)})\n`);
+  process.stdout.write(`Install root: ${state.root ?? cwd}\n`);
 
   if (!versionMatch) {
     process.stdout.write(
@@ -71,11 +73,12 @@ export async function runStatus(_args: string[]): Promise<number> {
     );
   }
 
-  process.stdout.write(`\nManaged files (${state.managedFiles.length}):\n`);
+  const managedFiles = getManagedFiles(state).files;
+  process.stdout.write(`\nManaged files (${managedFiles.length}):\n`);
   const driftCounts: Record<DriftStatus, number> = {
     unchanged: 0, modified: 0, missing: 0, unknown: 0,
   };
-  for (const f of state.managedFiles) {
+  for (const f of managedFiles) {
     const d = detectDrift(cwd, f);
     driftCounts[d]++;
     process.stdout.write(`  ${statusGlyph(d)} ${f.path.padEnd(60)} ${statusLabel(d)}\n`);

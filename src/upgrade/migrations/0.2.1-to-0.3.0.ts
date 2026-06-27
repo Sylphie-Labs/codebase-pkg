@@ -8,6 +8,7 @@
  * bridge 0.2.1 -> 0.3.0 without a blocker.
  */
 
+import { getManagedFiles } from '../state.js';
 import type { Migration, MigrationContext, MigrationResult } from './types.js';
 
 const migration: Migration = {
@@ -28,7 +29,7 @@ const migration: Migration = {
     // Nothing to write, dry-run or not — the version bump itself is handled by
     // the runner advancing the state cursor.
     return {
-      managedFiles: ctx.state.managedFiles,
+      managedFiles: getManagedFiles(ctx.state).files,
       changedFiles: [],
       warnings: [],
     };

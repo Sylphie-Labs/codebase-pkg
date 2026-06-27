@@ -9,6 +9,7 @@
  *   validate         Run integrity checks against the current graph.
  *   backfill-changes Populate Change nodes from git history.
  *   add-constraint   Interactive CLI to add an architectural constraint.
+ *   reset            Wipe the Neo4j graph and/or conformity Postgres data.
  *
  * Usage:
  *   npx codebase-pkg <subcommand> [args]
@@ -27,6 +28,7 @@ function printUsage(): void {
       `  codebase-pkg status                       Show install state and drift\n` +
       `  codebase-pkg doctor [--no-network]        Run structural checks\n` +
       `  codebase-pkg uninstall --confirm          Remove managed files and state\n` +
+      `  codebase-pkg reset [--graph-only|--conformity-only] [--reseed] --confirm  Wipe graph/conformity data\n` +
       `\n` +
       `Graph operations:\n` +
       `  codebase-pkg seed               Initial full graph build\n` +
@@ -92,6 +94,11 @@ async function main(): Promise<number> {
       case 'upgrade': {
         const { runUpgrade } = await import('./upgrade.js');
         return await runUpgrade(rest);
+      }
+
+      case 'reset': {
+        const { runReset } = await import('./reset.js');
+        return await runReset(rest);
       }
 
       case 'doctor': {
