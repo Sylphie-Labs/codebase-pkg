@@ -1,0 +1,361 @@
+{
+  "generatedAt": "2026-06-27T05:20:05.343Z",
+  "root": "src",
+  "functionsAnalyzed": 234,
+  "curatedAxes": [
+    "var_decl",
+    "string_style",
+    "async_style",
+    "array_syntax",
+    "export_style"
+  ],
+  "baseRateGuard": {
+    "minSubstantive": 10,
+    "substantiveCount": {
+      "var_decl": 171,
+      "string_style": 124,
+      "async_style": 85,
+      "array_syntax": 95,
+      "export_style": 118
+    }
+  },
+  "descriptiveDistribution": {
+    "var_decl": {
+      "none": 63,
+      "const": 133,
+      "mixed": 35,
+      "let": 3
+    },
+    "string_style": {
+      "template-literal": 105,
+      "none": 110,
+      "mixed": 12,
+      "concat": 7
+    },
+    "async_style": {
+      "sync": 149,
+      "async-await": 84,
+      "promise-then": 1
+    },
+    "array_syntax": {
+      "none": 139,
+      "bracket": 92,
+      "generic": 1,
+      "mixed": 2
+    },
+    "export_style": {
+      "none": 116,
+      "named": 118
+    }
+  },
+  "seededTarget": {
+    "var_decl": "const",
+    "string_style": "template-literal",
+    "async_style": "async-await",
+    "array_syntax": "bracket",
+    "export_style": "named"
+  },
+  "overrides": {
+    "array_syntax": "generic",
+    "export_style": "default"
+  },
+  "finalTarget": {
+    "var_decl": "const",
+    "string_style": "template-literal",
+    "async_style": "async-await",
+    "array_syntax": "generic",
+    "export_style": "default"
+  },
+  "enforcedAxes": [
+    "var_decl",
+    "string_style",
+    "async_style",
+    "array_syntax",
+    "export_style"
+  ],
+  "migrationProgress": {
+    "var_decl": {
+      "target": "const",
+      "atTarget": 133,
+      "offTarget": 38,
+      "considered": 171,
+      "pct": 77.77777777777777
+    },
+    "string_style": {
+      "target": "template-literal",
+      "atTarget": 105,
+      "offTarget": 19,
+      "considered": 124,
+      "pct": 84.6774193548387
+    },
+    "async_style": {
+      "target": "async-await",
+      "atTarget": 84,
+      "offTarget": 1,
+      "considered": 85,
+      "pct": 98.82352941176471
+    },
+    "array_syntax": {
+      "target": "generic",
+      "atTarget": 1,
+      "offTarget": 94,
+      "considered": 95,
+      "pct": 1.0526315789473684
+    },
+    "export_style": {
+      "target": "default",
+      "atTarget": 0,
+      "offTarget": 118,
+      "considered": 118,
+      "pct": 0
+    }
+  },
+  "scenarios": {
+    "badConsensusFlip": {
+      "axis": "array_syntax",
+      "from": "bracket",
+      "to": "generic",
+      "atTarget": 1,
+      "offTarget": 94
+    },
+    "coldStart": {
+      "axis": "export_style",
+      "to": "default",
+      "occurrencesInCorpus": 0,
+      "atTarget": 0,
+      "considered": 118
+    }
+  },
+  "offTargetFunctions": 171,
+  "sampleVerdicts": [
+    {
+      "file": "src/cli/codebase-pkg.ts",
+      "line": 20,
+      "name": "printUsage",
+      "flags": []
+    },
+    {
+      "file": "src/cli/codebase-pkg.ts",
+      "line": 46,
+      "name": "main",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 21,
+      "name": "readPackageVersion",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 28,
+      "name": "statusGlyph",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 32,
+      "name": "checkStateFile",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 48,
+      "name": "checkVersionMatch",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 66,
+      "name": "checkManagedFiles",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 93,
+      "name": "checkMcpStanza",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 109,
+      "name": "checkConstraints",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 138,
+      "name": "checkNeo4j",
+      "flags": []
+    },
+    {
+      "file": "src/cli/doctor.ts",
+      "line": 167,
+      "name": "runDoctor",
+      "flags": [
+        {
+          "dim": "var_decl",
+          "value": "mixed",
+          "target": "const"
+        },
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        },
+        {
+          "dim": "export_style",
+          "value": "named",
+          "target": "default"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 73,
+      "name": "parseFlags",
+      "flags": [
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 90,
+      "name": "detectPackageManager",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 98,
+      "name": "getPackageRoot",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 103,
+      "name": "getCliAbsolutePath",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 107,
+      "name": "readPackageVersion",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 113,
+      "name": "listFilesRecursive",
+      "flags": [
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 128,
+      "name": "copyFile",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 136,
+      "name": "writeFileContent",
+      "flags": []
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 144,
+      "name": "installSkills",
+      "flags": [
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 176,
+      "name": "installMcp",
+      "flags": [
+        {
+          "dim": "var_decl",
+          "value": "mixed",
+          "target": "const"
+        },
+        {
+          "dim": "string_style",
+          "value": "mixed",
+          "target": "template-literal"
+        },
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 224,
+      "name": "installConstraints",
+      "flags": [
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 262,
+      "name": "renderComposeFile",
+      "flags": [
+        {
+          "dim": "export_style",
+          "value": "named",
+          "target": "default"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 312,
+      "name": "installDocker",
+      "flags": [
+        {
+          "dim": "var_decl",
+          "value": "mixed",
+          "target": "const"
+        },
+        {
+          "dim": "array_syntax",
+          "value": "bracket",
+          "target": "generic"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 373,
+      "name": "bootstrapPgSchema",
+      "flags": [
+        {
+          "dim": "var_decl",
+          "value": "mixed",
+          "target": "const"
+        }
+      ]
+    }
+  ]
+}
