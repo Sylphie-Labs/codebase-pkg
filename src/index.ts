@@ -94,6 +94,7 @@ export {
   judgeFileDecisions,
   judgeWorkingTreeDecisions,
   isDecisionUnavailable,
+  runConformityTarget,
 } from './conformity/index.js';
 export type {
   Embedder,

@@ -103,7 +103,7 @@ After the initial seed, run `codebase-pkg sync` to update only the deltas since 
 | `getConstraints(scope)` | Architectural invariants from `constraints.json` and the graph |
 | `getLogContext(query?, service?, severity?, since?)` | Query log files on disk |
 | `searchContent(pattern, fileFilter?, maxResults?)` | Structured grep that returns code-entity context, not just byte offsets |
-| `judgeConformity(filePath?, maxResults?)` | How well your working-tree code fits the codebase's existing patterns — per-entity (functions, types, module constants) category, distance, verdict (with the threshold used and whether it was calibrated), and nearest existing entities of the same kind (see [Conformity Judge](#conformity-judge)) |
+| `judgeConformity(filePath?, maxResults?)` | How well your working-tree code fits the codebase's existing patterns — **style-conformity primary** (per-function decision flags vs. the effective target: "uses `let`; target is `const`") plus **embedding-novelty secondary** (per-entity category, distance, verdict, and nearest same-kind entities). See [Conformity Judge](#conformity-judge) |
 
 ## Configuration
 
@@ -137,13 +137,42 @@ See `constraints.example.json` for the format.
 
 ## Conformity Judge
 
-The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. It judges three kinds of code entity, each against a pool of its own kind: functions and methods (`function:body`), types — classes, interfaces, enums, and type aliases (`type:body`), and module-level constant/config declarations (`module:const`). For each entity it embeds the entity's **whole body, lightly normalized** — comments stripped and whitespace collapsed, but identifiers and literals kept — and measures the cosine distance from that vector to the committed pool of same-category entities. Each category carries its own in-distribution calibrated threshold. It is **not a linter or a gate**; it is an instrument. Use it to see what your in-progress code is diverging from (or matching), not to pass/fail a build.
+The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. It has two complementary lenses:
+
+1. **Decision/style conformity — the PRIMARY signal.** A deterministic, explainable check of the discrete, interchangeable coding *decisions* a function makes — the curated axes `var_decl`, `string_style`, `async_style`, `array_syntax`, `export_style` — against an **effective target** (the codebase's own preferred value per axis). Each finding is a flat fact you can act on: "uses `let`; target is `const`". No model, no embeddings, no fuzziness.
+2. **Embedding novelty — the SECONDARY lens.** A "semantic novelty" read: it embeds an entity's whole body and measures cosine distance to a pool of structurally similar peers, surfacing code that is *shaped* unlike anything else in the repo. This is the older whole-body signal; it now backs up the decision signal rather than leading it.
+
+It is **not a linter or a gate**; it is an instrument. Use the decision flags to see exactly which conventions your in-progress code diverges from, and the novelty distance to see whether it is structurally unusual.
+
+### Decision/style conformity (primary)
+
+For each curated axis, the judge compares a function's choice to the **effective target** = a **descriptive seed** merged with an optional, git-tracked override file:
+
+- **Descriptive seed.** The codebase's own *mode* per axis — whichever value the existing code uses most (e.g. if 75% of declarations are `const`, the seed target for `var_decl` is `const`). Computed over *substantive* decisions only; a function that declares no variables makes no `var_decl` decision and is never faulted for it.
+- **`conformity-target.json` (optional, at repo root).** A small git-trackable file of accepted preferences, `{ "var_decl": "const", ... }`. Any axis you set here **overrides** the descriptive seed (so you can flip the target to a current minority — a deliberate "we're migrating to X" decision) and is **always enforced**, even past the base-rate guard.
+- **Base-rate guard.** An axis is only enforced when the codebase has enough substantive examples of it (≥ 10 deciders) to have a real preference — *or* you've set it explicitly in `conformity-target.json`. Axes the codebase barely uses are left un-enforced rather than fabricating a convention from noise.
+
+The **`conformity-target`** command is the read-only way to inspect and seed this:
+
+```bash
+codebase-pkg conformity-target          # show the effective target + per-axis migration progress
+codebase-pkg conformity-target --init    # write a starter conformity-target.json from the current modes
+codebase-pkg conformity-target --init --force  # overwrite an existing one
+```
+
+Show mode is a pure **lookup against the already-persisted decision facts** (the `cfm_decisions` table) — it never re-parses or re-embeds the tree. Per axis it prints the target value, whether it came from the seed or an override, whether it's enforced or guarded out, the substantive count, and **migration progress**: of the functions that decided that axis, what fraction already match the target and how many remain to migrate. `--init` seeds the file from the current descriptive modes for the enforced axes; edit it, commit it, and both the judge and `conformity-backfill` will honor it.
+
+The decision axes are extracted with ts-morph, so they cover **TypeScript/TSX only**.
+
+### Embedding novelty (secondary)
+
+The novelty lens judges three kinds of code entity, each against a pool of its own kind: functions and methods (`function:body`), types — classes, interfaces, enums, and type aliases (`type:body`), and module-level constant/config declarations (`module:const`). For each entity it embeds the entity's **whole body, lightly normalized** — comments stripped and whitespace collapsed, but identifiers and literals kept — and measures the cosine distance from that vector to the committed pool of same-category entities. Each category carries its own in-distribution calibrated threshold.
 
 It runs **fully local**: a code-specific embedding model (`jinaai/jina-embeddings-v2-base-code` via `@xenova/transformers`, ~162 MB, 768-dimensional, downloaded once then run in-process and offline), with `Xenova/jina-embeddings-v2-small-en` and MiniLM as fallbacks. No external API, no tokens, no cost. Note the one-time download is larger than the earlier small general model — the code model is what makes whole-body similarity separate cleanly.
 
 ### Architecture
 
-Neo4j stays the canonical graph. The conformity vectors live in a separate **pgvector Postgres** (a cold store), keyed by the same node id as the graph (`<filePath>::<name>`), with an in-memory hot cache that serves per-category pools and does the kNN distance. When you run `init --docker`, the Postgres/pgvector service is provisioned in the same compose file alongside Neo4j, the schema (the `cfm_vectors` table plus an HNSW cosine ANN index) is bootstrapped once Postgres is reachable, and the embedding model is prefetched. The Neo4j schema is untouched — no conformity data lives in the graph.
+Two stores back the feature. **Neo4j** stays the canonical graph (untouched — no conformity data lives in it). A separate **pgvector Postgres** holds the conformity data, keyed by the same node id as the graph (`<filePath>::<name>`): the embedding-novelty vectors live in `cfm_vectors` (with an HNSW cosine ANN index) plus a `cfm_calibration` table of per-category thresholds, and the **decision facts** live in `cfm_decisions` — one row per `(node_id, axis)` — so axis distributions and the migration backlog are plain SQL queries and the decision judge / `conformity-target` are a lookup, never a re-scan. When you run `init --docker`, the Postgres/pgvector service is provisioned in the same compose file alongside Neo4j, the schema is bootstrapped once Postgres is reachable, and the embedding model is prefetched.
 
 ### Workflow
 
@@ -155,25 +184,33 @@ docker compose -f docker-compose.codebase-pkg.yml up -d
 # 2. Seed the Neo4j graph as usual
 codebase-pkg seed
 
-# 3. One-time: embed every committed entity (functions, types, constants) into
-#    the descriptive pools AND calibrate the per-category outlier thresholds
+# 3. One-time: persist the decision facts (the PRIMARY signal) AND embed every
+#    committed entity into the novelty pools + calibrate the per-category thresholds
 codebase-pkg conformity-backfill
 
-# 4. Judge your working-tree code against that pool
+# 4. (optional) Inspect the effective decision target + migration, and seed a
+#    git-tracked conformity-target.json you can edit to set accepted preferences
+codebase-pkg conformity-target
+codebase-pkg conformity-target --init
+
+# 5. Judge your working-tree code: decision/style flags (primary) + novelty (secondary)
 codebase-pkg conformity-judge            # all uncommitted changes in watched dirs
 codebase-pkg conformity-judge src/foo.ts # or a single file
 ```
 
-`conformity-backfill` embeds every committed entity (functions, types, and module-level constants) and, as its final step, **calibrates** the verdict: per category it takes the 95th percentile of the leave-one-out kNN distances over that category's in-repo pool, so roughly 95% of the codebase's own code reads as "conforms". That threshold is stored in a `cfm_calibration` table. If you later tune the calibration or grow the pool via sync and want to refresh thresholds **without re-embedding**, run `codebase-pkg conformity-calibrate` — it re-reads the stored vectors and recomputes the thresholds (no model load).
+`conformity-backfill` does two passes. The **decision pass** extracts and persists the per-entity style facts into `cfm_decisions`, then logs the effective target (seed merged with `conformity-target.json`) and per-axis migration progress. The **novelty pass** embeds every committed entity (functions, types, and module-level constants) and, as its final step, **calibrates** the verdict: per category it takes the 95th percentile of the leave-one-out kNN distances over that category's in-repo pool, so roughly 95% of the codebase's own code reads as "conforms". That threshold is stored in a `cfm_calibration` table. If you later tune the calibration or grow the pool via sync and want to refresh thresholds **without re-embedding**, run `codebase-pkg conformity-calibrate` — it re-reads the stored vectors and recomputes the thresholds (no model load). To inspect or re-seed the decision target on demand without any re-parse, use `codebase-pkg conformity-target`.
 
 After the one-time backfill, normal `codebase-pkg sync` keeps the pool fresh: it re-embeds changed entities and removes vectors for deleted ones as a best-effort, non-fatal step (a failure or unreachable Postgres warns but never blocks the sync cursor). You can also judge from a Claude Code session via the `judgeConformity` MCP tool.
 
 ### The `judgeConformity` MCP tool
 
-The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs; `maxResults` caps the nearest neighbors reported per entity and the kNN window, default 5). Returns, per entity, its category (`function:body`, `type:body`, or `module:const`), distance, a verdict (`conforms`/`outlier`), the **threshold** the verdict was decided against and whether that threshold was **calibrated**, and the nearest existing entities of the same kind — leading with the outliers. Each entity is judged against its category's pool *minus its own committed vector*, so a committed entity is compared to other code, never to itself. Before `conformity-backfill`/`conformity-calibrate` has run there is no calibrated threshold, so verdicts fall back to a default and are flagged `calibrated: false` — in that state the distance and nearest-neighbor list remain the trustworthy signal. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
+The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs; `maxResults` caps the nearest neighbors reported per entity and the kNN window, default 5). It leads with the **style-conformity** report — per-function off-target decisions against the effective target — then the **embedding-novelty** report. For novelty it returns, per entity, its category (`function:body`, `type:body`, or `module:const`), distance, a verdict (`conforms`/`outlier`), the **threshold** the verdict was decided against and whether that threshold was **calibrated**, and the nearest existing entities of the same kind — leading with the outliers. Each entity is judged against its category's pool *minus its own committed vector*, so a committed entity is compared to other code, never to itself. Before `conformity-backfill`/`conformity-calibrate` has run there is no calibrated threshold, so verdicts fall back to a default and are flagged `calibrated: false` — in that state the distance and nearest-neighbor list remain the trustworthy signal. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
 
 ### Caveats
 
+- **Decision axes are TypeScript-only.** The decision extractor uses ts-morph, so style-conformity covers `.ts`/`.tsx` functions, methods, and arrows only — not Python or other languages.
+- **The decision axes don't cover everything.** The curated set is `var_decl`, `string_style`, `async_style`, `array_syntax`, `export_style`. Bare statements and destructuring-pattern declarations are not modeled as decisions, and a function that makes no decision on an axis (the axis's *absence* value) is never faulted on it.
+- **Embedding novelty is a separate lens.** The two signals answer different questions — "did this code follow our conventions?" (decisions) vs. "is this code shaped unlike anything else?" (embedding distance). A clean style report does not imply low novelty, and vice versa.
 - **Some declarations aren't chunked yet.** The judge covers functions/methods (`function:body`), types (`type:body`), and module-level const/var declarations (`module:const`), but the parser does not yet chunk bare top-level statements (side-effect calls), destructuring-pattern declarations, or Python module-level assignments — those entities aren't judged.
 - **The conformity signal separates best against genuinely different code.** In our validation it cleanly distinguishes unrelated code, but is more modest against same-author / same-domain code that already looks alike. Read the distance and nearest-neighbor list, not just the label.
 - **Before backfill/calibration the threshold is uncalibrated.** A judged function reports `calibrated: false` and falls back to a default cut until `conformity-backfill` (or `conformity-calibrate`) has run; in that state the distance and nearest neighbors are the trustworthy signal.
@@ -198,9 +235,10 @@ codebase-pkg backfill-changes     # populate Change nodes from git history
 codebase-pkg add-constraint --file constraints.json [--validate]
 
 # Conformity Judge (see below)
-codebase-pkg conformity-backfill  # one-time: embed all committed entities into the pools, then calibrate
+codebase-pkg conformity-backfill  # one-time: persist decision facts + embed all entities, then calibrate
 codebase-pkg conformity-calibrate # recompute per-category outlier thresholds (no re-embed)
-codebase-pkg conformity-judge [file]  # judge working-tree code (or one file) against the pool
+codebase-pkg conformity-target [--init] [--force]  # show the effective decision target + migration, or seed conformity-target.json
+codebase-pkg conformity-judge [file]  # judge working-tree code (or one file): style flags (primary) + novelty (secondary)
 ```
 
 `codebase-pkg-mcp` runs the MCP server directly (Claude Code launches it for you via `.mcp.json`).

@@ -194,6 +194,52 @@ export function migrationProgress(
 }
 
 /**
+ * Per-axis migration progress computed FROM DISTRIBUTIONS (value -> count)
+ * rather than from per-function facts. This is the read-only, store-backed
+ * counterpart of {@link migrationProgress}: instead of walking every function,
+ * it derives the numbers from the already-persisted axis counts in
+ * `cfm_decisions` -- so the `conformity-target` command never re-parses or
+ * re-embeds the tree.
+ *
+ * For each ENFORCED axis with a non-null target:
+ *   - atTarget   = the target value's count in the distribution,
+ *   - considered = the SUBSTANTIVE population (all non-absence counts),
+ *   - offTarget  = considered - atTarget,
+ *   - pct        = 100 * atTarget / considered (0 if considered == 0).
+ *
+ * This matches {@link migrationProgress} exactly when the distributions were
+ * built from the same facts: both exclude the axis's {@link AXIS_NONE_VALUE}
+ * from the considered population, and both count "at target" as the functions
+ * whose value equals the target.
+ */
+export function migrationFromStore(
+  dist: Distributions,
+  target: Target,
+  opts: EnforceOptions = {},
+): Partial<Record<Axis, AxisProgress>> {
+  const enforce = opts.enforce ?? CURATED_AXES;
+  const enforceSet = new Set<Axis>(enforce);
+  const counts = substantiveCounts(dist);
+  const out: Partial<Record<Axis, AxisProgress>> = {};
+  for (const axis of CURATED_AXES) {
+    if (!enforceSet.has(axis)) continue;
+    const t = target[axis];
+    if (t == null) continue;
+    const considered = counts[axis];
+    const atTarget = dist[axis]?.[t] ?? 0;
+    const offTarget = considered - atTarget;
+    out[axis] = {
+      target: t,
+      atTarget,
+      offTarget,
+      considered,
+      pct: considered === 0 ? 0 : (100 * atTarget) / considered,
+    };
+  }
+  return out;
+}
+
+/**
  * Count the SUBSTANTIVE (non-absence) population per axis from distributions.
  * This is the input to the base-rate guard.
  */

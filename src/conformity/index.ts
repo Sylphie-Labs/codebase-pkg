@@ -104,6 +104,7 @@ export {
   applyOverrides,
   judgeAgainstTarget,
   migrationProgress,
+  migrationFromStore,
   substantiveCounts,
   enforcedAxes,
   loadTargetOverrides,
@@ -140,6 +141,11 @@ export type {
   DecisionJudgeResult,
   JudgeDecisionsOptions,
 } from './decisions/judge-decisions.js';
+// Decision-conformity TARGET surface (PASS 2b): inspect the effective target +
+// migration progress (read-only, from the store) and initialize a git-trackable
+// conformity-target.json.
+export { runConformityTarget } from './decisions/target-cli.js';
+export type { ConformityTargetOptions } from './decisions/target-cli.js';
 
 // Store: upsert/delete/loadPool/coldNearest + calibration + nodeIdOf helper.
 export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';

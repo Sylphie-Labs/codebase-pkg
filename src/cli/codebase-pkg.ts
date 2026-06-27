@@ -36,6 +36,7 @@ function printUsage(): void {
       `  codebase-pkg conformity-backfill  Build the conformity descriptive pool\n` +
       `  codebase-pkg conformity-calibrate Recompute outlier thresholds (no re-embed)\n` +
       `  codebase-pkg conformity-judge [file]  Judge working-tree code against the pool\n` +
+      `  codebase-pkg conformity-target [--init] [--force]  Show the effective decision target + migration (or seed conformity-target.json)\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
       `\n` +
       `  codebase-pkg --version          Print package version\n` +
@@ -147,6 +148,17 @@ async function main(): Promise<number> {
         // First non-flag positional arg is an optional file path.
         const filePath = rest.find((a) => !a.startsWith('-'));
         return await runConformityJudge(filePath);
+      }
+
+      case 'conformity-target': {
+        const { runConformityTarget } = await import('../conformity/decisions/target-cli.js');
+        // The CLI `finally` closes the pg pool, so let the command rely on that.
+        await runConformityTarget({
+          init: rest.includes('--init'),
+          force: rest.includes('--force'),
+          closePool: false,
+        });
+        return 0;
       }
 
       case 'add-constraint': {
