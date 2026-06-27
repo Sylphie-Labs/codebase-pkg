@@ -1,0 +1,638 @@
+{
+  "generatedAt": "2026-06-27T05:12:25.142Z",
+  "root": "src",
+  "filesScanned": 56,
+  "functionsAnalyzed": 234,
+  "parseErrors": [],
+  "threshold": 0.12,
+  "dimensions": [
+    {
+      "dim": "fn_style",
+      "uniform": true,
+      "distinctValues": 3,
+      "houseChoice": "function",
+      "houseShare": 95.7,
+      "distribution": {
+        "function": {
+          "count": 224,
+          "pct": 95.7
+        },
+        "method": {
+          "count": 9,
+          "pct": 3.8
+        },
+        "arrow-const": {
+          "count": 1,
+          "pct": 0.4
+        }
+      }
+    },
+    {
+      "dim": "array_syntax",
+      "uniform": false,
+      "distinctValues": 4,
+      "houseChoice": "none",
+      "houseShare": 59.4,
+      "distribution": {
+        "none": {
+          "count": 139,
+          "pct": 59.4
+        },
+        "bracket": {
+          "count": 92,
+          "pct": 39.3
+        },
+        "mixed": {
+          "count": 2,
+          "pct": 0.9
+        },
+        "generic": {
+          "count": 1,
+          "pct": 0.4
+        }
+      }
+    },
+    {
+      "dim": "return_type",
+      "uniform": true,
+      "distinctValues": 2,
+      "houseChoice": "explicit",
+      "houseShare": 99.6,
+      "distribution": {
+        "explicit": {
+          "count": 233,
+          "pct": 99.6
+        },
+        "inferred": {
+          "count": 1,
+          "pct": 0.4
+        }
+      }
+    },
+    {
+      "dim": "loop_style",
+      "uniform": false,
+      "distinctValues": 5,
+      "houseChoice": "none",
+      "houseShare": 52.1,
+      "distribution": {
+        "none": {
+          "count": 122,
+          "pct": 52.1
+        },
+        "for-of": {
+          "count": 64,
+          "pct": 27.4
+        },
+        "array-method": {
+          "count": 35,
+          "pct": 15
+        },
+        "index-for": {
+          "count": 9,
+          "pct": 3.8
+        },
+        "while": {
+          "count": 4,
+          "pct": 1.7
+        }
+      }
+    },
+    {
+      "dim": "param_count",
+      "uniform": false,
+      "distinctValues": 7,
+      "houseChoice": "1",
+      "houseShare": 53,
+      "distribution": {
+        "0": {
+          "count": 42,
+          "pct": 17.9
+        },
+        "1": {
+          "count": 124,
+          "pct": 53
+        },
+        "2": {
+          "count": 46,
+          "pct": 19.7
+        },
+        "3": {
+          "count": 16,
+          "pct": 6.8
+        },
+        "4": {
+          "count": 4,
+          "pct": 1.7
+        },
+        "5": {
+          "count": 1,
+          "pct": 0.4
+        },
+        "6": {
+          "count": 1,
+          "pct": 0.4
+        }
+      }
+    },
+    {
+      "dim": "var_decl",
+      "uniform": false,
+      "distinctValues": 4,
+      "houseChoice": "const",
+      "houseShare": 56.8,
+      "distribution": {
+        "const": {
+          "count": 133,
+          "pct": 56.8
+        },
+        "none": {
+          "count": 63,
+          "pct": 26.9
+        },
+        "mixed": {
+          "count": 35,
+          "pct": 15
+        },
+        "let": {
+          "count": 3,
+          "pct": 1.3
+        }
+      }
+    },
+    {
+      "dim": "error_handling",
+      "uniform": false,
+      "distinctValues": 4,
+      "houseChoice": "none",
+      "houseShare": 75.2,
+      "distribution": {
+        "none": {
+          "count": 176,
+          "pct": 75.2
+        },
+        "try-catch": {
+          "count": 36,
+          "pct": 15.4
+        },
+        "throw": {
+          "count": 13,
+          "pct": 5.6
+        },
+        "try-catch+throw": {
+          "count": 9,
+          "pct": 3.8
+        }
+      }
+    },
+    {
+      "dim": "null_check",
+      "uniform": false,
+      "distinctValues": 4,
+      "houseChoice": "none",
+      "houseShare": 73.5,
+      "distribution": {
+        "none": {
+          "count": 172,
+          "pct": 73.5
+        },
+        "nullish-coalescing": {
+          "count": 35,
+          "pct": 15
+        },
+        "optional-chaining": {
+          "count": 17,
+          "pct": 7.3
+        },
+        "explicit": {
+          "count": 10,
+          "pct": 4.3
+        }
+      }
+    },
+    {
+      "dim": "async_style",
+      "uniform": false,
+      "distinctValues": 3,
+      "houseChoice": "sync",
+      "houseShare": 63.7,
+      "distribution": {
+        "sync": {
+          "count": 149,
+          "pct": 63.7
+        },
+        "async-await": {
+          "count": 84,
+          "pct": 35.9
+        },
+        "promise-then": {
+          "count": 1,
+          "pct": 0.4
+        }
+      }
+    },
+    {
+      "dim": "export_style",
+      "uniform": false,
+      "distinctValues": 2,
+      "houseChoice": "named",
+      "houseShare": 50.4,
+      "distribution": {
+        "named": {
+          "count": 118,
+          "pct": 50.4
+        },
+        "none": {
+          "count": 116,
+          "pct": 49.6
+        }
+      }
+    },
+    {
+      "dim": "string_style",
+      "uniform": false,
+      "distinctValues": 4,
+      "houseChoice": "none",
+      "houseShare": 47,
+      "distribution": {
+        "none": {
+          "count": 110,
+          "pct": 47
+        },
+        "template-literal": {
+          "count": 105,
+          "pct": 44.9
+        },
+        "mixed": {
+          "count": 12,
+          "pct": 5.1
+        },
+        "concat": {
+          "count": 7,
+          "pct": 3
+        }
+      }
+    }
+  ],
+  "signalDimensions": [
+    "array_syntax",
+    "loop_style",
+    "param_count",
+    "var_decl",
+    "error_handling",
+    "null_check",
+    "async_style",
+    "export_style",
+    "string_style"
+  ],
+  "uniformDimensions": [
+    "fn_style",
+    "return_type"
+  ],
+  "flagCounts": {
+    "ge1": 94,
+    "ge2": 23,
+    "ge3": 4
+  },
+  "topFlagged": [
+    {
+      "file": "src/conformity/distance.ts",
+      "line": 13,
+      "name": "dot",
+      "fn_style": "function",
+      "flagCount": 3,
+      "flags": [
+        {
+          "dim": "loop_style",
+          "value": "index-for",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "var_decl",
+          "value": "let",
+          "count": 3,
+          "share": 1.3
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/distance.ts",
+      "line": 52,
+      "name": "knnPoolDistance",
+      "fn_style": "function",
+      "flagCount": 3,
+      "flags": [
+        {
+          "dim": "loop_style",
+          "value": "index-for",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/store.ts",
+      "line": 247,
+      "name": "ConformityStore.coldNearest",
+      "fn_style": "method",
+      "flagCount": 3,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "method",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/ingestion/initial-seed.ts",
+      "line": 416,
+      "name": "runSeed",
+      "fn_style": "function",
+      "flagCount": 3,
+      "flags": [
+        {
+          "dim": "loop_style",
+          "value": "index-for",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "null_check",
+          "value": "optional-chaining",
+          "count": 17,
+          "share": 7.3
+        },
+        {
+          "dim": "string_style",
+          "value": "mixed",
+          "count": 12,
+          "share": 5.1
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 176,
+      "name": "installMcp",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        },
+        {
+          "dim": "string_style",
+          "value": "mixed",
+          "count": 12,
+          "share": 5.1
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 312,
+      "name": "installDocker",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "loop_style",
+          "value": "while",
+          "count": 4,
+          "share": 1.7
+        },
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        }
+      ]
+    },
+    {
+      "file": "src/cli/init.ts",
+      "line": 455,
+      "name": "printNextSteps",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        },
+        {
+          "dim": "var_decl",
+          "value": "let",
+          "count": 3,
+          "share": 1.3
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/embed-functions.ts",
+      "line": 75,
+      "name": "embedAndStoreChunks",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "loop_style",
+          "value": "index-for",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/embed.ts",
+      "line": 102,
+      "name": "embed",
+      "fn_style": "arrow-const",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "arrow-const",
+          "count": 1,
+          "share": 0.4
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/judge-worktree.ts",
+      "line": 125,
+      "name": "judgeAgainstPool",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "param_count",
+          "value": "6",
+          "count": 1,
+          "share": 0.4
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/judge.ts",
+      "line": 111,
+      "name": "judgeChunk",
+      "fn_style": "function",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "param_count",
+          "value": "3",
+          "count": 16,
+          "share": 6.8
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/store.ts",
+      "line": 156,
+      "name": "ConformityStore.upsertVectors",
+      "fn_style": "method",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "method",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "error_handling",
+          "value": "throw",
+          "count": 13,
+          "share": 5.6
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/store.ts",
+      "line": 273,
+      "name": "ConformityStore.setCalibration",
+      "fn_style": "method",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "method",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "array_syntax",
+          "value": "generic",
+          "count": 1,
+          "share": 0.4
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/store.ts",
+      "line": 310,
+      "name": "ConformityStore.getCalibration",
+      "fn_style": "method",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "method",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "null_check",
+          "value": "explicit",
+          "count": 10,
+          "share": 4.3
+        }
+      ]
+    },
+    {
+      "file": "src/conformity/store.ts",
+      "line": 132,
+      "name": "ConformityStore.constructor",
+      "fn_style": "method",
+      "flagCount": 2,
+      "flags": [
+        {
+          "dim": "fn_style",
+          "value": "method",
+          "count": 9,
+          "share": 3.8
+        },
+        {
+          "dim": "return_type",
+          "value": "inferred",
+          "count": 1,
+          "share": 0.4
+        }
+      ]
+    }
+  ]
+}
