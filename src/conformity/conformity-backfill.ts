@@ -26,6 +26,7 @@ import { computeCalibration } from './calibration.js';
 import { categoryOf, type ParsedChunk } from './category.js';
 import { CHOSEN_MODEL, MODEL_CANDIDATES } from './embed.js';
 import type { PoolEntry } from './judge.js';
+import { runDecisionBackfill } from './decisions/decision-backfill.js';
 
 /**
  * Compute per-category calibration over the committed pool and persist it (step
@@ -134,6 +135,19 @@ export async function runConformityBackfill(): Promise<void> {
   const categories = new Set(chunks.map((c) => categoryOf(c)));
   const calibrated = await calibrateFromStore(store, categories, model);
   console.log(`  Categories calibrated: ${calibrated}`);
+
+  // Additive pass: extract + persist per-entity STYLE decision facts and log
+  // the seeded target + migration progress. Independent of the embedding pool;
+  // makes a later style-conformity judge a lookup, not a re-scan. Best-effort:
+  // a failure here must not fail the (already-completed) embedding backfill.
+  try {
+    await runDecisionBackfill(files);
+  } catch (err) {
+    process.stderr.write(
+      `[conformity] decision backfill failed (embedding pool is intact): ` +
+        `${err instanceof Error ? err.message : String(err)}\n`,
+    );
+  }
 }
 
 /**

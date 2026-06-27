@@ -81,7 +81,51 @@ export {
 export type { PgRunner } from './pg-client.js';
 
 // Schema bootstrap.
-export { ensureSchema, EMBEDDING_DIM, VECTORS_TABLE, CALIBRATION_TABLE } from './schema.js';
+export {
+  ensureSchema,
+  EMBEDDING_DIM,
+  VECTORS_TABLE,
+  CALIBRATION_TABLE,
+  DECISIONS_TABLE,
+} from './schema.js';
+
+// Decision-conformity (deterministic STYLE signal): extractor, pure target
+// logic, per-entity Postgres persistence, and the additive backfill pass.
+export {
+  extractDecisions,
+  extractDecisionsFromFile,
+  extractDecisionsFromSourceFile,
+  CURATED_AXES,
+  AXIS_NONE_VALUE,
+} from './decisions/extract.js';
+export type { Axis, DecisionFacts } from './decisions/extract.js';
+export {
+  seedTarget,
+  applyOverrides,
+  judgeAgainstTarget,
+  migrationProgress,
+  substantiveCounts,
+  enforcedAxes,
+  loadTargetOverrides,
+  effectiveTarget,
+  MIN_SUBSTANTIVE,
+  TARGET_FILE,
+} from './decisions/target.js';
+export type {
+  Target,
+  TargetOverrides,
+  Distributions,
+  AxisDistribution,
+  AxisFacts,
+  AxisFlag,
+  Verdict as DecisionVerdict,
+  AxisProgress,
+  EnforceOptions,
+} from './decisions/target.js';
+export { DecisionStore, createDecisionStore } from './decisions/decision-store.js';
+export type { DecisionRow, Distribution } from './decisions/decision-store.js';
+export { runDecisionBackfill } from './decisions/decision-backfill.js';
+export type { DecisionBackfillResult } from './decisions/decision-backfill.js';
 
 // Store: upsert/delete/loadPool/coldNearest + calibration + nodeIdOf helper.
 export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';

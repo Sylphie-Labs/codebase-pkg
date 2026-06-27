@@ -32,6 +32,9 @@ export const VECTORS_TABLE = 'cfm_vectors';
 /** Name of the per-category calibration table. */
 export const CALIBRATION_TABLE = 'cfm_calibration';
 
+/** Name of the per-entity style-decision facts table. */
+export const DECISIONS_TABLE = 'cfm_decisions';
+
 /**
  * Create the pgvector extension, the cfm_vectors table, and the category index
  * if they do not already exist. Safe to call repeatedly (idempotent).
@@ -72,5 +75,27 @@ export async function ensureSchema(runner: PgRunner): Promise<void> {
        model       text NOT NULL,
        updated_at  timestamptz NOT NULL DEFAULT now()
      );`,
+  );
+
+  // Per-entity STYLE decision facts (the decision-conformity signal). One row
+  // per (node_id, axis): the categorical value a function/method chose on that
+  // axis (e.g. var_decl=const, array_syntax=bracket). Storing decisions
+  // per-entity makes both the axis DISTRIBUTIONS (GROUP BY value) and the
+  // MIGRATION BACKLOG (rows off the target value) plain SQL queries -- a later
+  // judge is a lookup, never a full re-scan of the source tree.
+  await runner.query(
+    `CREATE TABLE IF NOT EXISTS ${DECISIONS_TABLE} (
+       node_id    text NOT NULL,
+       axis       text NOT NULL,
+       value      text NOT NULL,
+       updated_at timestamptz NOT NULL DEFAULT now(),
+       PRIMARY KEY (node_id, axis)
+     );`,
+  );
+
+  // Distributions and migration-backlog queries both filter/group by axis.
+  await runner.query(
+    `CREATE INDEX IF NOT EXISTS cfm_decisions_axis_idx
+       ON ${DECISIONS_TABLE} (axis);`,
   );
 }
