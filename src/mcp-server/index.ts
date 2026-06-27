@@ -205,13 +205,16 @@ const TOOLS: Tool[] = [
   {
     name: 'judgeConformity',
     description:
-      'Judge whether the code you are writing fits the patterns already in this codebase. ' +
-      'Parses your working-tree changes (or one file), embeds each function\'s normalized signature ' +
-      'skeleton, and measures its distance to the committed "descriptive pool" of existing functions. ' +
-      'Returns per function: category, distance, a provisional verdict (conforms/outlier), and the ' +
-      'nearest existing functions — so you can see what you are diverging from or matching. ' +
-      'Leads with the outliers. Requires the conformity pool (run `codebase-pkg init` then ' +
-      '`codebase-pkg conformity-backfill`); says so plainly if unavailable.',
+      'Judge whether the code you are writing fits the patterns already in this codebase, with two ' +
+      'signals. PRIMARY — STYLE CONFORMITY (per-decision): for each function it checks the discrete ' +
+      'coding decisions made on a curated set of equivalent-choice axes (var_decl, string_style, ' +
+      'async_style, array_syntax, export_style) against the codebase\'s own effective target and ' +
+      'reports explainable off-target findings ("uses let; target is const"), leading with the most ' +
+      'divergent functions. SECONDARY — SEMANTIC NOVELTY (embedding distance): it embeds each ' +
+      'function body and measures its distance to the committed body-vector pool, flagging the ones ' +
+      'least like existing code. Judges your working-tree changes (or one file). Requires the ' +
+      'conformity store (run `codebase-pkg init` then `codebase-pkg conformity-backfill`); says so ' +
+      'plainly if unavailable.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -223,7 +226,9 @@ const TOOLS: Tool[] = [
         },
         maxResults: {
           type: 'number',
-          description: 'Max nearest neighbors to report per function (also the kNN window). Default 5.',
+          description:
+            'Max nearest neighbors to report per function in the SEMANTIC NOVELTY section ' +
+            '(also the kNN window). Default 5.',
         },
       },
       required: [],

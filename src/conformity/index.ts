@@ -126,6 +126,20 @@ export { DecisionStore, createDecisionStore } from './decisions/decision-store.j
 export type { DecisionRow, Distribution } from './decisions/decision-store.js';
 export { runDecisionBackfill } from './decisions/decision-backfill.js';
 export type { DecisionBackfillResult } from './decisions/decision-backfill.js';
+// Decision-conformity JUDGE surface (PASS 2a): per-decision STYLE-conformity
+// verdicts against the effective target (the primary signal).
+export {
+  judgeFileDecisions,
+  judgeWorkingTreeDecisions,
+  isDecisionUnavailable,
+} from './decisions/judge-decisions.js';
+export type {
+  DecisionFunctionResult,
+  DecisionFileResult,
+  DecisionUnavailableResult,
+  DecisionJudgeResult,
+  JudgeDecisionsOptions,
+} from './decisions/judge-decisions.js';
 
 // Store: upsert/delete/loadPool/coldNearest + calibration + nodeIdOf helper.
 export { ConformityStore, createConformityStore, nodeIdOf } from './store.js';

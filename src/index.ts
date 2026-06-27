@@ -91,6 +91,9 @@ export {
   judgeFile,
   isUnavailable,
   runConformityJudge,
+  judgeFileDecisions,
+  judgeWorkingTreeDecisions,
+  isDecisionUnavailable,
 } from './conformity/index.js';
 export type {
   Embedder,
@@ -110,4 +113,9 @@ export type {
   UnavailableResult,
   JudgeResult,
   JudgeWorktreeOptions,
+  DecisionFunctionResult,
+  DecisionFileResult,
+  DecisionUnavailableResult,
+  DecisionJudgeResult,
+  JudgeDecisionsOptions,
 } from './conformity/index.js';
