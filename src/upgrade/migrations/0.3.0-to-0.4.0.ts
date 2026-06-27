@@ -14,7 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { detectDrift, hashFile, normalizePath } from '../state.js';
+import { detectDrift, getManagedFiles, hashFile, normalizePath } from '../state.js';
 import type { Migration, MigrationContext, MigrationResult } from './types.js';
 
 const SKILL_REL = '.claude/skills/map-pkg-from-root/SKILL.md';
@@ -33,7 +33,7 @@ const migration: Migration = {
   async apply(ctx: MigrationContext): Promise<MigrationResult> {
     const src = path.join(ctx.packageRoot, 'template', SKILL_REL);
     const dest = path.join(ctx.cwd, SKILL_REL);
-    const managedFiles = [...ctx.state.managedFiles];
+    const managedFiles = [...getManagedFiles(ctx.state).files];
     const changedFiles: string[] = [];
     const warnings: string[] = [];
 

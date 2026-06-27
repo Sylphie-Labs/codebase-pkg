@@ -61,14 +61,19 @@ codebase-pkg seed
 ## Lifecycle
 
 ```bash
-codebase-pkg init      [--local] [--docker] [--force] [--dry-run]
-codebase-pkg upgrade   [--plan] [--confirm] [--force]
-codebase-pkg status                                # show install state + drift
-codebase-pkg doctor    [--no-network]              # structural checks
-codebase-pkg uninstall --confirm
+codebase-pkg init      [--local] [--docker] [--force] [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>]
+codebase-pkg upgrade   [--plan] [--confirm] [--force] [--path <dir>]
+codebase-pkg status                                [--path <dir>]   # show install state + drift
+codebase-pkg doctor    [--no-network]              [--path <dir>]   # structural checks
+codebase-pkg uninstall --confirm                   [--path <dir>]
+codebase-pkg reset     [--graph-only|--conformity-only] [--reseed] --confirm [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>]
 ```
 
-**`init`** is one-time per repo. It writes a state file that subsequent commands read.
+### Location
+
+By default every location-aware command (`init`, `upgrade`, `status`, `doctor`, `uninstall`, `reset`) operates on the current directory. You can point them at a different filesystem root with `--path <dir>` (alias `--root <dir>`; both `--path X` and `--path=X` forms work), or with the `CODEBASE_PKG_ROOT` environment variable. Precedence is `--path`/`--root` flag &gt; `CODEBASE_PKG_ROOT` &gt; current directory. The resolved root is where `.codebase-pkg/state.json` is read/written and where managed files live; `init` creates the directory if it doesn't exist and records the absolute root in `state.json` (shown by `status` and `doctor`). If a later teardown resolves a root that differs from the recorded one, `uninstall`/`reset` print a one-line note and proceed.
+
+**`init`** is one-time per repo. It writes a state file that subsequent commands read. Pass `--neo4j-uri <uri>` / `--pg-uri <uri>` to persist explicit database endpoints into `state.json` (`neo4j.uri` / `postgres.uri`) so later teardown reuses them without re-specifying — useful when your Neo4j/Postgres live somewhere other than the per-repo `--docker` defaults.
 
 **`upgrade`** walks the migration graph from the version recorded in `state.json` to the version of the CLI you currently have installed. Always shows the plan first; nothing is applied without `--confirm`. Drifted files (modified since install) are skipped with a warning unless `--force` is also passed (which creates `.bak.<timestamp>` backups).
 
@@ -77,6 +82,8 @@ codebase-pkg uninstall --confirm
 **`doctor`** runs six structural checks: state file present, version matches, managed files present, MCP stanza registered, constraints file populated, Neo4j reachable.
 
 **`uninstall`** removes every file recorded in `state.json` with `--confirm`. Modified files are backed up to `.bak.<timestamp>` rather than deleted unless `--force`.
+
+**`reset`** wipes *data*, not files (the data-side counterpart to `uninstall`). By default it deletes the entire Neo4j graph **and** truncates the conformity Postgres tables (`cfm_vectors`, `cfm_calibration`, `cfm_decisions`). Scope it with `--graph-only` or `--conformity-only` (mutually exclusive). Like `uninstall`, it requires `--confirm` (or `--yes`) to mutate and supports `--dry-run`; without `--confirm` it prints a plan showing live node/relationship and per-table row counts, then no-ops. Add `--reseed` to rebuild after a successful wipe — `seed` if the graph was wiped, `conformity-backfill` if conformity was wiped (respecting the scope flags). Absent `cfm_*` tables on a fresh install are skipped, not errored. Because `reset` deletes data, it targets a *specific* endpoint: it resolves the Neo4j/Postgres URIs (precedence `--neo4j-uri`/`--pg-uri` flag &gt; `CODEBASE_PKG_NEO4J_URI`/`CODEBASE_PKG_PG_URI` env &gt; `state.json` at the resolved `--path` root &gt; default) and runs the count/wipe against a dedicated driver/pool it builds and closes, independent of the cwd-bound singletons. The (credential-masked) resolved URIs are shown in the plan.
 
 > `setup` is a deprecated alias for `init` and will be removed before 1.0.
 
@@ -111,7 +118,8 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `CODEBASE_PKG_NEO4J_URI` | `bolt://localhost:7687` | Bolt endpoint |
+| `CODEBASE_PKG_ROOT` | `<cwd>` | Filesystem root the location-aware commands (`init`, `upgrade`, `status`, `doctor`, `uninstall`, `reset`) operate on. Overridden by the `--path`/`--root` flag |
+| `CODEBASE_PKG_NEO4J_URI` | `bolt://localhost:7687` | Bolt endpoint. Overridden by `reset --neo4j-uri` |
 | `CODEBASE_PKG_NEO4J_USER` | `neo4j` | Neo4j user |
 | `CODEBASE_PKG_NEO4J_PASSWORD` | `codebase-pkg-local` | Neo4j password |
 | `CODEBASE_PKG_WATCHED_DIRS` | `apps,packages,src` | Comma-separated relative paths to index |
@@ -119,7 +127,7 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 | `CODEBASE_PKG_WORKSPACE_SCOPE` | (none) | npm workspace scope prefix for import resolution (e.g. `@your-org`) |
 | `CODEBASE_PKG_LOGS_DIR` | `<cwd>/logs` | Where `getLogContext` reads log files |
 | `CODEBASE_PKG_DOMAIN_LABELS` | (generic set) | Comma-separated allowed domain labels for `Function.domain` |
-| `CODEBASE_PKG_PG_URI` | (auto) | Postgres/pgvector DSN for the [Conformity Judge](#conformity-judge). Overrides the per-instance DSN recorded in `state.json`; point it at an existing Postgres instead of the provisioned one |
+| `CODEBASE_PKG_PG_URI` | (auto) | Postgres/pgvector DSN for the [Conformity Judge](#conformity-judge). Overrides the per-instance DSN recorded in `state.json`; point it at an existing Postgres instead of the provisioned one. Overridden by `reset --pg-uri` |
 | `CODEBASE_PKG_CONFORMITY` | (unset) | Set to `off` to disable the conformity sync hook and judging entirely |
 | `CODEBASE_PKG_SKIP_MODEL_PREFETCH` | (unset) | Set to `1` to skip the embedding-model prefetch at `init` (same as `--no-model`) |
 
@@ -220,12 +228,13 @@ The 8th MCP tool. Input `{ filePath?, maxResults? }` (with no `filePath`, it jud
 ## CLI reference
 
 ```bash
-# Lifecycle
-codebase-pkg init        [--local] [--docker] [--force] [--dry-run]
-codebase-pkg upgrade     [--plan] [--confirm] [--force] [--verbose]
-codebase-pkg status
-codebase-pkg doctor      [--no-network]
-codebase-pkg uninstall   --confirm [--force] [--dry-run]
+# Lifecycle  (all accept --path/--root <dir> or CODEBASE_PKG_ROOT to set the install root)
+codebase-pkg init        [--local] [--docker] [--force] [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>]
+codebase-pkg upgrade     [--plan] [--confirm] [--force] [--verbose] [--path <dir>]
+codebase-pkg status      [--path <dir>]
+codebase-pkg doctor      [--no-network] [--path <dir>]
+codebase-pkg uninstall   --confirm [--force] [--dry-run] [--path <dir>]
+codebase-pkg reset       [--graph-only|--conformity-only] [--reseed] --confirm [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>]
 
 # Graph operations
 codebase-pkg seed                 # initial full graph build

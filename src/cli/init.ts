@@ -39,6 +39,7 @@ import {
   findFreePort,
   type Neo4jInstanceConfig,
 } from './neo4j-config.js';
+import { resolveRoot } from './resolve-root.js';
 
 /** Subset of Neo4jInstanceConfig persisted to state.json (no user/password). */
 type DockerInstanceConfig = Pick<
@@ -68,7 +69,28 @@ type Flags = {
   mcpOnly: boolean;
   noModel: boolean;
   installMode: InstallMode;
+  /** Explicit Neo4j endpoint from `--neo4j-uri`, persisted to state.neo4j.uri. */
+  neo4jUri?: string;
+  /** Explicit Postgres endpoint from `--pg-uri`, persisted to state.postgres.uri. */
+  pgUri?: string;
 };
+
+/**
+ * Read a `--flag <value>` (or `--flag=<value>`) string option from `args`.
+ * Returns the last occurrence's value, or undefined when absent.
+ */
+function readStrFlag(args: string[], flag: string): string | undefined {
+  let found: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === flag) {
+      if (args[i + 1] !== undefined) found = args[i + 1];
+    } else if (a.startsWith(flag + '=')) {
+      found = a.slice(flag.length + 1);
+    }
+  }
+  return found;
+}
 
 function parseFlags(args: string[]): Flags {
   const local = args.includes('--local');
@@ -84,6 +106,8 @@ function parseFlags(args: string[]): Flags {
       args.includes('--no-model') ||
       process.env.CODEBASE_PKG_SKIP_MODEL_PREFETCH === '1',
     installMode: local ? 'local' : global ? 'global' : 'global',
+    neo4jUri: readStrFlag(args, '--neo4j-uri'),
+    pgUri: readStrFlag(args, '--pg-uri'),
   };
 }
 
@@ -486,7 +510,14 @@ function printNextSteps(
 
 export async function runInit(args: string[]): Promise<number> {
   const flags = parseFlags(args);
-  const cwd = process.cwd();
+  // Install into the resolved root (--path/--root/CODEBASE_PKG_ROOT/cwd). Create
+  // it if needed so init can target a directory that does not exist yet
+  // (consistent with how init already creates the state dir). Skip creation on
+  // dry-run so a preview never touches the filesystem.
+  const cwd = resolveRoot(args);
+  if (!flags.dryRun && !fs.existsSync(cwd)) {
+    fs.mkdirSync(cwd, { recursive: true });
+  }
   const pm = detectPackageManager(cwd);
 
   process.stdout.write(`[init] codebase-pkg ${flags.dryRun ? '(dry-run) ' : ''}in ${cwd}\n\n`);
@@ -521,10 +552,23 @@ export async function runInit(args: string[]): Promise<number> {
       installMode: flags.installMode,
       cliPathAtInstall: getCliAbsolutePath(),
       managedFiles: managed,
+      // Record the absolute install root so later teardown can warn if a
+      // different root is resolved.
+      root: cwd,
     };
     if (dockerConfig) {
       state.neo4j = dockerConfig.neo4j;
       state.postgres = dockerConfig.postgres;
+    }
+    // Explicit DB endpoints persist their `uri` so later teardown reuses them
+    // without re-specifying. These override any docker-derived uri above, but
+    // leave the docker-only sub-fields (containerName/ports/slug) as-is /
+    // absent (they're optional). The override URI takes precedence.
+    if (flags.neo4jUri) {
+      state.neo4j = { ...(state.neo4j ?? {}), uri: flags.neo4jUri } as InstallState['neo4j'];
+    }
+    if (flags.pgUri) {
+      state.postgres = { ...(state.postgres ?? {}), uri: flags.pgUri } as InstallState['postgres'];
     }
     writeState(cwd, state);
     process.stdout.write(`[init] wrote .codebase-pkg/state.json (tracks ${managed.length} managed file${managed.length === 1 ? '' : 's'})\n`);

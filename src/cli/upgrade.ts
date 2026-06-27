@@ -21,6 +21,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { readState, writeState } from '../upgrade/state.js';
 import { applyAll, compareVersions, planMigrations } from '../upgrade/runner.js';
+import { resolveRoot } from './resolve-root.js';
 
 type Flags = {
   plan: boolean;
@@ -60,7 +61,7 @@ function severityBadge(s: 'patch' | 'minor' | 'major'): string {
 
 export async function runUpgrade(args: string[]): Promise<number> {
   const flags = parseFlags(args);
-  const cwd = process.cwd();
+  const cwd = resolveRoot(args);
   const state = readState(cwd);
 
   if (!state) {

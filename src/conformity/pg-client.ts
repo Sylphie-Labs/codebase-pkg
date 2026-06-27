@@ -34,18 +34,23 @@ export interface PgRunner {
 let _pool: Pool | null = null;
 
 /**
- * Resolve the effective Postgres DSN for the repo at `cwd`.
+ * Resolve the effective Postgres DSN for the install at `root`.
  *
- * Precedence env > state.json > default:
- *   uri: CODEBASE_PKG_PG_URI > state.postgres.uri >
+ * `root` is the resolved filesystem root (see resolveRoot) whose
+ * `.codebase-pkg/state.json` is consulted. Precedence:
+ *   uri: overrideUri (flag) > CODEBASE_PKG_PG_URI > state.postgres.uri >
  *        postgres://codebase-pkg:codebase-pkg-local@localhost:5432/codebase_pkg
+ *
+ * @param root        - Install root dir whose state.json supplies the fallback DSN.
+ * @param overrideUri - Highest-precedence DSN, e.g. from a `--pg-uri` flag.
  */
-export function resolvePgConfig(cwd: string): { uri: string } {
-  const state = readState(cwd) as { postgres?: { uri?: string } } | null;
+export function resolvePgConfig(root: string, overrideUri?: string): { uri: string } {
+  const state = readState(root) as { postgres?: { uri?: string } } | null;
   const stateUri = state?.postgres?.uri;
 
   return {
     uri:
+      overrideUri ??
       process.env.CODEBASE_PKG_PG_URI ??
       stateUri ??
       'postgres://codebase-pkg:codebase-pkg-local@localhost:5432/codebase_pkg',
@@ -70,6 +75,47 @@ export function getPgPool(): Pool {
     });
   }
   return _pool;
+}
+
+/**
+ * Build a NEW pg Pool bound to an explicit DSN, independent of the cwd-bound
+ * singleton from {@link getPgPool}.
+ *
+ * The singleton resolves its DSN once (from cwd) on first use, so commands that
+ * must target a SPECIFIC endpoint -- e.g. `reset --pg-uri ...`, or a non-cwd
+ * `--path` whose state.json points elsewhere -- cannot use it. The caller OWNS
+ * the returned pool and must `end()` it (the dispatcher's finally only closes
+ * the shared singleton).
+ */
+export function createPgPool(uri: string): Pool {
+  const pool = new Pool({
+    connectionString: uri,
+    max: 10,
+    connectionTimeoutMillis: 5000,
+  });
+  pool.on('error', (err) => {
+    process.stderr.write(`[pg-client] pool error: ${err.message}\n`);
+  });
+  return pool;
+}
+
+/**
+ * Run a SQL query against a CALLER-PROVIDED pool (typically one from
+ * {@link createPgPool} targeting an explicit DSN) and return `{ rows }`. Mirrors
+ * {@link pgQuery}'s error wrapping but does not touch the singleton.
+ */
+export async function pgQueryOn(
+  pool: Pool,
+  text: string,
+  params: unknown[] = [],
+): Promise<{ rows: unknown[] }> {
+  try {
+    const result = await pool.query(text, params as unknown[]);
+    return { rows: result.rows };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Postgres query failed: ${message}\nQuery: ${text.slice(0, 200)}`);
+  }
 }
 
 /**

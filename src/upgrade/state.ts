@@ -38,6 +38,13 @@ export interface InstallState {
   /** Files this package manages in the consumer's repo. */
   managedFiles: ManagedFile[];
   /**
+   * Absolute filesystem root this install was written to (the resolved
+   * `--path`/`--root`/`CODEBASE_PKG_ROOT`, or cwd at init time). Optional and
+   * additive: state files written before this field existed remain valid, and
+   * teardown only uses it to warn when a later command resolves a different root.
+   */
+  root?: string;
+  /**
    * Per-instance Neo4j settings chosen at `init --docker` time. Optional so
    * state files written before this field existed remain valid.
    */
@@ -76,6 +83,42 @@ export function readState(cwd: string): InstallState | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Return a well-formed `ManagedFile[]` from a (possibly old/partial/hand-edited)
+ * state object, never throwing.
+ *
+ * `readState` does a blind `JSON.parse` with no validation, so `managedFiles`
+ * may be missing entirely (state written before the field existed, or a
+ * truncated file) or contain malformed elements. This accessor:
+ *   - returns `[]` when `managedFiles` is absent or not an array, and
+ *   - drops elements that aren't objects with a string `path`,
+ * reporting the count of dropped (malformed) elements so callers can surface
+ * them rather than silently losing them. Callers that iterate `managedFiles`
+ * should use this instead of touching the raw field, so an old state file can
+ * never make teardown/inspection crash with "is not iterable".
+ */
+export function getManagedFiles(state: InstallState): {
+  files: ManagedFile[];
+  malformed: number;
+} {
+  const raw = (state as { managedFiles?: unknown }).managedFiles;
+  if (!Array.isArray(raw)) return { files: [], malformed: 0 };
+  const files: ManagedFile[] = [];
+  let malformed = 0;
+  for (const entry of raw) {
+    if (
+      entry &&
+      typeof entry === 'object' &&
+      typeof (entry as { path?: unknown }).path === 'string'
+    ) {
+      files.push(entry as ManagedFile);
+    } else {
+      malformed++;
+    }
+  }
+  return { files, malformed };
 }
 
 export function writeState(cwd: string, state: InstallState): void {
