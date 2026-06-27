@@ -4,7 +4,7 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] — 2026-06-27
 
 ### Added
 - **Decision/style conformity — the primary conformity signal.** A deterministic, explainable check of the discrete, interchangeable coding decisions a function makes — the curated axes `var_decl`, `string_style`, `async_style`, `array_syntax`, `export_style` — against an **effective target**: a **descriptive seed** (the codebase's own mode per axis) merged with an optional, git-tracked **`conformity-target.json`** of accepted preferences at the repo root. Findings are flat facts ("uses `let`; target is `const`"), no model or embeddings involved. A **base-rate guard** only enforces an axis with enough substantive examples (≥ 10 deciders) unless an explicit override forces it. Decision facts persist one row per `(node_id, axis)` in a new `cfm_decisions` table, so axis distributions and the migration backlog are plain SQL. `conformity-backfill` now also persists these facts and logs the effective target + per-axis migration progress; `judgeConformity` and `conformity-judge` lead with the decision report.
@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Embedding-novelty coverage spans functions/methods (`function:body`), types (`type:body`), and module-level const/var declarations (`module:const`), but the parser does not yet chunk bare top-level statements (side-effect calls), destructuring-pattern declarations, or Python module-level assignments — those entities aren't judged.
 - The conformity signal separates best against genuinely different code; per our validation it is more modest against same-author / same-domain code that already looks alike, so read the distance and nearest neighbors, not just the label. Verdicts before backfill/calibration are uncalibrated (flagged `calibrated: false`).
 - The Python parser does not yet capture default-parameter values (TypeScript/TSX only); this is unrelated to the whole-body embedding but the parser distinction still stands.
-- End-to-end against live Neo4j + Postgres still wants a smoke test; the engine is unit-tested with fakes.
+- Decision/style conformity is the primary signal; the embedding-novelty lens separates strongly on genuinely different code but only modestly on same-author/same-domain code — so for novelty, read the distance and nearest neighbors, not just the label.
 
 ## [0.4.0] — 2026-06-19
 
