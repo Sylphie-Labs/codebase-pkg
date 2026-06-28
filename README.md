@@ -93,7 +93,7 @@ By default every location-aware command (`init`, `upgrade`, `status`, `doctor`, 
 
 **Edges:** `CONTAINS`, `DEFINES`, `BELONGS_TO`, `IMPORTS`, `USES_TYPE`, `CALLS`, `HAS_CODE`, `EXTENDS`, `IMPLEMENTS`, `INJECTS`, `CHANGED_IN`.
 
-Skills add more on top of the seeded graph (schemaless — no migration or indexes needed): `/infer-pkg-connections` writes `DATA_FLOWS_TO` and `BRIDGES` edges plus `hubScore` properties, and `/map-pkg-from-root` writes `REACHES` edges (Function/File → Function/Type, with a `hops` property) along with root annotations (`entryPointKind`, `purpose`, `summary`, `reachableCount`) on entry-point nodes.
+Skills add more on top of the seeded graph (schemaless — no migration or indexes needed): `/classify-pkg-domains` writes a `domain` property on `Function` nodes; `/infer-pkg-connections` writes `DATA_FLOWS_TO` and `BRIDGES` edges plus `hubScore`/`hubKind`, `possiblyDead`, and `architecturalLayer` properties; and `/map-pkg-from-root` writes `REACHES` edges (Function/File → Function/Type, with a `hops` property) along with root annotations (`entryPointKind`, `purpose`, `summary`, `reachableCount`) on entry-point nodes. `/sync-pkg` orchestrates the others after a `sync` (it writes no edges itself). The skill templates are installed into `.claude/skills/` by `init`.
 
 After the initial seed, run `codebase-pkg sync` to update only the deltas since the last synced commit. SHA-256 content hashes per entity drive change detection. Sync is a manual command — if you want it automatic, wire it into a `pre-push` git hook or a CI step.
 
@@ -104,7 +104,7 @@ After the initial seed, run `codebase-pkg sync` to update only the deltas since 
 | Tool | What it returns |
 |---|---|
 | `getModuleContext(query)` | Functions, types, files, constraints in a feature area |
-| `getFunctionDetail(name, filePath?)` | Full body + signature + JSDoc + recent changes for one function |
+| `getFunctionDetail(functionName, filePath?)` | Full body + signature + JSDoc + recent changes for one function |
 | `getDataFlow(startNode, direction, depth?)` | Upstream/downstream graph traversal (default depth 3, max 6) |
 | `getRecentChanges(query, since?)` | Concept ↔ git-history cross-reference |
 | `getConstraints(scope)` | Architectural invariants from `constraints.json` and the graph |
@@ -123,6 +123,8 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 | `CODEBASE_PKG_NEO4J_USER` | `neo4j` | Neo4j user |
 | `CODEBASE_PKG_NEO4J_PASSWORD` | `codebase-pkg-local` | Neo4j password |
 | `CODEBASE_PKG_WATCHED_DIRS` | `apps,packages,src` | Comma-separated relative paths to index |
+| `CODEBASE_PKG_EXCLUDE_DIRS` | (none) | Comma-separated path-prefixes (anchored at repo root) to skip during `sync`, e.g. `packages/legacy/` |
+| `CODEBASE_PKG_CURSOR_FILE` | `.codebase-pkg/.last-sync-commit` | Override the location of the last-synced-commit cursor file (absolute or repo-relative) |
 | `CODEBASE_PKG_PACKAGES` | (auto) | JSON array of `{name, dir}` for seed |
 | `CODEBASE_PKG_WORKSPACE_SCOPE` | (none) | npm workspace scope prefix for import resolution (e.g. `@your-org`) |
 | `CODEBASE_PKG_LOGS_DIR` | `<cwd>/logs` | Where `getLogContext` reads log files |
