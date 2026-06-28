@@ -18,6 +18,7 @@ import {
   getChangedFiles,
   getDeletedFiles,
   readLastSyncCommit,
+  computeWatchedDirectories,
 } from '../dist/sync/git-diff.js';
 
 const REPO_ROOT = process.cwd().replace(/\\/g, '/');
@@ -62,4 +63,49 @@ test('getDeletedFiles returns an array of absolute, forward-slashed paths (BUG 1
       assertAbsoluteForwardSlashed(p, 'getDeletedFiles');
     }
   }
+});
+
+// ---------------------------------------------------------------------------
+// computeWatchedDirectories — keeps incremental sync consistent with the seed
+// ---------------------------------------------------------------------------
+
+test('computeWatchedDirectories: env override wins verbatim (CSV, trimmed)', () => {
+  const dirs = computeWatchedDirectories(' apps , custom/place , ', [
+    { dir: 'frontend/src' },
+  ]);
+  assert.deepEqual(dirs, ['apps', 'custom/place']);
+});
+
+test('computeWatchedDirectories: no env unions defaults with non-default package dirs', () => {
+  const dirs = computeWatchedDirectories(undefined, [
+    { dir: 'frontend/src' },
+    { dir: 'apps/web/src' },
+    { dir: 'packages/api/src' },
+    { dir: '.' }, // must be ignored
+  ]);
+  // defaults present; root-level package contributes its FULL dir ('frontend/src'),
+  // NOT just 'frontend', so incremental sync watches exactly what the seed indexes.
+  assert.ok(dirs.includes('apps'));
+  assert.ok(dirs.includes('packages'));
+  assert.ok(dirs.includes('src'));
+  assert.ok(dirs.includes('frontend/src'));
+  assert.ok(!dirs.includes('frontend'), 'must NOT widen to the whole frontend/ tree');
+  assert.ok(!dirs.includes('.'));
+  assert.equal(new Set(dirs).size, dirs.length, 'no duplicates');
+  // 'apps'/'packages' covered by defaults: apps/web/src + packages/api/src add nothing.
+  assert.equal(dirs.filter(d => d === 'apps').length, 1);
+  assert.equal(dirs.filter(d => d === 'packages').length, 1);
+  assert.ok(!dirs.includes('apps/web/src'), 'apps/* covered by default apps');
+  assert.ok(!dirs.includes('packages/api/src'), 'packages/* covered by default packages');
+});
+
+test('computeWatchedDirectories: root-level package watches only its src subtree (seed parity)', () => {
+  const dirs = computeWatchedDirectories(undefined, [{ dir: 'frontend/src' }]);
+  // Mirror isWatchedFile's prefix-match semantics (dir === rel || rel.startsWith(dir + '/')).
+  const inWatchedDir = (rel) =>
+    dirs.some((d) => rel === d || rel.startsWith(d + '/'));
+  // The seed walks <repo>/frontend/src only, so incremental sync must too:
+  assert.ok(inWatchedDir('frontend/src/App.tsx'), 'frontend/src/App.tsx IS watched');
+  assert.ok(!inWatchedDir('frontend/next.config.ts'), 'frontend/next.config.ts is NOT watched');
+  assert.ok(!inWatchedDir('frontend/scripts/gen.ts'), 'frontend/scripts/gen.ts is NOT watched');
 });

@@ -12,6 +12,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { WATCHED_PACKAGES } from './import-resolver.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -44,10 +45,30 @@ const DEFAULT_WATCHED_DIRECTORIES = [
   'src',
 ];
 
-const WATCHED_DIRECTORIES = (
-  process.env.CODEBASE_PKG_WATCHED_DIRS
-    ? process.env.CODEBASE_PKG_WATCHED_DIRS.split(',').map(s => s.trim()).filter(Boolean)
-    : DEFAULT_WATCHED_DIRECTORIES
+/**
+ * Exported for testing. With no env override, union the defaults with each auto-detected
+ * package dir so the seed and incremental sync stay consistent. Packages whose top-level
+ * segment is already a broad default (apps/packages/src) are covered by that default and
+ * contribute nothing. A root-level package (e.g. 'frontend/src') contributes its FULL dir
+ * verbatim — NOT just 'frontend' — so isWatchedFile (prefix-matching on `dir + '/'`) watches
+ * exactly frontend/src/* and excludes sibling config/scripts the seed never indexes, matching
+ * the seed's collectSourceFiles(<repo>/frontend/src) scope. Never narrows the defaults.
+ */
+export function computeWatchedDirectories(
+  envValue: string | undefined,
+  watchedPackages: { dir: string }[],
+): string[] {
+  if (envValue) return envValue.split(',').map(s => s.trim()).filter(Boolean);
+  const extra = (Array.isArray(watchedPackages) ? watchedPackages : [])
+    .filter(p => p && typeof p.dir === 'string')
+    .map(p => p.dir)
+    .filter(dir => dir !== '.')
+    .filter(dir => !DEFAULT_WATCHED_DIRECTORIES.includes(dir.split('/')[0]));
+  return Array.from(new Set([...DEFAULT_WATCHED_DIRECTORIES, ...extra]));
+}
+
+const WATCHED_DIRECTORIES = computeWatchedDirectories(
+  process.env.CODEBASE_PKG_WATCHED_DIRS, WATCHED_PACKAGES,
 );
 
 /**

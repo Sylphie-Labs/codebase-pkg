@@ -122,10 +122,10 @@ All settings are environment variables. Defaults work for a standard local Neo4j
 | `CODEBASE_PKG_NEO4J_URI` | `bolt://localhost:7687` | Bolt endpoint. Overridden by `reset --neo4j-uri` |
 | `CODEBASE_PKG_NEO4J_USER` | `neo4j` | Neo4j user |
 | `CODEBASE_PKG_NEO4J_PASSWORD` | `codebase-pkg-local` | Neo4j password |
-| `CODEBASE_PKG_WATCHED_DIRS` | `apps,packages,src` | Comma-separated relative paths to index |
+| `CODEBASE_PKG_WATCHED_DIRS` | `apps,packages,src` (auto-extended) | Comma-separated relative paths the incremental `sync` watches. When unset, the defaults are unioned with every auto-detected package dir (a root-level package adds its full dir, e.g. `frontend/src`, so sync watches exactly the subtree the seed indexes; packages already under `apps/`/`packages/`/`src/` are covered by the defaults); setting it pins the list verbatim |
 | `CODEBASE_PKG_EXCLUDE_DIRS` | (none) | Comma-separated path-prefixes (anchored at repo root) to skip during `sync`, e.g. `packages/legacy/` |
 | `CODEBASE_PKG_CURSOR_FILE` | `.codebase-pkg/.last-sync-commit` | Override the location of the last-synced-commit cursor file (absolute or repo-relative) |
-| `CODEBASE_PKG_PACKAGES` | (auto) | JSON array of `{name, dir}` for seed |
+| `CODEBASE_PKG_PACKAGES` | (auto) | JSON array of `{name, dir}` for the seed. Auto-detect covers single-package (`src/`), `apps/`+`packages/` children (preferring `<pkg>/src` then falling back to the package dir itself for src-less/Python service layouts), and other top-level dirs with their own `src/` (e.g. `frontend/src`). Set this to pin the package roots exactly |
 | `CODEBASE_PKG_WORKSPACE_SCOPE` | (none) | npm workspace scope prefix for import resolution (e.g. `@your-org`) |
 | `CODEBASE_PKG_LOGS_DIR` | `<cwd>/logs` | Where `getLogContext` reads log files |
 | `CODEBASE_PKG_DOMAIN_LABELS` | (generic set) | Comma-separated allowed domain labels for `Function.domain` |

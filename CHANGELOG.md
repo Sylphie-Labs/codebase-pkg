@@ -4,6 +4,13 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] — 2026-06-28
+
+### Fixed
+- **Auto-detect now covers two layouts the seed previously missed**, so all source roots in a real monorepo get indexed. `getWatchedPackages` (the seed's package auto-detect) used to scan only `<repo>/src`, `apps/*/src`, and `packages/*/src`. It now also detects: (1) **top-level directories with their own `src/`** — e.g. a root-level `frontend/src` — and (2) **src-less package layouts** under `apps/`/`packages/` (e.g. Python services with `.py` files laid out directly under the package dir, no `src/` subdir), falling back to the package dir itself when it contains first-party source within a few levels. Detection now also skips noise dirs (`node_modules`, `dist`, `.venv`, `__pycache__`, …) and disambiguates colliding package names (e.g. `apps/foo` and `packages/foo` → `foo` and `foo-2`), since `Service.name` is a unique key in the graph. `getWatchedPackages` now accepts an optional `repoRoot` for testability; production behavior (no args) is unchanged.
+- **Incremental sync stays consistent with the seed.** `git-diff.ts` filtered changed files through its own hardcoded `['apps','packages','src']` watch list, so a newly covered root-level package (e.g. `frontend/src`) would be seeded once but never kept in sync. A new exported, unit-tested `computeWatchedDirectories(envValue, watchedPackages)` unions the defaults with every auto-detected package dir when `CODEBASE_PKG_WATCHED_DIRS` is unset (never narrowing the defaults); a root-level package contributes its **full** dir (e.g. `frontend/src`, not the whole `frontend/` tree) so incremental sync watches exactly the subtree the seed indexes, while packages already under `apps/`/`packages/`/`src/` are covered by the defaults. An explicit env value still pins the list verbatim.
+- **Auto-detect ignores non-indexable files when deciding a src-less package.** The src-less fallback only counts files the seed actually ingests: type declarations (`.d.ts`), test/spec files (`*.test.*`, `*.spec.*`, `test_*.py`, `_test.py`), and `conftest.py` no longer make a directory look like a real package, preventing empty `Service` nodes (and the unique-name collisions they would cause).
+
 ## [0.5.3] — 2026-06-27
 
 ### Fixed
