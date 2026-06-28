@@ -4,6 +4,16 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] — 2026-06-27
+
+### Fixed
+- **README: corrected the `getFunctionDetail` MCP tool parameter name** from `name` to `functionName` — the actual input key the tool expects, so callers copying from the docs now pass the right field.
+
+### Changed
+- **README: documented the full skill set.** The "What's in the graph" section now covers all four installed skills — `/classify-pkg-domains` (writes a `domain` property on `Function` nodes) and `/sync-pkg` (orchestrates the others after a `sync`) were previously omitted — plus the additional properties `/infer-pkg-connections` writes (`hubKind`, `possiblyDead`, `architecturalLayer`).
+- **README: documented two `sync` env vars** read by the diff layer but previously undocumented: `CODEBASE_PKG_EXCLUDE_DIRS` (comma-separated path-prefixes to skip) and `CODEBASE_PKG_CURSOR_FILE` (override the last-synced-commit cursor file location).
+- Registered a no-op `0.5.2 -> 0.5.3` migration so `upgrade` bridges without a blocker (documentation-only release; no managed-file changes).
+
 ## [0.5.2] — 2026-06-27
 
 ### Changed

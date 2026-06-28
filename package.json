@@ -1,6 +1,6 @@
 {
   "name": "@sylphie-labs/codebase-pkg",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "AST-driven Neo4j knowledge graph of your codebase, exposed to Claude Code via MCP. Map your monorepo once; let the agent query it instead of re-reading files.",
   "keywords": [
     "claude",
