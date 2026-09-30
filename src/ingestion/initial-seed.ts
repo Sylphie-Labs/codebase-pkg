@@ -114,6 +114,8 @@ async function createSchemaIndexes(driver: import('neo4j-driver').Driver): Promi
     'CREATE INDEX module_package IF NOT EXISTS FOR (m:Module) ON (m.packageName)',
     'CREATE INDEX function_hash IF NOT EXISTS FOR (f:Function) ON (f.contentHash)',
     'CREATE INDEX type_hash IF NOT EXISTS FOR (t:Type) ON (t.contentHash)',
+    'CREATE INDEX constant_hash IF NOT EXISTS FOR (c:Constant) ON (c.contentHash)',
+    'CREATE INDEX constant_filepath_name IF NOT EXISTS FOR (c:Constant) ON (c.filePath, c.name)',
     'CREATE INDEX file_name IF NOT EXISTS FOR (f:File) ON (f.fileName)',
     'CREATE INDEX file_extension IF NOT EXISTS FOR (f:File) ON (f.extension)',
   ];
@@ -226,9 +228,10 @@ async function createModuleNodes(
 async function writeParsedBatch(
   batch: ParsedFile[],
   driver: import('neo4j-driver').Driver
-): Promise<{ functions: number; types: number; errors: number }> {
+): Promise<{ functions: number; types: number; constants: number; errors: number }> {
   let functions = 0;
   let types = 0;
+  let constants = 0;
   let errors = 0;
 
   const session = driver.session({ defaultAccessMode: 'WRITE' });
@@ -370,6 +373,47 @@ async function writeParsedBatch(
         types++;
       }
 
+      for (const c of parsedFile.constants) {
+        await tx.run(
+          `
+          MERGE (c:Constant {filePath: $filePath, name: $name})
+          SET c.lineNumber  = $lineNumber,
+              c.endLine     = $endLine,
+              c.isExported  = $isExported,
+              c.contentHash = $contentHash,
+              c.updatedAt   = timestamp()
+          WITH c
+          MATCH (m:Module {filePath: $dirPath})
+          MERGE (m)-[:CONTAINS]->(c)
+          WITH c
+          MATCH (file:File {filePath: $filePath})
+          MERGE (file)-[:DEFINES]->(c)
+          `,
+          {
+            filePath: c.filePath,
+            name: c.name,
+            lineNumber: c.lineNumber,
+            endLine: c.endLine,
+            isExported: c.isExported,
+            contentHash: c.contentHash,
+            dirPath,
+          }
+        );
+
+        if (c.bodyText) {
+          await tx.run(
+            `
+            MATCH (c:Constant {filePath: $filePath, name: $name})
+            MERGE (c)-[:HAS_CODE]->(cb:CodeBlock {filePath: $filePath, functionName: $name})
+            SET cb.bodyText  = $bodyText,
+                cb.updatedAt = timestamp()
+            `,
+            { filePath: c.filePath, name: c.name, bodyText: c.bodyText.slice(0, 8000) }
+          );
+        }
+        constants++;
+      }
+
       // IMPORTS edges (dispatch on source language)
       for (const imp of parsedFile.imports) {
         const targetPath = parsedFile.extension === '.py'
@@ -406,7 +450,7 @@ async function writeParsedBatch(
   }
 
   await session.close();
-  return { functions, types, errors };
+  return { functions, types, constants, errors };
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +493,7 @@ async function runSeed(): Promise<void> {
   const parseStart = Date.now();
   let totalFunctions = 0;
   let totalTypes = 0;
+  let totalConstants = 0;
   let totalErrors = 0;
   let filesProcessed = 0;
 
@@ -466,6 +511,7 @@ async function runSeed(): Promise<void> {
     const writeResult = await writeParsedBatch(parsedFiles, driver);
     totalFunctions += writeResult.functions;
     totalTypes += writeResult.types;
+    totalConstants += writeResult.constants;
     totalErrors += writeResult.errors;
     filesProcessed += batch.length;
 
@@ -478,6 +524,7 @@ async function runSeed(): Promise<void> {
   console.log(`       Files parsed:        ${allFiles.length}`);
   console.log(`       Functions created:   ${totalFunctions}`);
   console.log(`       Types created:       ${totalTypes}`);
+  console.log(`       Constants created:   ${totalConstants}`);
   console.log(`       File errors:         ${totalErrors}`);
   console.log(`       Parse time:          ${((Date.now() - parseStart) / 1000).toFixed(1)}s`);
 
@@ -610,6 +657,7 @@ async function runSeed(): Promise<void> {
   console.log(`       Commit:              ${currentCommit.slice(0, 8)}`);
   console.log(`       Total functions:     ${totalFunctions}`);
   console.log(`       Total types:         ${totalTypes}`);
+  console.log(`       Total constants:     ${totalConstants}`);
   console.log(`       Parse errors:        ${totalErrors}`);
   console.log(`       Integrity passed:    ${integrityResult.passed}`);
   console.log(`       Total time:          ${totalTime.toFixed(1)}s`);

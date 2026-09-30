@@ -40,6 +40,7 @@ function printUsage(): void {
       `  codebase-pkg conformity-judge [file]  Judge working-tree code against the pool\n` +
       `  codebase-pkg conformity-target [--init] [--force]  Show the effective decision target + migration (or seed conformity-target.json)\n` +
       `  codebase-pkg add-constraint     Add an architectural constraint\n` +
+      `  codebase-pkg schedule-refresh [--time HH:MM] [--unregister]  Register/remove the daily /refresh-pkg-graph task (Windows)\n` +
       `\n` +
       `  codebase-pkg --version          Print package version\n` +
       `  codebase-pkg --help             Print this message\n`,
@@ -166,6 +167,11 @@ async function main(): Promise<number> {
           closePool: false,
         });
         return 0;
+      }
+
+      case 'schedule-refresh': {
+        const { runScheduleRefresh } = await import('./schedule-refresh.js');
+        return await runScheduleRefresh(rest);
       }
 
       case 'add-constraint': {

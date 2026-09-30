@@ -187,6 +187,143 @@ function installSkills(cwd: string, flags: Flags, managed: ManagedFile[]): void 
   }
 }
 
+function installHooks(cwd: string, flags: Flags, managed: ManagedFile[]): void {
+  const templateRoot = path.join(getPackageRoot(), 'template', '.claude', 'hooks');
+  if (!fs.existsSync(templateRoot)) {
+    process.stderr.write(`[init] no hook templates bundled at ${templateRoot}; skipping.\n`);
+    return;
+  }
+  const files = listFilesRecursive(templateRoot);
+  if (files.length === 0) return;
+
+  process.stdout.write(`[init] hooks:\n`);
+  for (const src of files) {
+    const rel = path.relative(templateRoot, src);
+    const destRel = normalizePath(path.join('.claude', 'hooks', rel));
+    const dest = path.join(cwd, destRel);
+    const result = copyFile(src, dest, flags);
+    process.stdout.write(`  ${result.padEnd(12)} ${destRel}\n`);
+    if (result === 'wrote' || (result === 'skipped' && fs.existsSync(dest))) {
+      managed.push({ path: destRel, installedHash: hashFile(dest) });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// .claude/settings.json hook registration
+// ---------------------------------------------------------------------------
+
+interface HookCommandEntry {
+  type: 'command';
+  command: string;
+  timeout?: number;
+}
+
+interface HookMatcherEntry {
+  matcher: string;
+  hooks: HookCommandEntry[];
+}
+
+interface SettingsJson {
+  hooks?: Record<string, HookMatcherEntry[]>;
+  [key: string]: unknown;
+}
+
+const SESSION_CAPTURE_MARKER = 'codebase-pkg-session-capture.cjs';
+const MCP_FIRST_MARKER = 'codebase-pkg-mcp-first.cjs';
+const SESSION_CAPTURE_CMD = `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/${SESSION_CAPTURE_MARKER}`;
+const MCP_FIRST_CMD = `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/${MCP_FIRST_MARKER}`;
+
+/** Whether any matcher entry in `matchers` already runs a hook whose command contains `needle`. */
+function hookAlreadyRegistered(matchers: HookMatcherEntry[] | undefined, needle: string): boolean {
+  if (!matchers) return false;
+  return matchers.some((m) =>
+    (m.hooks ?? []).some((h) => typeof h.command === 'string' && h.command.includes(needle)),
+  );
+}
+
+/** Drop any matcher entries whose hooks all/only reference `needle` (used by --force re-registration). */
+function stripHook(matchers: HookMatcherEntry[], needle: string): HookMatcherEntry[] {
+  return matchers
+    .map((m) => ({ ...m, hooks: (m.hooks ?? []).filter((h) => !h.command?.includes(needle)) }))
+    .filter((m) => m.hooks.length > 0);
+}
+
+/**
+ * Register the Stop (session-capture) and PreToolUse(Read) (mcp-first) hooks
+ * in `.claude/settings.json`, merging non-destructively with whatever is
+ * already there (other hooks, permissions, etc. — e.g. a consumer repo that
+ * already has its own Stop hooks from another system). Idempotent: re-running
+ * without --force leaves an already-registered hook alone; with --force the
+ * codebase-pkg entries are replaced (everything else untouched).
+ */
+function installSettingsHooks(cwd: string, flags: Flags, managed: ManagedFile[]): void {
+  const destRel = normalizePath(path.join('.claude', 'settings.json'));
+  const destPath = path.join(cwd, destRel);
+
+  let existing: SettingsJson = {};
+  if (fs.existsSync(destPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(destPath, 'utf8')) as SettingsJson;
+    } catch {
+      process.stderr.write(
+        `[init] could not parse existing ${destRel}; refusing to touch it. Register the hooks manually (see docs).\n`,
+      );
+      return;
+    }
+  }
+
+  existing.hooks = existing.hooks ?? {};
+  existing.hooks.Stop = existing.hooks.Stop ?? [];
+  existing.hooks.PreToolUse = existing.hooks.PreToolUse ?? [];
+
+  let changed = false;
+
+  const stopRegistered = hookAlreadyRegistered(existing.hooks.Stop, SESSION_CAPTURE_MARKER);
+  if (!stopRegistered || flags.force) {
+    if (stopRegistered && flags.force) {
+      existing.hooks.Stop = stripHook(existing.hooks.Stop, SESSION_CAPTURE_MARKER);
+    }
+    existing.hooks.Stop.push({
+      matcher: '',
+      hooks: [{ type: 'command', command: SESSION_CAPTURE_CMD, timeout: 30 }],
+    });
+    changed = true;
+  }
+
+  const preToolRegistered = hookAlreadyRegistered(existing.hooks.PreToolUse, MCP_FIRST_MARKER);
+  if (!preToolRegistered || flags.force) {
+    if (preToolRegistered && flags.force) {
+      existing.hooks.PreToolUse = stripHook(existing.hooks.PreToolUse, MCP_FIRST_MARKER);
+    }
+    existing.hooks.PreToolUse.push({
+      matcher: 'Read',
+      hooks: [{ type: 'command', command: MCP_FIRST_CMD, timeout: 5 }],
+    });
+    changed = true;
+  }
+
+  if (!changed) {
+    process.stdout.write(
+      `[init] settings: skipped ${destRel} (codebase-pkg hooks already registered; --force to re-register)\n`,
+    );
+    if (fs.existsSync(destPath)) {
+      managed.push({ path: destRel, installedHash: hashFile(destPath) });
+    }
+    return;
+  }
+
+  if (flags.dryRun) {
+    process.stdout.write(`[init] settings: would-write ${destRel} with codebase-pkg Stop + PreToolUse(Read) hooks\n`);
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.writeFileSync(destPath, JSON.stringify(existing, null, 2) + '\n', 'utf8');
+  process.stdout.write(`[init] settings: wrote ${destRel} with codebase-pkg Stop + PreToolUse(Read) hooks\n`);
+  managed.push({ path: destRel, installedHash: hashFile(destPath) });
+}
+
 interface McpStanza {
   command: string;
   args: string[];
@@ -539,6 +676,8 @@ export async function runInit(args: string[]): Promise<number> {
   const runConstraints = !flags.mcpOnly && !flags.skillsOnly;
 
   if (runSkills) installSkills(cwd, flags, managed);
+  if (runSkills) installHooks(cwd, flags, managed);
+  if (runSkills) installSettingsHooks(cwd, flags, managed);
   if (runMcp) installMcp(cwd, flags, managed);
   if (runConstraints) installConstraints(cwd, flags, managed);
   const dockerConfig = flags.docker ? await installDocker(cwd, flags, managed) : null;

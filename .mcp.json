@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "codebase-pkg": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package",
+        "@sylphie-labs/codebase-pkg",
+        "codebase-pkg-mcp"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    }
+  }
+}

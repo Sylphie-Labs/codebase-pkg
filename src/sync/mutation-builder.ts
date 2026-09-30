@@ -13,7 +13,7 @@
 
 import * as path from 'path';
 import type { Changeset, NodeDelete, EdgeAdd, EdgeRemove } from './graph-differ.js';
-import type { ParsedFunction, ParsedType, ParsedFile } from './ast-parser.js';
+import type { ParsedFunction, ParsedType, ParsedConstant, ParsedFile } from './ast-parser.js';
 import {
   resolveImportTarget,
   resolvePythonImportTarget,
@@ -232,6 +232,75 @@ function buildTypeUpdate(ty: ParsedType, _changedFields: string[]): CypherStatem
 }
 
 // ---------------------------------------------------------------------------
+// Constant node mutations
+// ---------------------------------------------------------------------------
+
+/**
+ * Module-level constants (see {@link ParsedConstant}) mirror the Function/Type
+ * shape: a MERGE on (filePath, name), a CONTAINS edge from the directory-keyed
+ * Module, a DEFINES edge from the owning File, and a HAS_CODE -> CodeBlock
+ * holding the declaration source. Constants have no callees/typeRefs/hierarchy,
+ * so there is nothing to mirror from buildCallsEdges/buildUsesTypeEdges.
+ */
+function buildConstantCreate(c: ParsedConstant): CypherStatement[] {
+  const stmts: CypherStatement[] = [];
+  const dirPath = path.dirname(c.filePath).replace(/\\/g, '/');
+
+  stmts.push({
+    cypher: `
+      MERGE (c:Constant {filePath: $filePath, name: $name})
+      SET c.lineNumber   = $lineNumber,
+          c.endLine      = $endLine,
+          c.isExported   = $isExported,
+          c.contentHash  = $contentHash,
+          c.updatedAt    = timestamp()
+      WITH c
+      MERGE (m:Module {filePath: $dirPath})
+      ON CREATE SET m.name        = $dirName,
+                    m.packageName = $pkgName,
+                    m.updatedAt   = timestamp()
+      MERGE (m)-[:CONTAINS]->(c)
+      WITH c
+      MATCH (file:File {filePath: $filePath})
+      MERGE (file)-[:DEFINES]->(c)
+    `.trim(),
+    params: {
+      filePath: c.filePath,
+      dirPath,
+      dirName: path.basename(dirPath),
+      pkgName: packageNameForDir(dirPath),
+      name: c.name,
+      lineNumber: c.lineNumber,
+      endLine: c.endLine,
+      isExported: c.isExported,
+      contentHash: c.contentHash,
+    },
+  });
+
+  if (c.bodyText) {
+    stmts.push({
+      cypher: `
+        MATCH (c:Constant {filePath: $filePath, name: $name})
+        MERGE (c)-[:HAS_CODE]->(cb:CodeBlock {filePath: $filePath, functionName: $name})
+        SET cb.bodyText  = $bodyText,
+            cb.updatedAt = timestamp()
+      `.trim(),
+      params: {
+        filePath: c.filePath,
+        name: c.name,
+        bodyText: c.bodyText.slice(0, 8000),
+      },
+    });
+  }
+
+  return stmts;
+}
+
+function buildConstantUpdate(c: ParsedConstant, _changedFields: string[]): CypherStatement[] {
+  return buildConstantCreate(c);
+}
+
+// ---------------------------------------------------------------------------
 // Relationship edge builders
 // ---------------------------------------------------------------------------
 
@@ -376,7 +445,7 @@ export function buildFileCreate(file: ParsedFile): CypherStatement[] {
 // ---------------------------------------------------------------------------
 
 function buildNodeDelete(del: NodeDelete): CypherStatement {
-  const label = del.kind === 'function' ? 'Function' : 'Type';
+  const label = del.kind === 'function' ? 'Function' : del.kind === 'type' ? 'Type' : 'Constant';
   // Also delete the node's CodeBlock — otherwise it is stranded until the
   // whole file is deleted.
   return {
@@ -401,6 +470,10 @@ function buildDeletedFileNodes(filePath: string): CypherStatement[] {
     },
     {
       cypher: `MATCH (n:Type {filePath: $filePath}) DETACH DELETE n`.trim(),
+      params: { filePath },
+    },
+    {
+      cypher: `MATCH (n:Constant {filePath: $filePath}) DETACH DELETE n`.trim(),
       params: { filePath },
     },
     {
@@ -542,8 +615,10 @@ export function buildMutations(changeset: Changeset): CypherStatement[] {
       const fn = create.data as ParsedFunction;
       const importedNames = importedNamesIndex.get(fn.filePath) ?? emptySet;
       statements.push(...buildFunctionCreate(fn, importedNames));
-    } else {
+    } else if (create.kind === 'type') {
       statements.push(...buildTypeCreate(create.data as ParsedType));
+    } else {
+      statements.push(...buildConstantCreate(create.data as ParsedConstant));
     }
   }
 
@@ -552,8 +627,10 @@ export function buildMutations(changeset: Changeset): CypherStatement[] {
       const fn = update.data as ParsedFunction;
       const importedNames = importedNamesIndex.get(fn.filePath) ?? emptySet;
       statements.push(...buildFunctionUpdate(fn, update.changedFields, importedNames));
-    } else {
+    } else if (update.kind === 'type') {
       statements.push(...buildTypeUpdate(update.data as ParsedType, update.changedFields));
+    } else {
+      statements.push(...buildConstantUpdate(update.data as ParsedConstant, update.changedFields));
     }
   }
 

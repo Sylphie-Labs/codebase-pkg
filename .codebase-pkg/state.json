@@ -1,0 +1,67 @@
+{
+  "version": "0.5.4",
+  "installedAt": "2026-08-05T19:24:19.409Z",
+  "lastUpgradedAt": "2026-08-05T19:24:19.409Z",
+  "installMode": "global",
+  "cliPathAtInstall": "C:\\Users\\Jim\\OneDrive\\desktop\\Code\\codebase-pkg\\dist\\cli\\codebase-pkg.js",
+  "managedFiles": [
+    {
+      "path": ".claude/skills/classify-pkg-domains/SKILL.md",
+      "installedHash": "ea250948ddbf183742ab3d27cdb4f21704b88025fc1fa5e9280483a7cc660704"
+    },
+    {
+      "path": ".claude/skills/infer-pkg-connections/SKILL.md",
+      "installedHash": "e22a9008f0c6bc18d657beb7ae7fcca9a3f2e0f773be58fceeae75990af9ecb8"
+    },
+    {
+      "path": ".claude/skills/map-pkg-from-root/SKILL.md",
+      "installedHash": "342bf323120e3bfb1a64d171f633a20548c00116f071db655079c056d98d9601"
+    },
+    {
+      "path": ".claude/skills/refresh-pkg-graph/SKILL.md",
+      "installedHash": "3748c2df8dcc500c56996183066a97d51689f24e39b7fe87b3f9560bffc6a1f2"
+    },
+    {
+      "path": ".claude/skills/sync-pkg/SKILL.md",
+      "installedHash": "0c1a4cb27eec0d5f33f2860b1f1ad1cb729944d5f07b68bf330d8a6a633d81ac"
+    },
+    {
+      "path": ".claude/hooks/codebase-pkg-mcp-first.cjs",
+      "installedHash": "89f326d362f24add64eafd152259cc64e091fbc443cfb120a9b396a5a912c66b"
+    },
+    {
+      "path": ".claude/hooks/codebase-pkg-session-capture.cjs",
+      "installedHash": "360b00bd292ff3c64d5c0d0cfd9848e490e2897eb4f6e8fae864c10b00454564"
+    },
+    {
+      "path": ".claude/settings.json",
+      "installedHash": "78dd2f892b910b0c2000955b4ca44b3d7768d771cb3aa05efbcc6d7b1d44ac7a"
+    },
+    {
+      "path": ".mcp.json",
+      "installedHash": "a61fd9429d391f6af64fb164cd67a4c4fe0e956add355ce35d7c17bb96dc607e"
+    },
+    {
+      "path": "constraints.json",
+      "installedHash": "e6d73be9dd001431b1d6c7670662823b63471e7b4613766e67ffa8ee263b2e08"
+    },
+    {
+      "path": "docker-compose.codebase-pkg.yml",
+      "installedHash": "eca6559f4d09327e2545e63fcfeece75971f3e09d2af65034d8ca774ba0bb39a"
+    }
+  ],
+  "root": "C:\\Users\\Jim\\OneDrive\\desktop\\Code\\codebase-pkg",
+  "neo4j": {
+    "uri": "bolt://localhost:8165",
+    "containerName": "codebase-pkg-neo4j-codebase-pkg-9bdc",
+    "httpPort": 7786,
+    "boltPort": 8165,
+    "slug": "codebase-pkg-9bdc"
+  },
+  "postgres": {
+    "uri": "postgres://codebase-pkg:codebase-pkg-local@localhost:6018/codebase_pkg",
+    "containerName": "codebase-pkg-postgres-codebase-pkg-9bdc",
+    "port": 6018,
+    "slug": "codebase-pkg-9bdc"
+  }
+}

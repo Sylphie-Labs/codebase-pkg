@@ -99,7 +99,7 @@ async function checkOrphanedImports(): Promise<IntegrityIssue[]> {
 async function checkOrphanedContainsEdges(): Promise<IntegrityIssue[]> {
   const records = await runQuery(`
     MATCH (m:Module)-[:CONTAINS]->(n)
-    WHERE NOT (n:Function) AND NOT (n:Type)
+    WHERE NOT (n:Function) AND NOT (n:Type) AND NOT (n:Constant)
     RETURN m.filePath AS fp, labels(n) AS nodeLabels
     LIMIT 20
   `);
@@ -109,7 +109,7 @@ async function checkOrphanedContainsEdges(): Promise<IntegrityIssue[]> {
   return [{
     check: 'contains-pointing-to-wrong-label',
     severity: 'warning',
-    message: `${records.length} CONTAINS edge(s) pointing to nodes that are neither Function nor Type.`,
+    message: `${records.length} CONTAINS edge(s) pointing to nodes that are neither Function, Type, nor Constant.`,
     examples: records.slice(0, 10).map(r =>
       `${r.get('fp') as string} -> ${JSON.stringify(r.get('nodeLabels'))}`
     ),

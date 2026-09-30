@@ -9,20 +9,76 @@
  *   1. Match Module nodes by name/packageName
  *   2. Match Service nodes by name (so "auth" finds the auth-service)
  *   3. Fallback: match Function names (so a function keyword finds its module)
+ *
+ * Structured as gather (Neo4j -> plain data) + render (data -> text/json) so
+ * `format: "json"` (#10, MCP-SERVER-IMPROVEMENTS.md) is a pure serialization
+ * of the same data the text render uses, not a second query path. `runQuery`
+ * is injectable (mirrors graph-ref-validator.js) so the gather step is unit-
+ * testable without a live Neo4j.
  */
 
-import { runQuery } from '../neo4j-client.js';
+import { runQuery as defaultRunQuery } from '../neo4j-client.js';
+import type { RunQueryFn } from './graph-ref-validator.js';
 
 export interface GetModuleContextInput {
   query: string;
+  /** 'text' (default) for direct model consumption, or 'json' for a stable machine-parseable envelope (#10). */
+  format?: 'text' | 'json';
+}
+
+/** Injectable dependencies for testing; production uses the real Neo4j singleton. */
+export interface GetModuleContextDeps {
+  runQuery?: RunQueryFn;
+}
+
+export interface ModuleContextModule {
+  name: string;
+  filePath: string | null;
+  packageName: string | null;
+  service: string | null;
+}
+
+export interface ModuleContextFunction {
+  name: string;
+  module: string;
+  filePath: string | null;
+  lineNumber: number | null;
+  args: string | null;
+  returnType: string | null;
+  comment: string | null;
+  isAsync: boolean | null;
+  isExported: boolean | null;
+}
+
+export interface ModuleContextType {
+  name: string;
+  module: string;
+  filePath: string | null;
+  kind: string | null;
+}
+
+export interface ModuleContextConstraint {
+  module: string;
+  description: string;
+  severity: string | null;
+}
+
+export interface ModuleContextResult {
+  query: string;
+  modules: ModuleContextModule[];
+  functions: ModuleContextFunction[];
+  types: ModuleContextType[];
+  constraints: ModuleContextConstraint[];
 }
 
 /**
- * Handle the getModuleContext tool call.
+ * Gather the structured module-context data from Neo4j. Returns null when no
+ * modules/services/functions matched `query` at all (the "no matches" case).
  */
-export async function handleGetModuleContext(input: GetModuleContextInput): Promise<string> {
-  const { query } = input;
-
+export async function gatherModuleContext(
+  query: string,
+  runQuery: RunQueryFn = defaultRunQuery,
+): Promise<ModuleContextResult | null> {
   // Match the whole query string as a single phrase (multi-word queries must
   // match in full, so "executor engine" does NOT match a module named just
   // "engine"). Single-word queries behave the same way.
@@ -58,12 +114,10 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
            s.name AS serviceName
     LIMIT 15
     `,
-    { pattern: searchTerm }
+    { pattern: searchTerm },
   );
 
-  if (moduleRecords.length === 0) {
-    return `No modules, services, or functions found matching "${query}". Try a single broad keyword (e.g., "authentication" instead of "authentication and sessions").`;
-  }
+  if (moduleRecords.length === 0) return null;
 
   // Collect module file paths for querying
   const modulePaths = moduleRecords.map((r) => r.get('filePath') as string);
@@ -85,7 +139,7 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
     ORDER BY m.name, f.name
     LIMIT 60
     `,
-    { modulePaths }
+    { modulePaths },
   );
 
   // Get types belonging to matching modules
@@ -100,7 +154,7 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
     ORDER BY m.name, t.name
     LIMIT 40
     `,
-    { modulePaths }
+    { modulePaths },
   );
 
   // Get constraints linked to matching modules
@@ -114,79 +168,97 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
     ORDER BY c.severity DESC, m.name
     LIMIT 20
     `,
-    { modulePaths }
+    { modulePaths },
   );
 
-  // Format output
+  return {
+    query,
+    modules: moduleRecords.map((r) => ({
+      name: r.get('moduleName') as string,
+      filePath: (r.get('filePath') as string | null) ?? null,
+      packageName: (r.get('packageName') as string | null) ?? null,
+      service: (r.get('serviceName') as string | null) ?? null,
+    })),
+    functions: functionRecords.map((r) => ({
+      name: r.get('name') as string,
+      module: r.get('moduleName') as string,
+      filePath: (r.get('filePath') as string | null) ?? null,
+      lineNumber: (r.get('lineNumber') as number | null) ?? null,
+      args: (r.get('arguments') as string | null) ?? null,
+      returnType: (r.get('returnType') as string | null) ?? null,
+      comment: (r.get('comment') as string | null) ?? null,
+      isAsync: (r.get('isAsync') as boolean | null) ?? null,
+      isExported: (r.get('isExported') as boolean | null) ?? null,
+    })),
+    types: typeRecords.map((r) => ({
+      name: r.get('name') as string,
+      module: r.get('moduleName') as string,
+      filePath: (r.get('filePath') as string | null) ?? null,
+      kind: (r.get('kind') as string | null) ?? null,
+    })),
+    constraints: constraintRecords.map((r) => ({
+      module: r.get('moduleName') as string,
+      description: r.get('description') as string,
+      severity: (r.get('severity') as string | null) ?? null,
+    })),
+  };
+}
+
+/** Render a {@link ModuleContextResult} as the original text format. */
+export function renderModuleContextText(result: ModuleContextResult): string {
   const lines: string[] = [];
-  lines.push(`MODULE CONTEXT: "${query}"`);
+  lines.push(`MODULE CONTEXT: "${result.query}"`);
   lines.push('='.repeat(60));
 
   // Modules
-  lines.push(`\nMATCHED MODULES (${moduleRecords.length})`);
+  lines.push(`\nMATCHED MODULES (${result.modules.length})`);
   lines.push('-'.repeat(40));
-  for (const r of moduleRecords) {
-    const service = r.get('serviceName') as string | null;
-    const pkgName = r.get('packageName') as string | null;
-    lines.push(`${r.get('moduleName') as string}`);
-    if (service) lines.push(`  Service: ${service}`);
-    if (pkgName && pkgName !== service) lines.push(`  Package: ${pkgName}`);
-    lines.push(`  Path: ${r.get('filePath') as string ?? 'unknown'}`);
+  for (const m of result.modules) {
+    lines.push(m.name);
+    if (m.service) lines.push(`  Service: ${m.service}`);
+    if (m.packageName && m.packageName !== m.service) lines.push(`  Package: ${m.packageName}`);
+    lines.push(`  Path: ${m.filePath ?? 'unknown'}`);
   }
 
   // Functions grouped by module
-  if (functionRecords.length > 0) {
-    lines.push(`\nFUNCTIONS (${functionRecords.length})`);
+  if (result.functions.length > 0) {
+    lines.push(`\nFUNCTIONS (${result.functions.length})`);
     lines.push('-'.repeat(40));
     let currentModule = '';
-    for (const r of functionRecords) {
-      const mod = r.get('moduleName') as string;
-      if (mod !== currentModule) {
-        lines.push(`\n[${mod}]`);
-        currentModule = mod;
+    for (const f of result.functions) {
+      if (f.module !== currentModule) {
+        lines.push(`\n[${f.module}]`);
+        currentModule = f.module;
       }
-      const isAsync = r.get('isAsync') as boolean | null;
-      const isExported = r.get('isExported') as boolean | null;
-      const args = r.get('arguments') as string | null;
-      const ret = r.get('returnType') as string | null;
-      const comment = r.get('comment') as string | null;
-      const lineNo = r.get('lineNumber') as number | null;
-      const filePath = r.get('filePath') as string | null;
-
-      const prefix = [isExported ? 'export' : '', isAsync ? 'async' : ''].filter(Boolean).join(' ');
-      const sig = `${prefix ? prefix + ' ' : ''}function ${r.get('name') as string}(${args ?? ''})${ret ? ': ' + ret : ''}`;
+      const prefix = [f.isExported ? 'export' : '', f.isAsync ? 'async' : ''].filter(Boolean).join(' ');
+      const sig = `${prefix ? prefix + ' ' : ''}function ${f.name}(${f.args ?? ''})${f.returnType ? ': ' + f.returnType : ''}`;
       lines.push(`  ${sig}`);
-      if (filePath) lines.push(`    File: ${filePath}${lineNo != null ? `:${lineNo}` : ''}`);
-      if (comment) lines.push(`    // ${comment.split('\n')[0]}`);
+      if (f.filePath) lines.push(`    File: ${f.filePath}${f.lineNumber != null ? `:${f.lineNumber}` : ''}`);
+      if (f.comment) lines.push(`    // ${f.comment.split('\n')[0]}`);
     }
   }
 
   // Types grouped by module
-  if (typeRecords.length > 0) {
-    lines.push(`\nTYPES (${typeRecords.length})`);
+  if (result.types.length > 0) {
+    lines.push(`\nTYPES (${result.types.length})`);
     lines.push('-'.repeat(40));
     let currentModule = '';
-    for (const r of typeRecords) {
-      const mod = r.get('moduleName') as string;
-      if (mod !== currentModule) {
-        lines.push(`\n[${mod}]`);
-        currentModule = mod;
+    for (const t of result.types) {
+      if (t.module !== currentModule) {
+        lines.push(`\n[${t.module}]`);
+        currentModule = t.module;
       }
-      const kind = r.get('kind') as string | null;
-      const filePath = r.get('filePath') as string | null;
-      lines.push(`  ${r.get('name') as string}${kind ? ` (${kind})` : ''}`);
-      if (filePath) lines.push(`    File: ${filePath}`);
+      lines.push(`  ${t.name}${t.kind ? ` (${t.kind})` : ''}`);
+      if (t.filePath) lines.push(`    File: ${t.filePath}`);
     }
   }
 
   // Constraints
-  if (constraintRecords.length > 0) {
-    lines.push(`\nCONSTRAINTS (${constraintRecords.length})`);
+  if (result.constraints.length > 0) {
+    lines.push(`\nCONSTRAINTS (${result.constraints.length})`);
     lines.push('-'.repeat(40));
-    for (const r of constraintRecords) {
-      const severity = r.get('severity') as string | null;
-      const mod = r.get('moduleName') as string;
-      lines.push(`  [${severity ?? 'unknown'}] (${mod}) ${r.get('description') as string}`);
+    for (const c of result.constraints) {
+      lines.push(`  [${c.severity ?? 'unknown'}] (${c.module}) ${c.description}`);
     }
   }
 
@@ -194,6 +266,44 @@ export async function handleGetModuleContext(input: GetModuleContextInput): Prom
   lines.push(`Use getFunctionDetail to get the body of any specific function.`);
 
   return lines.join('\n');
+}
+
+/**
+ * Handle the getModuleContext tool call.
+ */
+export async function handleGetModuleContext(
+  input: GetModuleContextInput,
+  deps: GetModuleContextDeps = {},
+): Promise<string> {
+  const { query } = input;
+  const runQuery = deps.runQuery ?? defaultRunQuery;
+
+  const result = await gatherModuleContext(query, runQuery);
+
+  if (result === null) {
+    if (input.format === 'json') {
+      return JSON.stringify(
+        {
+          schemaVersion: 1,
+          tool: 'getModuleContext',
+          query,
+          modules: [],
+          functions: [],
+          types: [],
+          constraints: [],
+        },
+        null,
+        2,
+      );
+    }
+    return `No modules, services, or functions found matching "${query}". Try a single broad keyword (e.g., "authentication" instead of "authentication and sessions").`;
+  }
+
+  if (input.format === 'json') {
+    return JSON.stringify({ schemaVersion: 1, tool: 'getModuleContext', ...result }, null, 2);
+  }
+
+  return renderModuleContextText(result);
 }
 
 function escapeRegex(str: string): string {

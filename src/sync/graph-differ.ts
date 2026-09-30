@@ -9,13 +9,13 @@
  */
 
 import { runQuery } from '../mcp-server/neo4j-client.js';
-import type { ParsedFile, ParsedFunction, ParsedType, ParsedImport } from './ast-parser.js';
+import type { ParsedFile, ParsedFunction, ParsedType, ParsedConstant, ParsedImport } from './ast-parser.js';
 
 // ---------------------------------------------------------------------------
 // Graph state types
 // ---------------------------------------------------------------------------
 
-interface GraphNode {
+export interface GraphNode {
   name: string;
   filePath: string;
   contentHash: string | null;
@@ -32,18 +32,18 @@ interface GraphImportEdge {
 // ---------------------------------------------------------------------------
 
 export interface NodeCreate {
-  kind: 'function' | 'type';
-  data: ParsedFunction | ParsedType;
+  kind: 'function' | 'type' | 'const';
+  data: ParsedFunction | ParsedType | ParsedConstant;
 }
 
 export interface NodeUpdate {
-  kind: 'function' | 'type';
-  data: ParsedFunction | ParsedType;
+  kind: 'function' | 'type' | 'const';
+  data: ParsedFunction | ParsedType | ParsedConstant;
   changedFields: string[];
 }
 
 export interface NodeDelete {
-  kind: 'function' | 'type';
+  kind: 'function' | 'type' | 'const';
   name: string;
   filePath: string;
 }
@@ -127,6 +127,30 @@ async function fetchGraphTypes(
   return map;
 }
 
+async function fetchGraphConstants(
+  filePaths: string[]
+): Promise<Map<string, GraphNode>> {
+  if (filePaths.length === 0) return new Map();
+
+  const records = await runQuery(
+    `MATCH (c:Constant)
+     WHERE c.filePath IN $filePaths
+     RETURN c.name AS name, c.filePath AS filePath, c.contentHash AS contentHash`,
+    { filePaths }
+  );
+
+  const map = new Map<string, GraphNode>();
+  for (const r of records) {
+    const node: GraphNode = {
+      name: r.get('name') as string,
+      filePath: r.get('filePath') as string,
+      contentHash: (r.get('contentHash') as string) ?? null,
+    };
+    map.set(`${node.filePath}::${node.name}`, node);
+  }
+  return map;
+}
+
 async function fetchGraphImports(
   filePaths: string[]
 ): Promise<Map<string, GraphImportEdge>> {
@@ -165,6 +189,52 @@ function sameImportedNames(a: string[], b: string[]): boolean {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * Pure diff of one file's parsed module-level constants against the existing
+ * graph `Constant` nodes for that same file. Mirrors the create/update/delete
+ * rule already used inline for Function and Type nodes in
+ * {@link computeChangeset}: a name with no existing node -> create; an
+ * existing node whose `contentHash` differs from the freshly parsed one ->
+ * update; an existing node whose name is no longer present in the parse ->
+ * delete.
+ *
+ * Deliberately takes a plain `Map<string, GraphNode>` (keyed `filePath::name`,
+ * the same convention {@link fetchGraphConstants} produces) rather than
+ * hitting Neo4j itself, so the diffing RULE can be unit-tested without a
+ * database -- callers build the map however they like (a live query result,
+ * or a hand-built fixture in a test).
+ */
+export function diffConstantsForFile(
+  filePath: string,
+  constants: ParsedConstant[],
+  graphConstants: Map<string, GraphNode>,
+): { creates: NodeCreate[]; updates: NodeUpdate[]; deletes: NodeDelete[] } {
+  const creates: NodeCreate[] = [];
+  const updates: NodeUpdate[] = [];
+  const deletes: NodeDelete[] = [];
+  const parsedKeys = new Set<string>();
+
+  for (const c of constants) {
+    const key = `${filePath}::${c.name}`;
+    parsedKeys.add(key);
+
+    const existing = graphConstants.get(key);
+    if (!existing) {
+      creates.push({ kind: 'const', data: c });
+    } else if (existing.contentHash !== c.contentHash) {
+      updates.push({ kind: 'const', data: c, changedFields: ['full'] });
+    }
+  }
+
+  for (const [key, c] of graphConstants.entries()) {
+    if (c.filePath === filePath && !parsedKeys.has(key)) {
+      deletes.push({ kind: 'const', name: c.name, filePath: c.filePath });
+    }
+  }
+
+  return { creates, updates, deletes };
+}
+
 export async function computeChangeset(
   parsedFiles: ParsedFile[],
   deletedFiles: string[] = []
@@ -184,9 +254,10 @@ export async function computeChangeset(
     ...deletedFiles,
   ];
 
-  const [graphFunctions, graphTypes, graphImports] = await Promise.all([
+  const [graphFunctions, graphTypes, graphConstants, graphImports] = await Promise.all([
     fetchGraphFunctions(allFilePaths),
     fetchGraphTypes(allFilePaths),
+    fetchGraphConstants(allFilePaths),
     fetchGraphImports(allFilePaths),
   ]);
 
@@ -204,11 +275,17 @@ export async function computeChangeset(
         graphTypes.delete(key);
       }
     }
+    for (const [key, c] of graphConstants.entries()) {
+      if (c.filePath === filePath) {
+        changeset.nodesToDelete.push({ kind: 'const', name: c.name, filePath });
+        graphConstants.delete(key);
+      }
+    }
   }
 
   // Diff each parsed file against graph state
   for (const parsedFile of parsedFiles) {
-    const { filePath, functions, types, imports } = parsedFile;
+    const { filePath, functions, types, imports, constants } = parsedFile;
 
     // --- Functions ---
     const parsedFunctionKeys = new Set<string>();
@@ -251,6 +328,12 @@ export async function computeChangeset(
         changeset.nodesToDelete.push({ kind: 'type', name: ty.name, filePath: ty.filePath });
       }
     }
+
+    // --- Constants (module-level, non-function top-level declarations) ---
+    const constantDiff = diffConstantsForFile(filePath, constants, graphConstants);
+    changeset.nodesToCreate.push(...constantDiff.creates);
+    changeset.nodesToUpdate.push(...constantDiff.updates);
+    changeset.nodesToDelete.push(...constantDiff.deletes);
 
     // --- Imports ---
     const parsedImportKeys = new Set<string>();

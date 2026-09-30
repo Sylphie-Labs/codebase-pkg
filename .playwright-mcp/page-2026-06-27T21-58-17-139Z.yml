@@ -1,0 +1,380 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - link "🚀 Socket Launch Week Day 5:Introducing Repository Access Permissions and Custom Roles. Learn more →" [ref=e4] [cursor=pointer]:
+      - /url: https://socket.dev/blog/introducing-repository-access-permissions-custom-roles
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - text: "🚀 Socket Launch Week Day 5:"
+          - generic [ref=e8]: Introducing Repository Access Permissions and Custom Roles.
+        - generic [ref=e9]: Learn more →
+    - generic [ref=e10]:
+      - banner [ref=e11]:
+        - generic [ref=e13]:
+          - link "Socket home" [ref=e14] [cursor=pointer]:
+            - /url: /
+            - img [ref=e15]
+          - navigation "Main" [ref=e25]:
+            - list [ref=e27]:
+              - listitem [ref=e28]:
+                - button "Product" [ref=e29] [cursor=pointer]
+              - listitem [ref=e30]:
+                - button "Why Socket" [ref=e31] [cursor=pointer]
+              - listitem [ref=e32]:
+                - button "Company" [ref=e33] [cursor=pointer]
+              - listitem [ref=e34]:
+                - link "News" [ref=e35] [cursor=pointer]:
+                  - /url: /blog
+              - listitem [ref=e36]:
+                - link "Pricing" [ref=e37] [cursor=pointer]:
+                  - /url: /pricing
+          - generic [ref=e39]:
+            - button "Search packages" [ref=e40] [cursor=pointer]:
+              - generic [ref=e42]: npm
+              - generic [ref=e43]: Search packages
+            - link "Sign In" [ref=e44] [cursor=pointer]:
+              - /url: /auth/login
+              - generic [ref=e45]:
+                - img [ref=e46]
+                - generic [ref=e48]: Sign In
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - paragraph [ref=e53]: "@sylphie-labs/codebase-pkg"
+              - generic [ref=e55]:
+                - combobox "Package version" [ref=e56]:
+                  - option "0.5.1 (latest)" [selected]
+                  - option "0.5.0"
+                  - option "0.4.0"
+                  - option "0.3.0"
+                  - option "0.2.1"
+                  - option "0.2.0"
+                  - option "0.1.0"
+                - generic:
+                  - img
+            - generic [ref=e58]:
+              - link "Package Overview" [ref=e59] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1
+                - generic [ref=e60]:
+                  - img [ref=e62]
+                  - generic [ref=e64]: Package Overview
+              - link "Dependencies 5" [ref=e65] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/dependencies/0.5.1
+                - generic [ref=e66]:
+                  - img [ref=e68]
+                  - generic [ref=e74]: Dependencies
+                  - generic [ref=e77]: "5"
+              - link "Maintainers 1" [ref=e78] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/maintainers/0.5.1
+                - generic [ref=e79]:
+                  - img [ref=e81]
+                  - generic [ref=e83]: Maintainers
+                  - generic [ref=e86]: "1"
+              - link "Versions 7" [ref=e87] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/versions/0.5.1
+                - generic [ref=e88]:
+                  - img [ref=e90]
+                  - generic [ref=e92]: Versions
+                  - generic [ref=e95]: "7"
+              - link "Alerts" [ref=e96] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/alerts/0.5.1
+                - generic [ref=e97]:
+                  - img [ref=e99]
+                  - generic [ref=e101]: Alerts
+              - link "File Explorer" [ref=e102] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/files/0.5.1
+                - generic [ref=e103]:
+                  - img [ref=e105]
+                  - generic [ref=e107]: File Explorer
+            - generic [ref=e108]:
+              - paragraph [ref=e109]: Advanced tools
+              - link "License" [ref=e111] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/license/0.5.1
+                - generic [ref=e112]:
+                  - img [ref=e114]
+                  - generic [ref=e116]: License
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - img "Socket logo" [ref=e120]
+              - paragraph [ref=e121]: Install Socket
+            - paragraph [ref=e122]: Detect and block malicious and high-risk dependencies
+            - link "Install" [ref=e123] [cursor=pointer]:
+              - /url: /github-app
+              - img [ref=e124]
+              - text: Install
+        - generic [ref=e127]:
+          - navigation "breadcrumb" [ref=e128]:
+            - list [ref=e129]:
+              - listitem [ref=e130]:
+                - link "npm" [ref=e131] [cursor=pointer]:
+                  - /url: /npm
+              - listitem [ref=e132]:
+                - img [ref=e133]
+              - listitem [ref=e135]:
+                - link "@sylphie-labs/codebase-pkg" [ref=e136] [cursor=pointer]:
+                  - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1
+              - listitem [ref=e137]:
+                - img [ref=e138]
+              - listitem [ref=e140]:
+                - paragraph [ref=e141]: Alerts
+          - heading "@sylphie-labs/codebase-pkg - Package Alerts" [level=1] [ref=e142]
+          - generic [ref=e144]:
+            - tablist [ref=e145]:
+              - tab "Package Alerts" [selected] [ref=e146] [cursor=pointer]:
+                - img [ref=e147]
+                - paragraph [ref=e149]: Package Alerts
+              - tab "Dependency Alerts" [ref=e150] [cursor=pointer]:
+                - img [ref=e151]
+                - paragraph [ref=e157]: Dependency Alerts
+            - tabpanel "Package Alerts" [ref=e159]:
+              - generic [ref=e160]:
+                - generic [ref=e161]:
+                  - img [ref=e162]
+                  - generic [ref=e164]:
+                    - generic [ref=e166]:
+                      - paragraph [ref=e167]: Network access
+                      - generic [ref=e168]: Supply chain risk
+                    - paragraph [ref=e170]: This module accesses the network.
+                - generic [ref=e171]:
+                  - img [ref=e172]
+                  - generic [ref=e174]:
+                    - generic [ref=e176]:
+                      - paragraph [ref=e177]: Shell access
+                      - generic [ref=e178]: Supply chain risk
+                    - paragraph [ref=e180]: This module accesses the system shell. Accessing the system shell increases the risk of executing arbitrary code.
+                - generic [ref=e181]:
+                  - img [ref=e182]
+                  - generic [ref=e184]:
+                    - generic [ref=e186]:
+                      - paragraph [ref=e187]: Environment variable access
+                      - generic [ref=e188]: Supply chain risk
+                    - paragraph [ref=e190]: Package accesses environment variables, which may be a sign of credential stuffing or data theft.
+                - generic [ref=e191]:
+                  - img [ref=e192]
+                  - generic [ref=e194]:
+                    - generic [ref=e196]:
+                      - paragraph [ref=e197]: Filesystem access
+                      - generic [ref=e198]: Supply chain risk
+                    - paragraph [ref=e200]: Accesses the file system, and could potentially read sensitive data.
+                - generic [ref=e201]:
+                  - img [ref=e202]
+                  - generic [ref=e204]:
+                    - generic [ref=e206]:
+                      - paragraph [ref=e207]: URL strings
+                      - generic [ref=e208]: Supply chain risk
+                    - paragraph [ref=e210]: Package contains fragments of external URLs or IP addresses, which the package may be accessing at runtime.
+      - contentinfo [ref=e211]:
+        - generic [ref=e213]:
+          - generic [ref=e214]:
+            - generic [ref=e215]:
+              - link "Socket for GitHub" [ref=e216] [cursor=pointer]:
+                - /url: /features/github
+                - generic [ref=e217]:
+                  - img [ref=e219]
+                  - paragraph [ref=e221]: Socket for GitHub
+              - link "Socket Firewall" [ref=e222] [cursor=pointer]:
+                - /url: /features/firewall
+                - generic [ref=e223]:
+                  - img [ref=e225]
+                  - paragraph [ref=e227]: Socket Firewall
+              - link "Socket CLI" [ref=e228] [cursor=pointer]:
+                - /url: /features/cli
+                - generic [ref=e229]:
+                  - img [ref=e231]
+                  - paragraph [ref=e233]: Socket CLI
+              - link "Socket Certified Patches" [ref=e234] [cursor=pointer]:
+                - /url: /features/patches
+                - generic [ref=e235]:
+                  - img [ref=e237]
+                  - paragraph [ref=e239]: Socket Certified Patches
+              - link "Socket Web Extension" [ref=e240] [cursor=pointer]:
+                - /url: /features/web-extension
+                - generic [ref=e241]:
+                  - img [ref=e243]
+                  - paragraph [ref=e245]: Socket Web Extension
+              - link "Socket Optimize" [ref=e246] [cursor=pointer]:
+                - /url: /features/optimize
+                - generic [ref=e247]:
+                  - img [ref=e249]
+                  - paragraph [ref=e251]: Socket Optimize
+              - link "Socket Dependency Search" [ref=e252] [cursor=pointer]:
+                - /url: /features/dependency-search
+                - generic [ref=e253]:
+                  - img [ref=e255]
+                  - paragraph [ref=e257]: Socket Dependency Search
+              - link "Socket Reachability" [ref=e258] [cursor=pointer]:
+                - /url: /features/reachability
+                - generic [ref=e259]:
+                  - img [ref=e261]
+                  - paragraph [ref=e263]: Socket Reachability
+            - generic [ref=e264]:
+              - paragraph [ref=e265]: Languages
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - img [ref=e268]
+                  - link "JavaScript / TypeScript" [ref=e270] [cursor=pointer]:
+                    - /url: /integrations/javascript
+                    - generic [ref=e271]: JavaScript / TypeScript
+                - generic [ref=e272]:
+                  - img [ref=e273]
+                  - link "Python" [ref=e275] [cursor=pointer]:
+                    - /url: /integrations/python
+                    - generic [ref=e276]: Python
+                - generic [ref=e277]:
+                  - img [ref=e278]
+                  - link "Go" [ref=e280] [cursor=pointer]:
+                    - /url: /integrations/go
+                    - generic [ref=e281]: Go
+                - generic [ref=e282]:
+                  - img [ref=e283]
+                  - link "Ruby" [ref=e285] [cursor=pointer]:
+                    - /url: /integrations/ruby
+                    - generic [ref=e286]: Ruby
+                - link "All Languages" [ref=e288] [cursor=pointer]:
+                  - /url: /integrations#languages
+                  - generic [ref=e289]: All Languages
+            - generic [ref=e290]:
+              - paragraph [ref=e291]: Integrations
+              - generic [ref=e292]:
+                - link "All Integrations" [ref=e294] [cursor=pointer]:
+                  - /url: /integrations
+                  - generic [ref=e295]: All Integrations
+                - link "Source Control" [ref=e297] [cursor=pointer]:
+                  - /url: /integrations#scm
+                  - generic [ref=e298]: Source Control
+                - link "Ticketing & Messaging" [ref=e300] [cursor=pointer]:
+                  - /url: /integrations#ticketing-and-messaging
+                  - generic [ref=e301]: Ticketing & Messaging
+                - link "Package Managers" [ref=e303] [cursor=pointer]:
+                  - /url: /integrations#package-managers
+                  - generic [ref=e304]: Package Managers
+                - link "SIEM" [ref=e306] [cursor=pointer]:
+                  - /url: /integrations#siem
+                  - generic [ref=e307]: SIEM
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - paragraph [ref=e310]: Resources
+              - generic [ref=e311]:
+                - link "Docs" [ref=e313] [cursor=pointer]:
+                  - /url: https://docs.socket.dev
+                  - generic [ref=e314]: Docs
+                - link "Changelog" [ref=e316] [cursor=pointer]:
+                  - /url: /changelog
+                  - generic [ref=e317]: Changelog
+                - link "Package Alerts" [ref=e319] [cursor=pointer]:
+                  - /url: /alerts
+                  - generic [ref=e320]: Package Alerts
+                - link "FAQ" [ref=e322] [cursor=pointer]:
+                  - /url: /faq
+                  - generic [ref=e323]: FAQ
+                - link "Glossary" [ref=e325] [cursor=pointer]:
+                  - /url: /glossary
+                  - generic [ref=e326]: Glossary
+            - generic [ref=e327]:
+              - paragraph [ref=e328]: Company
+              - generic [ref=e329]:
+                - link "About" [ref=e331] [cursor=pointer]:
+                  - /url: /about
+                  - generic [ref=e332]: About
+                - link "Careers" [ref=e334] [cursor=pointer]:
+                  - /url: /careers
+                  - generic [ref=e335]: Careers
+                - link "Investors" [ref=e337] [cursor=pointer]:
+                  - /url: /about#investors
+                  - generic [ref=e338]: Investors
+                - link "Security" [ref=e340] [cursor=pointer]:
+                  - /url: /security
+                  - generic [ref=e341]: Security
+                - link "Love" [ref=e343] [cursor=pointer]:
+                  - /url: /love
+                  - generic [ref=e344]: Love
+            - generic [ref=e345]:
+              - paragraph [ref=e346]: News
+              - generic [ref=e347]:
+                - link "Security" [ref=e349] [cursor=pointer]:
+                  - /url: /blog/category/security-news
+                  - generic [ref=e350]: Security
+                - link "Company" [ref=e352] [cursor=pointer]:
+                  - /url: /blog/category/news
+                  - generic [ref=e353]: Company
+                - link "Engineering" [ref=e355] [cursor=pointer]:
+                  - /url: /blog/category/engineering
+                  - generic [ref=e356]: Engineering
+                - link "Application Security" [ref=e358] [cursor=pointer]:
+                  - /url: /blog/category/security
+                  - generic [ref=e359]: Application Security
+                - link "View All" [ref=e361] [cursor=pointer]:
+                  - /url: /blog
+                  - generic [ref=e362]: View All
+            - generic [ref=e363]:
+              - paragraph [ref=e364]: Achievements
+              - generic [ref=e365]:
+                - link "SOC 2 Type 2" [ref=e367] [cursor=pointer]:
+                  - /url: /blog/announcing-soc-2-type-2-compliance
+                  - generic [ref=e368]: SOC 2 Type 2
+                - link "Raised $125M" [ref=e370] [cursor=pointer]:
+                  - /url: /blog/series-c
+                  - generic [ref=e371]: Raised $125M
+                - link "Fortune Cyber 60" [ref=e373] [cursor=pointer]:
+                  - /url: /blog/socket-recognized-on-fortune-cyber-60-list
+                  - generic [ref=e374]: Fortune Cyber 60
+                - link "Top Customers" [ref=e376] [cursor=pointer]:
+                  - /url: /customers
+                  - generic [ref=e377]: Top Customers
+                - link "Company News" [ref=e379] [cursor=pointer]:
+                  - /url: /blog/category/news
+                  - generic [ref=e380]: Company News
+          - generic [ref=e381]:
+            - generic [ref=e382]:
+              - link "Socket home" [ref=e383] [cursor=pointer]:
+                - /url: /
+                - img [ref=e384]
+              - generic [ref=e394]:
+                - link "Socket on X" [ref=e395] [cursor=pointer]:
+                  - /url: https://x.com/SocketSecurity
+                  - img [ref=e396]
+                - link "Socket on GitHub" [ref=e398] [cursor=pointer]:
+                  - /url: https://github.com/SocketDev
+                  - img [ref=e399]
+                - link "Socket on LinkedIn" [ref=e401] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/company/socketinc
+                  - img [ref=e402]
+                - link "Socket on Discord" [ref=e404] [cursor=pointer]:
+                  - /url: https://discord.gg/JkhgPpXDSd
+                  - img [ref=e405]
+                - link "Socket on Bluesky" [ref=e407] [cursor=pointer]:
+                  - /url: https://bsky.app/profile/socket.dev
+                  - img [ref=e408]
+            - generic [ref=e410]:
+              - paragraph [ref=e411]: Stay in touch
+              - paragraph [ref=e412]: Get open source security insights delivered straight into your inbox.
+              - generic [ref=e413]:
+                - textbox "Enter email" [ref=e414]
+                - button "Subscribe to newsletter" [ref=e415] [cursor=pointer]:
+                  - img [ref=e416]
+            - generic [ref=e418]:
+              - link "Book a Demo" [ref=e419] [cursor=pointer]:
+                - /url: /demo
+                - generic [ref=e420]: Book a Demo
+              - link "Sign In" [ref=e421] [cursor=pointer]:
+                - /url: /auth/login
+                - generic [ref=e422]: Sign In
+            - generic [ref=e423]:
+              - link "Terms" [ref=e424] [cursor=pointer]:
+                - /url: /terms
+                - generic [ref=e425]: Terms
+              - link "Privacy" [ref=e426] [cursor=pointer]:
+                - /url: /privacy
+                - generic [ref=e427]: Privacy
+              - link "Security" [ref=e428] [cursor=pointer]:
+                - /url: /security
+                - generic [ref=e429]: Security
+          - generic [ref=e430]:
+            - generic [ref=e431]:
+              - paragraph [ref=e432]: Made with ⚡️ by Socket Inc
+              - paragraph [ref=e433]: U.S. Patent No. 12,346,443 & 12,314,394. Other pending.
+            - link "SOC 2 Type II certified" [ref=e434] [cursor=pointer]:
+              - /url: /security
+              - img "SOC 2 Type II certified" [ref=e435]
+  - alert [ref=e436]
+  - region "bottom-end Notifications alt+T"

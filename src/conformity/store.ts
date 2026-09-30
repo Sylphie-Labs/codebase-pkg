@@ -165,11 +165,17 @@ export class ConformityStore {
       }
     }
 
+    // Postgres rejects a multi-row ON CONFLICT DO UPDATE that touches the same
+    // node_id twice in one statement ("cannot affect row a second time"), and
+    // parsers can emit duplicate ids (e.g. a Python @property/setter pair).
+    // Keep the last occurrence — same outcome as sequential upserts.
+    const deduped = [...new Map(entries.map((e) => [e.nodeId, e])).values()];
+
     // Build a single multi-row VALUES list. Each row contributes 4 params:
     // node_id, category, embedding (pgvector text literal), model.
     const params: unknown[] = [];
     const tuples: string[] = [];
-    for (const e of entries) {
+    for (const e of deduped) {
       const base = params.length;
       tuples.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`);
       params.push(e.nodeId, e.category, toPgVector(e.vector), e.model);

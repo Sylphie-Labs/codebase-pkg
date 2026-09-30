@@ -157,13 +157,13 @@ test('nodesToCreate function uses MERGE (not MATCH) for the Module CONTAINS atta
   assert.ok(nodeStmt.cypher.includes('MERGE (m)-[:CONTAINS]->(f)'), 'CONTAINS edge merged');
 });
 
-test('deletedFiles generate the 5 per-label DETACH DELETE statements', () => {
+test('deletedFiles generate the 6 per-label DETACH DELETE statements', () => {
   const changeset = emptyChangeset({ deletedFiles: ['src/sync/removed.ts'] });
 
   const statements = buildMutations(changeset);
-  assert.equal(statements.length, 5, 'exactly five statements per deleted file');
+  assert.equal(statements.length, 6, 'exactly six statements per deleted file');
 
-  const labels = ['CodeBlock', 'Function', 'Type', 'File', 'Module'];
+  const labels = ['CodeBlock', 'Function', 'Type', 'Constant', 'File', 'Module'];
   for (const label of labels) {
     const stmt = statements.find(s => s.cypher.includes(`:${label} {filePath: $filePath}`));
     assert.ok(stmt, `per-label delete for ${label} present`);
@@ -201,6 +201,93 @@ test('no statement anywhere in a mixed changeset is a RETURN 1 no-op', () => {
   for (const stmt of statements) {
     assert.ok(!/RETURN\s+1/.test(stmt.cypher), `no RETURN 1 no-op: ${stmt.cypher.slice(0, 60)}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Constant node mutations
+// ---------------------------------------------------------------------------
+
+function makeParsedConstant(overrides = {}) {
+  return {
+    name: 'CONFIG',
+    filePath: `${REPO_ROOT}/src/sync/example.ts`,
+    lineNumber: 3,
+    endLine: 9,
+    bodyText: 'export const CONFIG = { a: 1 };',
+    isExported: true,
+    kind: 'const',
+    contentHash: 'const-hash-0123456789',
+    ...overrides,
+  };
+}
+
+test('nodesToCreate const: MERGEs a Constant node, CONTAINS from Module, DEFINES from File', () => {
+  const c = makeParsedConstant();
+  const changeset = emptyChangeset({
+    nodesToCreate: [{ kind: 'const', data: c }],
+  });
+
+  const statements = buildMutations(changeset);
+  assert.ok(statements.length >= 1);
+
+  const nodeStmt = statements.find(s => s.cypher.includes('MERGE (c:Constant'));
+  assert.ok(nodeStmt, 'a Constant MERGE statement is produced');
+  assert.ok(nodeStmt.cypher.includes('MERGE (m:Module'), 'Module attachment uses MERGE');
+  assert.ok(!nodeStmt.cypher.includes('MATCH (m:Module'), 'Module attachment must not use MATCH');
+  assert.ok(nodeStmt.cypher.includes('MERGE (m)-[:CONTAINS]->(c)'), 'CONTAINS edge merged from Module');
+  assert.ok(nodeStmt.cypher.includes('MERGE (file)-[:DEFINES]->(c)'), 'DEFINES edge merged from File');
+  assert.equal(nodeStmt.params.filePath, c.filePath);
+  assert.equal(nodeStmt.params.name, c.name);
+  assert.equal(nodeStmt.params.contentHash, c.contentHash);
+  assert.equal(nodeStmt.params.isExported, true);
+});
+
+test('nodesToCreate const: bodyText produces a HAS_CODE -> CodeBlock statement', () => {
+  const c = makeParsedConstant();
+  const changeset = emptyChangeset({
+    nodesToCreate: [{ kind: 'const', data: c }],
+  });
+
+  const statements = buildMutations(changeset);
+  const codeBlockStmt = statements.find(
+    s => s.cypher.includes('HAS_CODE') && s.cypher.includes('CodeBlock'),
+  );
+  assert.ok(codeBlockStmt, 'a HAS_CODE -> CodeBlock statement is produced for a const with bodyText');
+  assert.equal(codeBlockStmt.params.bodyText, c.bodyText);
+});
+
+test('nodesToUpdate const: routes through the same Constant MERGE as create', () => {
+  const c = makeParsedConstant({ contentHash: 'updated-const-hash' });
+  const changeset = emptyChangeset({
+    nodesToUpdate: [{ kind: 'const', data: c, changedFields: ['full'] }],
+  });
+
+  const statements = buildMutations(changeset);
+  const nodeStmt = statements.find(s => s.cypher.includes('MERGE (c:Constant'));
+  assert.ok(nodeStmt, 'update path produces the same Constant MERGE statement');
+  assert.equal(nodeStmt.params.contentHash, 'updated-const-hash');
+});
+
+test('nodesToDelete const: DETACH DELETEs the Constant node and its CodeBlock', () => {
+  const changeset = emptyChangeset({
+    nodesToDelete: [{ kind: 'const', name: 'OLD_CONFIG', filePath: 'src/sync/example.ts' }],
+  });
+
+  const statements = buildMutations(changeset);
+  assert.equal(statements.length, 1);
+  assert.ok(statements[0].cypher.includes('(n:Constant'), 'delete targets Constant label');
+  assert.match(statements[0].cypher, /CodeBlock/, 'delete statement covers the CodeBlock');
+  assert.match(statements[0].cypher, /DETACH DELETE/, 'uses DETACH DELETE');
+  assert.equal(statements[0].params.name, 'OLD_CONFIG');
+});
+
+test('deletedFiles: the Constant DETACH DELETE statement is included among the six per-label statements', () => {
+  const changeset = emptyChangeset({ deletedFiles: ['src/sync/removed.ts'] });
+
+  const statements = buildMutations(changeset);
+  const constStmt = statements.find(s => s.cypher.includes(':Constant {filePath: $filePath}'));
+  assert.ok(constStmt, 'a Constant per-label delete is present for whole-file deletion');
+  assert.match(constStmt.cypher, /DETACH DELETE/);
 });
 
 // ---------------------------------------------------------------------------

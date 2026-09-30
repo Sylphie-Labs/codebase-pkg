@@ -1,0 +1,1297 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - link "🚀 Socket Launch Week Day 5:Introducing Repository Access Permissions and Custom Roles. Learn more →" [ref=e4] [cursor=pointer]:
+      - /url: https://socket.dev/blog/introducing-repository-access-permissions-custom-roles
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - text: "🚀 Socket Launch Week Day 5:"
+          - generic [ref=e8]: Introducing Repository Access Permissions and Custom Roles.
+        - generic [ref=e9]: Learn more →
+    - generic [ref=e10]:
+      - banner [ref=e11]:
+        - generic [ref=e13]:
+          - link "Socket home" [ref=e14] [cursor=pointer]:
+            - /url: /
+            - img [ref=e15]
+          - navigation "Main" [ref=e25]:
+            - list [ref=e27]:
+              - listitem [ref=e28]:
+                - button "Product" [ref=e29] [cursor=pointer]
+              - listitem [ref=e30]:
+                - button "Why Socket" [ref=e31] [cursor=pointer]
+              - listitem [ref=e32]:
+                - button "Company" [ref=e33] [cursor=pointer]
+              - listitem [ref=e34]:
+                - link "News" [ref=e35] [cursor=pointer]:
+                  - /url: /blog
+              - listitem [ref=e36]:
+                - link "Pricing" [ref=e37] [cursor=pointer]:
+                  - /url: /pricing
+          - generic [ref=e39]:
+            - button "Search packages" [ref=e40] [cursor=pointer]:
+              - generic [ref=e42]: npm
+              - generic [ref=e43]: Search packages
+            - link "Sign In" [ref=e44] [cursor=pointer]:
+              - /url: /auth/login
+              - generic [ref=e45]:
+                - img [ref=e46]
+                - generic [ref=e48]: Sign In
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - paragraph [ref=e53]: "@sylphie-labs/codebase-pkg"
+              - generic [ref=e55]:
+                - combobox "Package version" [ref=e56]:
+                  - option "0.5.1 (latest)" [selected]
+                  - option "0.5.0"
+                  - option "0.4.0"
+                  - option "0.3.0"
+                  - option "0.2.1"
+                  - option "0.2.0"
+                  - option "0.1.0"
+                - generic:
+                  - img
+            - generic [ref=e58]:
+              - link "Package Overview" [ref=e59] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1
+                - generic [ref=e60]:
+                  - img [ref=e62]
+                  - generic [ref=e64]: Package Overview
+              - link "Dependencies 5" [ref=e65] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/dependencies/0.5.1
+                - generic [ref=e66]:
+                  - img [ref=e68]
+                  - generic [ref=e74]: Dependencies
+                  - generic [ref=e77]: "5"
+              - link "Maintainers 1" [ref=e78] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/maintainers/0.5.1
+                - generic [ref=e79]:
+                  - img [ref=e81]
+                  - generic [ref=e83]: Maintainers
+                  - generic [ref=e86]: "1"
+              - link "Versions 7" [ref=e87] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/versions/0.5.1
+                - generic [ref=e88]:
+                  - img [ref=e90]
+                  - generic [ref=e92]: Versions
+                  - generic [ref=e95]: "7"
+              - link "Alerts" [ref=e96] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/alerts/0.5.1
+                - generic [ref=e97]:
+                  - img [ref=e99]
+                  - generic [ref=e101]: Alerts
+              - link "File Explorer" [ref=e102] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/files/0.5.1
+                - generic [ref=e103]:
+                  - img [ref=e105]
+                  - generic [ref=e107]: File Explorer
+            - generic [ref=e108]:
+              - paragraph [ref=e109]: Advanced tools
+              - link "License" [ref=e111] [cursor=pointer]:
+                - /url: /npm/package/@sylphie-labs/codebase-pkg/license/0.5.1
+                - generic [ref=e112]:
+                  - img [ref=e114]
+                  - generic [ref=e116]: License
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - img "Socket logo" [ref=e120]
+              - paragraph [ref=e121]: Install Socket
+            - paragraph [ref=e122]: Detect and block malicious and high-risk dependencies
+            - link "Install" [ref=e123] [cursor=pointer]:
+              - /url: /github-app
+              - img [ref=e124]
+              - text: Install
+        - generic [ref=e127]:
+          - navigation "breadcrumb" [ref=e128]:
+            - list [ref=e129]:
+              - listitem [ref=e130]:
+                - link "npm" [ref=e131] [cursor=pointer]:
+                  - /url: /npm
+              - listitem [ref=e132]:
+                - img [ref=e133]
+              - listitem [ref=e135]:
+                - paragraph [ref=e136]: "@sylphie-labs/codebase-pkg"
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - heading "@sylphie-labs/codebase-pkg" [level=1] [ref=e142]
+                - paragraph [ref=e143]: AST-driven Neo4j knowledge graph of your codebase, exposed to Claude Code via MCP. Map your monorepo once; let the agent query it instead of re-reading files.
+                - generic [ref=e144]:
+                  - generic [ref=e147]: latest
+                  - link "Source" [ref=e149] [cursor=pointer]:
+                    - /url: https://github.com/Sylphie-Labs/codebase-pkg
+                    - generic [ref=e150]:
+                      - img [ref=e152]
+                      - generic [ref=e154]: Source
+                  - link "npm npm" [ref=e156] [cursor=pointer]:
+                    - /url: https://npmjs.com/package/@sylphie-labs/codebase-pkg
+                    - generic [ref=e157]:
+                      - img "npm" [ref=e159]
+                      - generic [ref=e162]: npm
+                  - generic [ref=e164]:
+                    - button "Copy purl" [ref=e165] [cursor=pointer]
+                    - link "Learn more about Socket Package URL (purl)" [ref=e166] [cursor=pointer]:
+                      - /url: https://docs.socket.dev/reference/socket-package-urls-purl
+                      - img [ref=e167]
+                  - button "Socket score" [ref=e171]:
+                    - img "Socket score" [ref=e172] [cursor=pointer]
+              - group [ref=e173]:
+                - generic "Loading" [ref=e175]:
+                  - progressbar "0%" [ref=e176]
+                - generic "Loading" [ref=e180]:
+                  - progressbar "0%" [ref=e181]
+                - generic "Loading" [ref=e185]:
+                  - progressbar "0%" [ref=e186]
+                - generic "Loading" [ref=e190]:
+                  - progressbar "0%" [ref=e191]
+                - generic "Loading" [ref=e195]:
+                  - progressbar "0%" [ref=e196]
+            - separator [ref=e199]
+            - generic [ref=e200]:
+              - generic [ref=e201]:
+                - term [ref=e202]: Version
+                - definition [ref=e203]:
+                  - generic [ref=e205]: 0.5.1
+              - generic [ref=e206]:
+                - term [ref=e207]: Version published
+                - definition [ref=e208]:
+                  - time [ref=e209]: 16 minutes ago
+              - generic [ref=e210]:
+                - term [ref=e211]: Weekly downloads
+                - definition [ref=e212]: "51"
+                - generic [ref=e213]:
+                  - img [ref=e215]
+                  - text: "-80.61%"
+              - generic [ref=e217]:
+                - term [ref=e218]: Maintainers
+                - definition [ref=e219]:
+                  - link "1" [ref=e220] [cursor=pointer]:
+                    - /url: /npm/package/@sylphie-labs/codebase-pkg/maintainers/0.5.1
+              - generic [ref=e221]:
+                - generic [ref=e222]: Weekly downloads
+                - img [ref=e224]
+              - generic [ref=e226]:
+                - term [ref=e227]: Created
+                - definition [ref=e228]:
+                  - time [ref=e229]: 2 months ago
+            - generic [ref=e231]:
+              - generic [ref=e233]:
+                - tablist [ref=e234]:
+                  - list [ref=e235]:
+                    - listitem [ref=e236]:
+                      - tab "README" [selected] [ref=e237] [cursor=pointer]:
+                        - generic [ref=e238]:
+                          - img [ref=e239]
+                          - paragraph [ref=e241]: README
+                - tabpanel "README" [ref=e243]:
+                  - link "Source" [ref=e244] [cursor=pointer]:
+                    - /url: /npm/package/@sylphie-labs/codebase-pkg/files/0.5.1/README.md
+              - tabpanel "README" [ref=e247]:
+                - heading "@sylphie-labs/codebase-pkg" [level=2] [ref=e248]
+                - paragraph [ref=e249]:
+                  - strong [ref=e250]: A queryable knowledge graph of your codebase, for Claude Code agents.
+                - paragraph [ref=e251]:
+                  - code [ref=e252]: codebase-pkg
+                  - text: parses your TypeScript/TSX and Python source tree into a Neo4j graph (functions, types, imports, call chains, constraints, change history) and exposes it to Claude Code over MCP. Instead of re-greping and re-reading files every session, the agent queries the graph.
+                - blockquote [ref=e253]:
+                  - paragraph [ref=e254]:
+                    - text: "Status: 0.x — early release. TypeScript/TSX and Python (see"
+                    - link "Language support" [ref=e255] [cursor=pointer]:
+                      - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1#language-support
+                    - text: ). Tested with
+                    - code [ref=e256]: node:test
+                    - text: (
+                    - code [ref=e257]: npm test
+                    - text: ). See the
+                    - link "CHANGELOG" [ref=e258] [cursor=pointer]:
+                      - /url: https://github.com/Sylphie-Labs/codebase-pkg/blob/HEAD/./CHANGELOG.md
+                    - text: for what's new and known limitations.
+                - heading "Language support" [level=2] [ref=e259]
+                - list [ref=e260]:
+                  - listitem [ref=e261]:
+                    - strong [ref=e262]: TypeScript / TSX
+                    - text: — parsed in-process with ts-morph. No extra requirements.
+                  - listitem [ref=e263]:
+                    - strong [ref=e264]: Python
+                    - text: — parsed with your own Python runtime via the stdlib
+                    - code [ref=e265]: ast
+                    - text: module (zero extra npm dependencies). Needs
+                    - code [ref=e266]: python3
+                    - text: or
+                    - code [ref=e267]: python
+                    - text: (3.9+) on PATH, and only to index
+                    - code [ref=e268]: .py
+                    - text: files — if no runtime is found,
+                    - code [ref=e269]: .py
+                    - text: files are skipped with a warning and everything else works unchanged. Test files (
+                    - code [ref=e270]: test_*.py
+                    - text: ","
+                    - code [ref=e271]: "*_test.py"
+                    - text: ","
+                    - code [ref=e272]: conftest.py
+                    - text: ) and
+                    - code [ref=e273]: __pycache__
+                    - text: /virtualenv directories are excluded automatically.
+                - heading "Install" [level=2] [ref=e274]
+                - paragraph [ref=e275]: Two install modes, pick what fits.
+                - paragraph [ref=e276]:
+                  - strong [ref=e277]: Global
+                  - text: "(recommended for solo dev / cross-repo use):"
+                - code [ref=e279]: npm install -g @sylphie-labs/codebase-pkg
+                - paragraph [ref=e280]: "Then in any repo:"
+                - code [ref=e282]: codebase-pkg init
+                - paragraph [ref=e283]:
+                  - strong [ref=e284]: Local
+                  - text: "(recommended for teams who want version pinning):"
+                - code [ref=e286]: npm install --save-dev @sylphie-labs/codebase-pkg npx codebase-pkg init --local
+                - paragraph [ref=e287]:
+                  - text: You'll also need a Neo4j instance.
+                  - code [ref=e288]: init --docker
+                  - text: writes a
+                  - code [ref=e289]: docker-compose.codebase-pkg.yml
+                  - text: for you, or use whatever Neo4j you already have.
+                - heading "Quickstart" [level=2] [ref=e290]
+                - code [ref=e292]: "# 1. Install (global) npm install -g @sylphie-labs/codebase-pkg # 2. From your repo root codebase-pkg init --docker # 3. Bring up Neo4j docker compose -f docker-compose.codebase-pkg.yml up -d # 4. Seed the graph from the current state of your repo codebase-pkg seed # 5. Start a Claude Code session — the MCP tools are now available"
+                - paragraph [ref=e293]:
+                  - code [ref=e294]: init --docker
+                  - text: picks a free pair of host ports per repo and records the resulting Bolt URI in
+                  - code [ref=e295]: .codebase-pkg/state.json
+                  - text: ", so multiple repos can run Neo4j side by side without collisions. The exact ports and container name are printed by"
+                  - code [ref=e296]: init
+                  - text: and shown by
+                  - code [ref=e297]: doctor
+                  - text: .
+                - paragraph [ref=e298]:
+                  - code [ref=e299]: init
+                  - text: copies skill templates into
+                  - code [ref=e300]: .claude/skills/
+                  - text: ", patches"
+                  - code [ref=e301]: .mcp.json
+                  - text: with the MCP server stanza, writes
+                  - code [ref=e302]: constraints.json
+                  - text: from the bundled example, and records what it did in
+                  - code [ref=e303]: .codebase-pkg/state.json
+                  - text: so
+                  - code [ref=e304]: upgrade
+                  - text: ","
+                  - code [ref=e305]: status
+                  - text: ", and"
+                  - code [ref=e306]: uninstall
+                  - text: can later operate on the install cleanly.
+                - heading "Lifecycle" [level=2] [ref=e307]
+                - code [ref=e309]: "codebase-pkg init [--local] [--docker] [--force] [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>] codebase-pkg upgrade [--plan] [--confirm] [--force] [--path <dir>] codebase-pkg status [--path <dir>] # show install state + drift codebase-pkg doctor [--no-network] [--path <dir>] # structural checks codebase-pkg uninstall --confirm [--path <dir>] codebase-pkg reset [--graph-only|--conformity-only] [--reseed] --confirm [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>]"
+                - heading "Location" [level=3] [ref=e310]
+                - paragraph [ref=e311]:
+                  - text: By default every location-aware command (
+                  - code [ref=e312]: init
+                  - text: ","
+                  - code [ref=e313]: upgrade
+                  - text: ","
+                  - code [ref=e314]: status
+                  - text: ","
+                  - code [ref=e315]: doctor
+                  - text: ","
+                  - code [ref=e316]: uninstall
+                  - text: ","
+                  - code [ref=e317]: reset
+                  - text: ) operates on the current directory. You can point them at a different filesystem root with
+                  - code [ref=e318]: "--path <dir>"
+                  - text: (alias
+                  - code [ref=e319]: "--root <dir>"
+                  - text: ; both
+                  - code [ref=e320]: "--path X"
+                  - text: and
+                  - code [ref=e321]: "--path=X"
+                  - text: forms work), or with the
+                  - code [ref=e322]: CODEBASE_PKG_ROOT
+                  - text: environment variable. Precedence is
+                  - code [ref=e323]: "--path"
+                  - text: /
+                  - code [ref=e324]: "--root"
+                  - text: flag >
+                  - code [ref=e325]: CODEBASE_PKG_ROOT
+                  - text: "> current directory. The resolved root is where"
+                  - code [ref=e326]: .codebase-pkg/state.json
+                  - text: is read/written and where managed files live;
+                  - code [ref=e327]: init
+                  - text: creates the directory if it doesn't exist and records the absolute root in
+                  - code [ref=e328]: state.json
+                  - text: (shown by
+                  - code [ref=e329]: status
+                  - text: and
+                  - code [ref=e330]: doctor
+                  - text: ). If a later teardown resolves a root that differs from the recorded one,
+                  - code [ref=e331]: uninstall
+                  - text: /
+                  - code [ref=e332]: reset
+                  - text: print a one-line note and proceed.
+                - paragraph [ref=e333]:
+                  - strong [ref=e334]:
+                    - code [ref=e335]: init
+                  - text: is one-time per repo. It writes a state file that subsequent commands read. Pass
+                  - code [ref=e336]: "--neo4j-uri <uri>"
+                  - text: /
+                  - code [ref=e337]: "--pg-uri <uri>"
+                  - text: to persist explicit database endpoints into
+                  - code [ref=e338]: state.json
+                  - text: (
+                  - code [ref=e339]: neo4j.uri
+                  - text: /
+                  - code [ref=e340]: postgres.uri
+                  - text: ) so later teardown reuses them without re-specifying — useful when your Neo4j/Postgres live somewhere other than the per-repo
+                  - code [ref=e341]: "--docker"
+                  - text: defaults.
+                - paragraph [ref=e342]:
+                  - strong [ref=e343]:
+                    - code [ref=e344]: upgrade
+                  - text: walks the migration graph from the version recorded in
+                  - code [ref=e345]: state.json
+                  - text: to the version of the CLI you currently have installed. Always shows the plan first; nothing is applied without
+                  - code [ref=e346]: "--confirm"
+                  - text: . Drifted files (modified since install) are skipped with a warning unless
+                  - code [ref=e347]: "--force"
+                  - text: is also passed (which creates
+                  - code [ref=e348]: .bak.<timestamp>
+                  - text: backups).
+                - paragraph [ref=e349]:
+                  - strong [ref=e350]:
+                    - code [ref=e351]: status
+                  - text: is a quick
+                  - code [ref=e352]: git status
+                  - text: "-style report of what's installed, the package's view of each managed file, and any drift."
+                - paragraph [ref=e353]:
+                  - strong [ref=e354]:
+                    - code [ref=e355]: doctor
+                  - text: "runs six structural checks: state file present, version matches, managed files present, MCP stanza registered, constraints file populated, Neo4j reachable."
+                - paragraph [ref=e356]:
+                  - strong [ref=e357]:
+                    - code [ref=e358]: uninstall
+                  - text: removes every file recorded in
+                  - code [ref=e359]: state.json
+                  - text: with
+                  - code [ref=e360]: "--confirm"
+                  - text: . Modified files are backed up to
+                  - code [ref=e361]: .bak.<timestamp>
+                  - text: rather than deleted unless
+                  - code [ref=e362]: "--force"
+                  - text: .
+                - paragraph [ref=e363]:
+                  - strong [ref=e364]:
+                    - code [ref=e365]: reset
+                  - text: wipes
+                  - emphasis [ref=e366]: data
+                  - text: ", not files (the data-side counterpart to"
+                  - code [ref=e367]: uninstall
+                  - text: ). By default it deletes the entire Neo4j graph
+                  - strong [ref=e368]: and
+                  - text: truncates the conformity Postgres tables (
+                  - code [ref=e369]: cfm_vectors
+                  - text: ","
+                  - code [ref=e370]: cfm_calibration
+                  - text: ","
+                  - code [ref=e371]: cfm_decisions
+                  - text: ). Scope it with
+                  - code [ref=e372]: "--graph-only"
+                  - text: or
+                  - code [ref=e373]: "--conformity-only"
+                  - text: (mutually exclusive). Like
+                  - code [ref=e374]: uninstall
+                  - text: ", it requires"
+                  - code [ref=e375]: "--confirm"
+                  - text: (or
+                  - code [ref=e376]: "--yes"
+                  - text: ) to mutate and supports
+                  - code [ref=e377]: "--dry-run"
+                  - text: ; without
+                  - code [ref=e378]: "--confirm"
+                  - text: it prints a plan showing live node/relationship and per-table row counts, then no-ops. Add
+                  - code [ref=e379]: "--reseed"
+                  - text: to rebuild after a successful wipe —
+                  - code [ref=e380]: seed
+                  - text: if the graph was wiped,
+                  - code [ref=e381]: conformity-backfill
+                  - text: if conformity was wiped (respecting the scope flags). Absent
+                  - code [ref=e382]: cfm_*
+                  - text: tables on a fresh install are skipped, not errored. Because
+                  - code [ref=e383]: reset
+                  - text: deletes data, it targets a
+                  - emphasis [ref=e384]: specific
+                  - text: "endpoint: it resolves the Neo4j/Postgres URIs (precedence"
+                  - code [ref=e385]: "--neo4j-uri"
+                  - text: /
+                  - code [ref=e386]: "--pg-uri"
+                  - text: flag >
+                  - code [ref=e387]: CODEBASE_PKG_NEO4J_URI
+                  - text: /
+                  - code [ref=e388]: CODEBASE_PKG_PG_URI
+                  - text: env >
+                  - code [ref=e389]: state.json
+                  - text: at the resolved
+                  - code [ref=e390]: "--path"
+                  - text: root > default) and runs the count/wipe against a dedicated driver/pool it builds and closes, independent of the cwd-bound singletons. The (credential-masked) resolved URIs are shown in the plan.
+                - blockquote [ref=e391]:
+                  - paragraph [ref=e392]:
+                    - code [ref=e393]: setup
+                    - text: is a deprecated alias for
+                    - code [ref=e394]: init
+                    - text: and will be removed before 1.0.
+                - heading "What's in the graph" [level=2] [ref=e395]
+                - paragraph [ref=e396]:
+                  - strong [ref=e397]: "Nodes:"
+                  - code [ref=e398]: File
+                  - text: ","
+                  - code [ref=e399]: Function
+                  - text: ","
+                  - code [ref=e400]: Type
+                  - text: ","
+                  - code [ref=e401]: Module
+                  - text: ","
+                  - code [ref=e402]: Service
+                  - text: ","
+                  - code [ref=e403]: CodeBlock
+                  - text: ","
+                  - code [ref=e404]: Change
+                  - text: .
+                - paragraph [ref=e405]:
+                  - strong [ref=e406]: "Edges:"
+                  - code [ref=e407]: CONTAINS
+                  - text: ","
+                  - code [ref=e408]: DEFINES
+                  - text: ","
+                  - code [ref=e409]: BELONGS_TO
+                  - text: ","
+                  - code [ref=e410]: IMPORTS
+                  - text: ","
+                  - code [ref=e411]: USES_TYPE
+                  - text: ","
+                  - code [ref=e412]: CALLS
+                  - text: ","
+                  - code [ref=e413]: HAS_CODE
+                  - text: ","
+                  - code [ref=e414]: EXTENDS
+                  - text: ","
+                  - code [ref=e415]: IMPLEMENTS
+                  - text: ","
+                  - code [ref=e416]: INJECTS
+                  - text: ","
+                  - code [ref=e417]: CHANGED_IN
+                  - text: .
+                - paragraph [ref=e418]:
+                  - text: "Skills add more on top of the seeded graph (schemaless — no migration or indexes needed):"
+                  - code [ref=e419]: /infer-pkg-connections
+                  - text: writes
+                  - code [ref=e420]: DATA_FLOWS_TO
+                  - text: and
+                  - code [ref=e421]: BRIDGES
+                  - text: edges plus
+                  - code [ref=e422]: hubScore
+                  - text: properties, and
+                  - code [ref=e423]: /map-pkg-from-root
+                  - text: writes
+                  - code [ref=e424]: REACHES
+                  - text: edges (Function/File → Function/Type, with a
+                  - code [ref=e425]: hops
+                  - text: property) along with root annotations (
+                  - code [ref=e426]: entryPointKind
+                  - text: ","
+                  - code [ref=e427]: purpose
+                  - text: ","
+                  - code [ref=e428]: summary
+                  - text: ","
+                  - code [ref=e429]: reachableCount
+                  - text: ) on entry-point nodes.
+                - paragraph [ref=e430]:
+                  - text: After the initial seed, run
+                  - code [ref=e431]: codebase-pkg sync
+                  - text: to update only the deltas since the last synced commit. SHA-256 content hashes per entity drive change detection. Sync is a manual command — if you want it automatic, wire it into a
+                  - code [ref=e432]: pre-push
+                  - text: git hook or a CI step.
+                - blockquote [ref=e433]:
+                  - paragraph [ref=e434]:
+                    - text: The
+                    - link "Conformity Judge" [ref=e435] [cursor=pointer]:
+                      - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1#conformity-judge
+                    - text: keeps its embedding vectors in a separate pgvector Postgres, keyed by Neo4j node id. The Neo4j graph schema above is unchanged by that feature.
+                - heading "MCP tools" [level=2] [ref=e436]
+                - table [ref=e437]:
+                  - rowgroup [ref=e438]:
+                    - row "Tool What it returns" [ref=e439]:
+                      - columnheader "Tool" [ref=e440]
+                      - columnheader "What it returns" [ref=e441]
+                  - rowgroup [ref=e442]:
+                    - row "getModuleContext(query) Functions, types, files, constraints in a feature area" [ref=e443]:
+                      - cell "getModuleContext(query)" [ref=e444]:
+                        - code [ref=e445]: getModuleContext(query)
+                      - cell "Functions, types, files, constraints in a feature area" [ref=e446]
+                    - row "getFunctionDetail(name, filePath?) Full body + signature + JSDoc + recent changes for one function" [ref=e447]:
+                      - cell "getFunctionDetail(name, filePath?)" [ref=e448]:
+                        - code [ref=e449]: getFunctionDetail(name, filePath?)
+                      - cell "Full body + signature + JSDoc + recent changes for one function" [ref=e450]
+                    - row "getDataFlow(startNode, direction, depth?) Upstream/downstream graph traversal (default depth 3, max 6)" [ref=e451]:
+                      - cell "getDataFlow(startNode, direction, depth?)" [ref=e452]:
+                        - code [ref=e453]: getDataFlow(startNode, direction, depth?)
+                      - cell "Upstream/downstream graph traversal (default depth 3, max 6)" [ref=e454]
+                    - row "getRecentChanges(query, since?) Concept ↔ git-history cross-reference" [ref=e455]:
+                      - cell "getRecentChanges(query, since?)" [ref=e456]:
+                        - code [ref=e457]: getRecentChanges(query, since?)
+                      - cell "Concept ↔ git-history cross-reference" [ref=e458]
+                    - row "getConstraints(scope) Architectural invariants from constraints.json and the graph" [ref=e459]:
+                      - cell "getConstraints(scope)" [ref=e460]:
+                        - code [ref=e461]: getConstraints(scope)
+                      - cell "Architectural invariants from constraints.json and the graph" [ref=e462]:
+                        - text: Architectural invariants from
+                        - code [ref=e463]: constraints.json
+                        - text: and the graph
+                    - row "getLogContext(query?, service?, severity?, since?) Query log files on disk" [ref=e464]:
+                      - cell "getLogContext(query?, service?, severity?, since?)" [ref=e465]:
+                        - code [ref=e466]: getLogContext(query?, service?, severity?, since?)
+                      - cell "Query log files on disk" [ref=e467]
+                    - row "searchContent(pattern, fileFilter?, maxResults?) Structured grep that returns code-entity context, not just byte offsets" [ref=e468]:
+                      - cell "searchContent(pattern, fileFilter?, maxResults?)" [ref=e469]:
+                        - code [ref=e470]: searchContent(pattern, fileFilter?, maxResults?)
+                      - cell "Structured grep that returns code-entity context, not just byte offsets" [ref=e471]
+                    - 'row "judgeConformity(filePath?, maxResults?) How well your working-tree code fits the codebase''s existing patterns — style-conformity primary (per-function decision flags vs. the effective target: \"uses let; target is const\") plus embedding-novelty secondary (per-entity category, distance, verdict, and nearest same-kind entities). See Conformity Judge" [ref=e472]':
+                      - cell "judgeConformity(filePath?, maxResults?)" [ref=e473]:
+                        - code [ref=e474]: judgeConformity(filePath?, maxResults?)
+                      - 'cell "How well your working-tree code fits the codebase''s existing patterns — style-conformity primary (per-function decision flags vs. the effective target: \"uses let; target is const\") plus embedding-novelty secondary (per-entity category, distance, verdict, and nearest same-kind entities). See Conformity Judge" [ref=e475]':
+                        - text: How well your working-tree code fits the codebase's existing patterns —
+                        - strong [ref=e476]: style-conformity primary
+                        - text: "(per-function decision flags vs. the effective target: \"uses"
+                        - code [ref=e477]: let
+                        - text: ; target is
+                        - code [ref=e478]: const
+                        - text: "\") plus"
+                        - strong [ref=e479]: embedding-novelty secondary
+                        - text: (per-entity category, distance, verdict, and nearest same-kind entities). See
+                        - link "Conformity Judge" [ref=e480] [cursor=pointer]:
+                          - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1#conformity-judge
+                - heading "Configuration" [level=2] [ref=e481]
+                - paragraph [ref=e482]:
+                  - text: All settings are environment variables. Defaults work for a standard local Neo4j on the default Bolt port. When you use
+                  - code [ref=e483]: init --docker
+                  - text: ", the Bolt URI it chooses is auto-recorded in"
+                  - code [ref=e484]: .codebase-pkg/state.json
+                  - text: and used automatically by the MCP server and
+                  - code [ref=e485]: doctor
+                  - text: ;
+                  - code [ref=e486]: CODEBASE_PKG_NEO4J_URI
+                  - text: still overrides everything.
+                - table [ref=e487]:
+                  - rowgroup [ref=e488]:
+                    - row "Variable Default Purpose" [ref=e489]:
+                      - columnheader "Variable" [ref=e490]
+                      - columnheader "Default" [ref=e491]
+                      - columnheader "Purpose" [ref=e492]
+                  - rowgroup [ref=e493]:
+                    - row "CODEBASE_PKG_ROOT <cwd> Filesystem root the location-aware commands (init, upgrade, status, doctor, uninstall, reset) operate on. Overridden by the --path/--root flag" [ref=e494]:
+                      - cell "CODEBASE_PKG_ROOT" [ref=e495]:
+                        - code [ref=e496]: CODEBASE_PKG_ROOT
+                      - cell "<cwd>" [ref=e497]:
+                        - code [ref=e498]: <cwd>
+                      - cell "Filesystem root the location-aware commands (init, upgrade, status, doctor, uninstall, reset) operate on. Overridden by the --path/--root flag" [ref=e499]:
+                        - text: Filesystem root the location-aware commands (
+                        - code [ref=e500]: init
+                        - text: ","
+                        - code [ref=e501]: upgrade
+                        - text: ","
+                        - code [ref=e502]: status
+                        - text: ","
+                        - code [ref=e503]: doctor
+                        - text: ","
+                        - code [ref=e504]: uninstall
+                        - text: ","
+                        - code [ref=e505]: reset
+                        - text: ) operate on. Overridden by the
+                        - code [ref=e506]: "--path"
+                        - text: /
+                        - code [ref=e507]: "--root"
+                        - text: flag
+                    - row "CODEBASE_PKG_NEO4J_URI bolt://localhost:7687 Bolt endpoint. Overridden by reset --neo4j-uri" [ref=e508]:
+                      - cell "CODEBASE_PKG_NEO4J_URI" [ref=e509]:
+                        - code [ref=e510]: CODEBASE_PKG_NEO4J_URI
+                      - cell "bolt://localhost:7687" [ref=e511]:
+                        - code [ref=e512]: bolt://localhost:7687
+                      - cell "Bolt endpoint. Overridden by reset --neo4j-uri" [ref=e513]:
+                        - text: Bolt endpoint. Overridden by
+                        - code [ref=e514]: reset --neo4j-uri
+                    - row "CODEBASE_PKG_NEO4J_USER neo4j Neo4j user" [ref=e515]:
+                      - cell "CODEBASE_PKG_NEO4J_USER" [ref=e516]:
+                        - code [ref=e517]: CODEBASE_PKG_NEO4J_USER
+                      - cell "neo4j" [ref=e518]:
+                        - code [ref=e519]: neo4j
+                      - cell "Neo4j user" [ref=e520]
+                    - row "CODEBASE_PKG_NEO4J_PASSWORD codebase-pkg-local Neo4j password" [ref=e521]:
+                      - cell "CODEBASE_PKG_NEO4J_PASSWORD" [ref=e522]:
+                        - code [ref=e523]: CODEBASE_PKG_NEO4J_PASSWORD
+                      - cell "codebase-pkg-local" [ref=e524]:
+                        - code [ref=e525]: codebase-pkg-local
+                      - cell "Neo4j password" [ref=e526]
+                    - row "CODEBASE_PKG_WATCHED_DIRS apps,packages,src Comma-separated relative paths to index" [ref=e527]:
+                      - cell "CODEBASE_PKG_WATCHED_DIRS" [ref=e528]:
+                        - code [ref=e529]: CODEBASE_PKG_WATCHED_DIRS
+                      - cell "apps,packages,src" [ref=e530]:
+                        - code [ref=e531]: apps,packages,src
+                      - cell "Comma-separated relative paths to index" [ref=e532]
+                    - 'row "CODEBASE_PKG_PACKAGES (auto) JSON array of {name, dir} for seed" [ref=e533]':
+                      - cell "CODEBASE_PKG_PACKAGES" [ref=e534]:
+                        - code [ref=e535]: CODEBASE_PKG_PACKAGES
+                      - cell "(auto)" [ref=e536]
+                      - 'cell "JSON array of {name, dir} for seed" [ref=e537]':
+                        - text: JSON array of
+                        - code [ref=e538]: "{name, dir}"
+                        - text: for seed
+                    - row "CODEBASE_PKG_WORKSPACE_SCOPE (none) npm workspace scope prefix for import resolution (e.g. @your-org)" [ref=e539]:
+                      - cell "CODEBASE_PKG_WORKSPACE_SCOPE" [ref=e540]:
+                        - code [ref=e541]: CODEBASE_PKG_WORKSPACE_SCOPE
+                      - cell "(none)" [ref=e542]
+                      - cell "npm workspace scope prefix for import resolution (e.g. @your-org)" [ref=e543]:
+                        - text: npm workspace scope prefix for import resolution (e.g.
+                        - code [ref=e544]: "@your-org"
+                        - text: )
+                    - row "CODEBASE_PKG_LOGS_DIR <cwd>/logs Where getLogContext reads log files" [ref=e545]:
+                      - cell "CODEBASE_PKG_LOGS_DIR" [ref=e546]:
+                        - code [ref=e547]: CODEBASE_PKG_LOGS_DIR
+                      - cell "<cwd>/logs" [ref=e548]:
+                        - code [ref=e549]: <cwd>/logs
+                      - cell "Where getLogContext reads log files" [ref=e550]:
+                        - text: Where
+                        - code [ref=e551]: getLogContext
+                        - text: reads log files
+                    - row "CODEBASE_PKG_DOMAIN_LABELS (generic set) Comma-separated allowed domain labels for Function.domain" [ref=e552]:
+                      - cell "CODEBASE_PKG_DOMAIN_LABELS" [ref=e553]:
+                        - code [ref=e554]: CODEBASE_PKG_DOMAIN_LABELS
+                      - cell "(generic set)" [ref=e555]
+                      - cell "Comma-separated allowed domain labels for Function.domain" [ref=e556]:
+                        - text: Comma-separated allowed domain labels for
+                        - code [ref=e557]: Function.domain
+                    - row "CODEBASE_PKG_PG_URI (auto) Postgres/pgvector DSN for the Conformity Judge . Overrides the per-instance DSN recorded in state.json; point it at an existing Postgres instead of the provisioned one. Overridden by reset --pg-uri" [ref=e558]:
+                      - cell "CODEBASE_PKG_PG_URI" [ref=e559]:
+                        - code [ref=e560]: CODEBASE_PKG_PG_URI
+                      - cell "(auto)" [ref=e561]
+                      - cell "Postgres/pgvector DSN for the Conformity Judge . Overrides the per-instance DSN recorded in state.json; point it at an existing Postgres instead of the provisioned one. Overridden by reset --pg-uri" [ref=e562]:
+                        - text: Postgres/pgvector DSN for the
+                        - link "Conformity Judge" [ref=e563] [cursor=pointer]:
+                          - /url: /npm/package/@sylphie-labs/codebase-pkg/overview/0.5.1#conformity-judge
+                        - text: . Overrides the per-instance DSN recorded in
+                        - code [ref=e564]: state.json
+                        - text: ; point it at an existing Postgres instead of the provisioned one. Overridden by
+                        - code [ref=e565]: reset --pg-uri
+                    - row "CODEBASE_PKG_CONFORMITY (unset) Set to off to disable the conformity sync hook and judging entirely" [ref=e566]:
+                      - cell "CODEBASE_PKG_CONFORMITY" [ref=e567]:
+                        - code [ref=e568]: CODEBASE_PKG_CONFORMITY
+                      - cell "(unset)" [ref=e569]
+                      - cell "Set to off to disable the conformity sync hook and judging entirely" [ref=e570]:
+                        - text: Set to
+                        - code [ref=e571]: "off"
+                        - text: to disable the conformity sync hook and judging entirely
+                    - row "CODEBASE_PKG_SKIP_MODEL_PREFETCH (unset) Set to 1 to skip the embedding-model prefetch at init (same as --no-model)" [ref=e572]:
+                      - cell "CODEBASE_PKG_SKIP_MODEL_PREFETCH" [ref=e573]:
+                        - code [ref=e574]: CODEBASE_PKG_SKIP_MODEL_PREFETCH
+                      - cell "(unset)" [ref=e575]
+                      - cell "Set to 1 to skip the embedding-model prefetch at init (same as --no-model)" [ref=e576]:
+                        - text: Set to
+                        - code [ref=e577]: "1"
+                        - text: to skip the embedding-model prefetch at
+                        - code [ref=e578]: init
+                        - text: (same as
+                        - code [ref=e579]: "--no-model"
+                        - text: )
+                - heading "Constraints" [level=2] [ref=e580]
+                - paragraph [ref=e581]:
+                  - text: Architectural invariants live in
+                  - code [ref=e582]: constraints.json
+                  - text: at your repo root and surface via the
+                  - code [ref=e583]: getConstraints
+                  - text: "MCP tool. The tool reads from the graph, not the file — after adding or editing constraints, load them with:"
+                - code [ref=e585]: codebase-pkg add-constraint --file constraints.json
+                - paragraph [ref=e586]:
+                  - text: Re-run that after every edit (add
+                  - code [ref=e587]: "--validate"
+                  - text: to check the file without writing).
+                - paragraph [ref=e588]:
+                  - text: See
+                  - code [ref=e589]: constraints.example.json
+                  - text: for the format.
+                - heading "Conformity Judge" [level=2] [ref=e590]
+                - paragraph [ref=e591]: "The Conformity Judge is a local, offline read on how well new code fits the patterns already in your codebase. It has two complementary lenses:"
+                - list [ref=e592]:
+                  - listitem [ref=e593]:
+                    - strong [ref=e594]: Decision/style conformity — the PRIMARY signal.
+                    - text: A deterministic, explainable check of the discrete, interchangeable coding
+                    - emphasis [ref=e595]: decisions
+                    - text: a function makes — the curated axes
+                    - code [ref=e596]: var_decl
+                    - text: ","
+                    - code [ref=e597]: string_style
+                    - text: ","
+                    - code [ref=e598]: async_style
+                    - text: ","
+                    - code [ref=e599]: array_syntax
+                    - text: ","
+                    - code [ref=e600]: export_style
+                    - text: — against an
+                    - strong [ref=e601]: effective target
+                    - text: "(the codebase's own preferred value per axis). Each finding is a flat fact you can act on: \"uses"
+                    - code [ref=e602]: let
+                    - text: ; target is
+                    - code [ref=e603]: const
+                    - text: "\". No model, no embeddings, no fuzziness."
+                  - listitem [ref=e604]:
+                    - strong [ref=e605]: Embedding novelty — the SECONDARY lens.
+                    - text: "A \"semantic novelty\" read: it embeds an entity's whole body and measures cosine distance to a pool of structurally similar peers, surfacing code that is"
+                    - emphasis [ref=e606]: shaped
+                    - text: unlike anything else in the repo. This is the older whole-body signal; it now backs up the decision signal rather than leading it.
+                - paragraph [ref=e607]:
+                  - text: It is
+                  - strong [ref=e608]: not a linter or a gate
+                  - text: ; it is an instrument. Use the decision flags to see exactly which conventions your in-progress code diverges from, and the novelty distance to see whether it is structurally unusual.
+                - heading "Decision/style conformity (primary)" [level=3] [ref=e609]
+                - paragraph [ref=e610]:
+                  - text: For each curated axis, the judge compares a function's choice to the
+                  - strong [ref=e611]: effective target
+                  - text: = a
+                  - strong [ref=e612]: descriptive seed
+                  - text: "merged with an optional, git-tracked override file:"
+                - list [ref=e613]:
+                  - listitem [ref=e614]:
+                    - strong [ref=e615]: Descriptive seed.
+                    - text: The codebase's own
+                    - emphasis [ref=e616]: mode
+                    - text: per axis — whichever value the existing code uses most (e.g. if 75% of declarations are
+                    - code [ref=e617]: const
+                    - text: ", the seed target for"
+                    - code [ref=e618]: var_decl
+                    - text: is
+                    - code [ref=e619]: const
+                    - text: ). Computed over
+                    - emphasis [ref=e620]: substantive
+                    - text: decisions only; a function that declares no variables makes no
+                    - code [ref=e621]: var_decl
+                    - text: decision and is never faulted for it.
+                  - listitem [ref=e622]:
+                    - strong [ref=e623]:
+                      - code [ref=e624]: conformity-target.json
+                      - text: (optional, at repo root).
+                    - text: A small git-trackable file of accepted preferences,
+                    - code [ref=e625]: "{ \"var_decl\": \"const\", ... }"
+                    - text: . Any axis you set here
+                    - strong [ref=e626]: overrides
+                    - text: the descriptive seed (so you can flip the target to a current minority — a deliberate "we're migrating to X" decision) and is
+                    - strong [ref=e627]: always enforced
+                    - text: ", even past the base-rate guard."
+                  - listitem [ref=e628]:
+                    - strong [ref=e629]: Base-rate guard.
+                    - text: An axis is only enforced when the codebase has enough substantive examples of it (≥ 10 deciders) to have a real preference —
+                    - emphasis [ref=e630]: or
+                    - text: you've set it explicitly in
+                    - code [ref=e631]: conformity-target.json
+                    - text: . Axes the codebase barely uses are left un-enforced rather than fabricating a convention from noise.
+                - paragraph [ref=e632]:
+                  - text: The
+                  - strong [ref=e633]:
+                    - code [ref=e634]: conformity-target
+                  - text: "command is the read-only way to inspect and seed this:"
+                - code [ref=e636]: "codebase-pkg conformity-target # show the effective target + per-axis migration progress codebase-pkg conformity-target --init # write a starter conformity-target.json from the current modes codebase-pkg conformity-target --init --force # overwrite an existing one"
+                - paragraph [ref=e637]:
+                  - text: Show mode is a pure
+                  - strong [ref=e638]: lookup against the already-persisted decision facts
+                  - text: (the
+                  - code [ref=e639]: cfm_decisions
+                  - text: table) — it never re-parses or re-embeds the tree. Per axis it prints the target value, whether it came from the seed or an override, whether it's enforced or guarded out, the substantive count, and
+                  - strong [ref=e640]: migration progress
+                  - text: ": of the functions that decided that axis, what fraction already match the target and how many remain to migrate."
+                  - code [ref=e641]: "--init"
+                  - text: seeds the file from the current descriptive modes for the enforced axes; edit it, commit it, and both the judge and
+                  - code [ref=e642]: conformity-backfill
+                  - text: will honor it.
+                - paragraph [ref=e643]:
+                  - text: The decision axes are extracted with ts-morph, so they cover
+                  - strong [ref=e644]: TypeScript/TSX only
+                  - text: .
+                - heading "Embedding novelty (secondary)" [level=3] [ref=e645]
+                - paragraph [ref=e646]:
+                  - text: "The novelty lens judges three kinds of code entity, each against a pool of its own kind: functions and methods ("
+                  - code [ref=e647]: function:body
+                  - text: ), types — classes, interfaces, enums, and type aliases (
+                  - code [ref=e648]: type:body
+                  - text: ), and module-level constant/config declarations (
+                  - code [ref=e649]: module:const
+                  - text: ). For each entity it embeds the entity's
+                  - strong [ref=e650]: whole body, lightly normalized
+                  - text: — comments stripped and whitespace collapsed, but identifiers and literals kept — and measures the cosine distance from that vector to the committed pool of same-category entities. Each category carries its own in-distribution calibrated threshold.
+                - paragraph [ref=e651]:
+                  - text: It runs
+                  - strong [ref=e652]: fully local
+                  - text: ": a code-specific embedding model ("
+                  - code [ref=e653]: jinaai/jina-embeddings-v2-base-code
+                  - text: via
+                  - code [ref=e654]: "@xenova/transformers"
+                  - text: ", ~162 MB, 768-dimensional, downloaded once then run in-process and offline), with"
+                  - code [ref=e655]: Xenova/jina-embeddings-v2-small-en
+                  - text: and MiniLM as fallbacks. No external API, no tokens, no cost. Note the one-time download is larger than the earlier small general model — the code model is what makes whole-body similarity separate cleanly.
+                - heading "Architecture" [level=3] [ref=e656]
+                - paragraph [ref=e657]:
+                  - text: Two stores back the feature.
+                  - strong [ref=e658]: Neo4j
+                  - text: stays the canonical graph (untouched — no conformity data lives in it). A separate
+                  - strong [ref=e659]: pgvector Postgres
+                  - text: holds the conformity data, keyed by the same node id as the graph (
+                  - code [ref=e660]: <filePath>::<name>
+                  - text: "): the embedding-novelty vectors live in"
+                  - code [ref=e661]: cfm_vectors
+                  - text: (with an HNSW cosine ANN index) plus a
+                  - code [ref=e662]: cfm_calibration
+                  - text: table of per-category thresholds, and the
+                  - strong [ref=e663]: decision facts
+                  - text: live in
+                  - code [ref=e664]: cfm_decisions
+                  - text: — one row per
+                  - code [ref=e665]: (node_id, axis)
+                  - text: — so axis distributions and the migration backlog are plain SQL queries and the decision judge /
+                  - code [ref=e666]: conformity-target
+                  - text: are a lookup, never a re-scan. When you run
+                  - code [ref=e667]: init --docker
+                  - text: ", the Postgres/pgvector service is provisioned in the same compose file alongside Neo4j, the schema is bootstrapped once Postgres is reachable, and the embedding model is prefetched."
+                - heading "Workflow" [level=3] [ref=e668]
+                - code [ref=e670]: "# 1. Provision Neo4j + pgvector Postgres and prefetch the model codebase-pkg init --docker docker compose -f docker-compose.codebase-pkg.yml up -d # 2. Seed the Neo4j graph as usual codebase-pkg seed # 3. One-time: persist the decision facts (the PRIMARY signal) AND embed every # committed entity into the novelty pools + calibrate the per-category thresholds codebase-pkg conformity-backfill # 4. (optional) Inspect the effective decision target + migration, and seed a # git-tracked conformity-target.json you can edit to set accepted preferences codebase-pkg conformity-target codebase-pkg conformity-target --init # 5. Judge your working-tree code: decision/style flags (primary) + novelty (secondary) codebase-pkg conformity-judge # all uncommitted changes in watched dirs codebase-pkg conformity-judge src/foo.ts # or a single file"
+                - paragraph [ref=e671]:
+                  - code [ref=e672]: conformity-backfill
+                  - text: does two passes. The
+                  - strong [ref=e673]: decision pass
+                  - text: extracts and persists the per-entity style facts into
+                  - code [ref=e674]: cfm_decisions
+                  - text: ", then logs the effective target (seed merged with"
+                  - code [ref=e675]: conformity-target.json
+                  - text: ) and per-axis migration progress. The
+                  - strong [ref=e676]: novelty pass
+                  - text: embeds every committed entity (functions, types, and module-level constants) and, as its final step,
+                  - strong [ref=e677]: calibrates
+                  - text: "the verdict: per category it takes the 95th percentile of the leave-one-out kNN distances over that category's in-repo pool, so roughly 95% of the codebase's own code reads as \"conforms\". That threshold is stored in a"
+                  - code [ref=e678]: cfm_calibration
+                  - text: table. If you later tune the calibration or grow the pool via sync and want to refresh thresholds
+                  - strong [ref=e679]: without re-embedding
+                  - text: ", run"
+                  - code [ref=e680]: codebase-pkg conformity-calibrate
+                  - text: — it re-reads the stored vectors and recomputes the thresholds (no model load). To inspect or re-seed the decision target on demand without any re-parse, use
+                  - code [ref=e681]: codebase-pkg conformity-target
+                  - text: .
+                - paragraph [ref=e682]:
+                  - text: After the one-time backfill, normal
+                  - code [ref=e683]: codebase-pkg sync
+                  - text: "keeps the pool fresh: it re-embeds changed entities and removes vectors for deleted ones as a best-effort, non-fatal step (a failure or unreachable Postgres warns but never blocks the sync cursor). You can also judge from a Claude Code session via the"
+                  - code [ref=e684]: judgeConformity
+                  - text: MCP tool.
+                - heading "The judgeConformity MCP tool" [level=3] [ref=e685]:
+                  - text: The
+                  - code [ref=e686]: judgeConformity
+                  - text: MCP tool
+                - paragraph [ref=e687]:
+                  - text: The 8th MCP tool. Input
+                  - code [ref=e688]: "{ filePath?, maxResults? }"
+                  - text: (with no
+                  - code [ref=e689]: filePath
+                  - text: ", it judges the uncommitted staged + unstaged + untracked working-tree changes in watched dirs;"
+                  - code [ref=e690]: maxResults
+                  - text: caps the nearest neighbors reported per entity and the kNN window, default 5). It leads with the
+                  - strong [ref=e691]: style-conformity
+                  - text: report — per-function off-target decisions against the effective target — then the
+                  - strong [ref=e692]: embedding-novelty
+                  - text: report. For novelty it returns, per entity, its category (
+                  - code [ref=e693]: function:body
+                  - text: ","
+                  - code [ref=e694]: type:body
+                  - text: ", or"
+                  - code [ref=e695]: module:const
+                  - text: ), distance, a verdict (
+                  - code [ref=e696]: conforms
+                  - text: /
+                  - code [ref=e697]: outlier
+                  - text: ), the
+                  - strong [ref=e698]: threshold
+                  - text: the verdict was decided against and whether that threshold was
+                  - strong [ref=e699]: calibrated
+                  - text: ", and the nearest existing entities of the same kind — leading with the outliers. Each entity is judged against its category's pool"
+                  - emphasis [ref=e700]: minus its own committed vector
+                  - text: ", so a committed entity is compared to other code, never to itself. Before"
+                  - code [ref=e701]: conformity-backfill
+                  - text: /
+                  - code [ref=e702]: conformity-calibrate
+                  - text: has run there is no calibrated threshold, so verdicts fall back to a default and are flagged
+                  - code [ref=e703]: "calibrated: false"
+                  - text: — in that state the distance and nearest-neighbor list remain the trustworthy signal. If conformity is disabled or Postgres is unreachable, it returns a plain message explaining how to enable it rather than erroring.
+                - heading "Caveats" [level=3] [ref=e704]
+                - list [ref=e705]:
+                  - listitem [ref=e706]:
+                    - strong [ref=e707]: Decision axes are TypeScript-only.
+                    - text: The decision extractor uses ts-morph, so style-conformity covers
+                    - code [ref=e708]: .ts
+                    - text: /
+                    - code [ref=e709]: .tsx
+                    - text: functions, methods, and arrows only — not Python or other languages.
+                  - listitem [ref=e710]:
+                    - strong [ref=e711]: The decision axes don't cover everything.
+                    - text: The curated set is
+                    - code [ref=e712]: var_decl
+                    - text: ","
+                    - code [ref=e713]: string_style
+                    - text: ","
+                    - code [ref=e714]: async_style
+                    - text: ","
+                    - code [ref=e715]: array_syntax
+                    - text: ","
+                    - code [ref=e716]: export_style
+                    - text: . Bare statements and destructuring-pattern declarations are not modeled as decisions, and a function that makes no decision on an axis (the axis's
+                    - emphasis [ref=e717]: absence
+                    - text: value) is never faulted on it.
+                  - listitem [ref=e718]:
+                    - strong [ref=e719]: Embedding novelty is a separate lens.
+                    - text: The two signals answer different questions — "did this code follow our conventions?" (decisions) vs. "is this code shaped unlike anything else?" (embedding distance). A clean style report does not imply low novelty, and vice versa.
+                  - listitem [ref=e720]:
+                    - strong [ref=e721]: Some declarations aren't chunked yet.
+                    - text: The judge covers functions/methods (
+                    - code [ref=e722]: function:body
+                    - text: ), types (
+                    - code [ref=e723]: type:body
+                    - text: ), and module-level const/var declarations (
+                    - code [ref=e724]: module:const
+                    - text: ), but the parser does not yet chunk bare top-level statements (side-effect calls), destructuring-pattern declarations, or Python module-level assignments — those entities aren't judged.
+                  - listitem [ref=e725]:
+                    - strong [ref=e726]: The conformity signal separates best against genuinely different code.
+                    - text: In our validation it cleanly distinguishes unrelated code, but is more modest against same-author / same-domain code that already looks alike. Read the distance and nearest-neighbor list, not just the label.
+                  - listitem [ref=e727]:
+                    - strong [ref=e728]: Before backfill/calibration the threshold is uncalibrated.
+                    - text: A judged function reports
+                    - code [ref=e729]: "calibrated: false"
+                    - text: and falls back to a default cut until
+                    - code [ref=e730]: conformity-backfill
+                    - text: (or
+                    - code [ref=e731]: conformity-calibrate
+                    - text: ) has run; in that state the distance and nearest neighbors are the trustworthy signal.
+                  - listitem [ref=e732]:
+                    - strong [ref=e733]: The Python parser does not yet capture default-parameter values
+                    - text: — only TypeScript/TSX functions surface default-position information. This is unrelated to the whole-body embedding (which uses the body text directly), but the parser distinction still stands.
+                  - listitem [ref=e734]:
+                    - strong [ref=e735]: End-to-end against live Neo4j + Postgres still wants a smoke test.
+                    - text: The engine is unit-tested with fakes; a full run against provisioned services has not been exercised here.
+                - heading "CLI reference" [level=2] [ref=e736]
+                - code [ref=e738]: "# Lifecycle (all accept --path/--root <dir> or CODEBASE_PKG_ROOT to set the install root) codebase-pkg init [--local] [--docker] [--force] [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>] codebase-pkg upgrade [--plan] [--confirm] [--force] [--verbose] [--path <dir>] codebase-pkg status [--path <dir>] codebase-pkg doctor [--no-network] [--path <dir>] codebase-pkg uninstall --confirm [--force] [--dry-run] [--path <dir>] codebase-pkg reset [--graph-only|--conformity-only] [--reseed] --confirm [--dry-run] [--path <dir>] [--neo4j-uri <uri>] [--pg-uri <uri>] # Graph operations codebase-pkg seed # initial full graph build codebase-pkg sync # incremental sync since last commit codebase-pkg validate # run integrity checks against the graph codebase-pkg backfill-changes # populate Change nodes from git history codebase-pkg add-constraint --file constraints.json [--validate] # Conformity Judge (see below) codebase-pkg conformity-backfill # one-time: persist decision facts + embed all entities, then calibrate codebase-pkg conformity-calibrate # recompute per-category outlier thresholds (no re-embed) codebase-pkg conformity-target [--init] [--force] # show the effective decision target + migration, or seed conformity-target.json codebase-pkg conformity-judge [file] # judge working-tree code (or one file): style flags (primary) + novelty (secondary)"
+                - paragraph [ref=e739]:
+                  - code [ref=e740]: codebase-pkg-mcp
+                  - text: runs the MCP server directly (Claude Code launches it for you via
+                  - code [ref=e741]: .mcp.json
+                  - text: ).
+                - heading "License" [level=2] [ref=e742]
+                - paragraph [ref=e743]:
+                  - text: MIT. See
+                  - link "LICENSE" [ref=e744] [cursor=pointer]:
+                    - /url: https://github.com/Sylphie-Labs/codebase-pkg/blob/HEAD/./LICENSE
+                  - text: .
+            - generic [ref=e745]:
+              - heading "Keywords" [level=2] [ref=e746]
+              - generic [ref=e747]:
+                - link "claude" [ref=e749] [cursor=pointer]:
+                  - /url: /search?e=npm&q=claude
+                  - generic [ref=e750]: claude
+                - link "claude-code" [ref=e752] [cursor=pointer]:
+                  - /url: /search?e=npm&q=claude-code
+                  - generic [ref=e753]: claude-code
+                - link "mcp" [ref=e755] [cursor=pointer]:
+                  - /url: /search?e=npm&q=mcp
+                  - generic [ref=e756]: mcp
+                - link "knowledge-graph" [ref=e758] [cursor=pointer]:
+                  - /url: /search?e=npm&q=knowledge-graph
+                  - generic [ref=e759]: knowledge-graph
+                - link "neo4j" [ref=e761] [cursor=pointer]:
+                  - /url: /search?e=npm&q=neo4j
+                  - generic [ref=e762]: neo4j
+                - link "ast" [ref=e764] [cursor=pointer]:
+                  - /url: /search?e=npm&q=ast
+                  - generic [ref=e765]: ast
+                - button "+2 more" [ref=e767]
+            - generic [ref=e768]:
+              - paragraph [ref=e769]: FAQs
+              - generic [ref=e770]:
+                - button "What is @sylphie-labs/codebase-pkg?" [ref=e772] [cursor=pointer]:
+                  - paragraph [ref=e773]: What is @sylphie-labs/codebase-pkg?
+                  - img [ref=e775]
+                - button "Is @sylphie-labs/codebase-pkg popular?" [ref=e778] [cursor=pointer]:
+                  - paragraph [ref=e779]: Is @sylphie-labs/codebase-pkg popular?
+                  - img [ref=e781]
+                - button "Is @sylphie-labs/codebase-pkg well maintained?" [ref=e784] [cursor=pointer]:
+                  - paragraph [ref=e785]: Is @sylphie-labs/codebase-pkg well maintained?
+                  - img [ref=e787]
+            - generic [ref=e789]: Package last updated on 27 Jun 2026
+            - separator [ref=e790]
+            - generic [ref=e791]:
+              - paragraph [ref=e792]: Did you know?
+              - generic [ref=e793]:
+                - img "Socket" [ref=e794]
+                - paragraph [ref=e795]: Socket for GitHub automatically highlights issues in each pull request and monitors the health of all your open source dependencies. Discover the contents of your packages and block harmful activity before you install or update your dependencies.
+              - link "Install" [ref=e796] [cursor=pointer]:
+                - /url: /github-app
+                - img [ref=e797]
+                - text: Install
+      - generic [ref=e800]:
+        - heading "Related posts" [level=2] [ref=e802]
+        - generic [ref=e803]:
+          - article [ref=e804]:
+            - generic [ref=e805]:
+              - img "Miasma Mini Shai-Hulud Hits ImmobiliareLabs npm Packages" [ref=e807]
+              - generic [ref=e808]:
+                - generic [ref=e809]:
+                  - paragraph [ref=e810]: Research
+                  - generic [ref=e811]: /
+                  - paragraph [ref=e812]: Security News
+                - heading "Miasma Mini Shai-Hulud Hits ImmobiliareLabs npm Packages" [level=3] [ref=e813]:
+                  - link "Miasma Mini Shai-Hulud Hits ImmobiliareLabs npm Packages" [ref=e814] [cursor=pointer]:
+                    - /url: /blog/miasma-mini-shai-hulud-hits-immobiliarelabs-npm-packages
+                - paragraph [ref=e816]: Miasma Mini Shai-Hulud hits @immobiliarelabs Backstage plugins, targeting GitLab and LDAP auth packages on npm.
+                - generic [ref=e818]:
+                  - text: By
+                  - generic [ref=e819]: Socket Research Team
+                  - generic [ref=e820]: "- Jun 26, 2026"
+          - article [ref=e821]:
+            - generic [ref=e822]:
+              - img "Rolldown Pulls Rust React Compiler Integration After Binary Size Increase" [ref=e824]
+              - generic [ref=e825]:
+                - paragraph [ref=e827]: Security News
+                - heading "Rolldown Pulls Rust React Compiler Integration After Binary Size Increase" [level=3] [ref=e828]:
+                  - link "Rolldown Pulls Rust React Compiler Integration After Binary Size Increase" [ref=e829] [cursor=pointer]:
+                    - /url: /blog/rolldown-pulls-rust-react-compiler-integration
+                - paragraph [ref=e831]: Rolldown paused Rust React Compiler integration after a 5MB binary size increase raised concerns about shipping React-specific code to all Vite users.
+                - generic [ref=e833]:
+                  - text: By
+                  - generic [ref=e834]: Sarah Gooding
+                  - generic [ref=e835]: "- Jun 26, 2026"
+          - article [ref=e836]:
+            - generic [ref=e837]:
+              - img "Miasma Mini Shai-Hulud Hits LeoPlatform npm Packages and GitHub Actions, Expands to the Go Ecosystem" [ref=e839]
+              - generic [ref=e840]:
+                - generic [ref=e841]:
+                  - paragraph [ref=e842]: Security News
+                  - generic [ref=e843]: /
+                  - paragraph [ref=e844]: Research
+                - heading "Miasma Mini Shai-Hulud Hits LeoPlatform npm Packages and GitHub Actions, Expands to the Go Ecosystem" [level=3] [ref=e845]:
+                  - link "Miasma Mini Shai-Hulud Hits LeoPlatform npm Packages and GitHub Actions, Expands to the Go Ecosystem" [ref=e846] [cursor=pointer]:
+                    - /url: /blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem
+                - paragraph [ref=e848]: Mini Shai-Hulud expands into the Go ecosystem after hitting LeoPlatform npm packages and targeting GitHub Actions workflows.
+                - generic [ref=e850]:
+                  - text: By
+                  - generic [ref=e851]: Socket Research Team
+                  - generic [ref=e852]: "- Jun 25, 2026"
+      - contentinfo [ref=e853]:
+        - generic [ref=e855]:
+          - generic [ref=e856]:
+            - generic [ref=e857]:
+              - link "Socket for GitHub" [ref=e858] [cursor=pointer]:
+                - /url: /features/github
+                - generic [ref=e859]:
+                  - img [ref=e861]
+                  - paragraph [ref=e863]: Socket for GitHub
+              - link "Socket Firewall" [ref=e864] [cursor=pointer]:
+                - /url: /features/firewall
+                - generic [ref=e865]:
+                  - img [ref=e867]
+                  - paragraph [ref=e869]: Socket Firewall
+              - link "Socket CLI" [ref=e870] [cursor=pointer]:
+                - /url: /features/cli
+                - generic [ref=e871]:
+                  - img [ref=e873]
+                  - paragraph [ref=e875]: Socket CLI
+              - link "Socket Certified Patches" [ref=e876] [cursor=pointer]:
+                - /url: /features/patches
+                - generic [ref=e877]:
+                  - img [ref=e879]
+                  - paragraph [ref=e881]: Socket Certified Patches
+              - link "Socket Web Extension" [ref=e882] [cursor=pointer]:
+                - /url: /features/web-extension
+                - generic [ref=e883]:
+                  - img [ref=e885]
+                  - paragraph [ref=e887]: Socket Web Extension
+              - link "Socket Optimize" [ref=e888] [cursor=pointer]:
+                - /url: /features/optimize
+                - generic [ref=e889]:
+                  - img [ref=e891]
+                  - paragraph [ref=e893]: Socket Optimize
+              - link "Socket Dependency Search" [ref=e894] [cursor=pointer]:
+                - /url: /features/dependency-search
+                - generic [ref=e895]:
+                  - img [ref=e897]
+                  - paragraph [ref=e899]: Socket Dependency Search
+              - link "Socket Reachability" [ref=e900] [cursor=pointer]:
+                - /url: /features/reachability
+                - generic [ref=e901]:
+                  - img [ref=e903]
+                  - paragraph [ref=e905]: Socket Reachability
+            - generic [ref=e906]:
+              - paragraph [ref=e907]: Languages
+              - generic [ref=e908]:
+                - generic [ref=e909]:
+                  - img [ref=e910]
+                  - link "JavaScript / TypeScript" [ref=e912] [cursor=pointer]:
+                    - /url: /integrations/javascript
+                    - generic [ref=e913]: JavaScript / TypeScript
+                - generic [ref=e914]:
+                  - img [ref=e915]
+                  - link "Python" [ref=e917] [cursor=pointer]:
+                    - /url: /integrations/python
+                    - generic [ref=e918]: Python
+                - generic [ref=e919]:
+                  - img [ref=e920]
+                  - link "Go" [ref=e922] [cursor=pointer]:
+                    - /url: /integrations/go
+                    - generic [ref=e923]: Go
+                - generic [ref=e924]:
+                  - img [ref=e925]
+                  - link "Ruby" [ref=e927] [cursor=pointer]:
+                    - /url: /integrations/ruby
+                    - generic [ref=e928]: Ruby
+                - link "All Languages" [ref=e930] [cursor=pointer]:
+                  - /url: /integrations#languages
+                  - generic [ref=e931]: All Languages
+            - generic [ref=e932]:
+              - paragraph [ref=e933]: Integrations
+              - generic [ref=e934]:
+                - link "All Integrations" [ref=e936] [cursor=pointer]:
+                  - /url: /integrations
+                  - generic [ref=e937]: All Integrations
+                - link "Source Control" [ref=e939] [cursor=pointer]:
+                  - /url: /integrations#scm
+                  - generic [ref=e940]: Source Control
+                - link "Ticketing & Messaging" [ref=e942] [cursor=pointer]:
+                  - /url: /integrations#ticketing-and-messaging
+                  - generic [ref=e943]: Ticketing & Messaging
+                - link "Package Managers" [ref=e945] [cursor=pointer]:
+                  - /url: /integrations#package-managers
+                  - generic [ref=e946]: Package Managers
+                - link "SIEM" [ref=e948] [cursor=pointer]:
+                  - /url: /integrations#siem
+                  - generic [ref=e949]: SIEM
+          - generic [ref=e950]:
+            - generic [ref=e951]:
+              - paragraph [ref=e952]: Resources
+              - generic [ref=e953]:
+                - link "Docs" [ref=e955] [cursor=pointer]:
+                  - /url: https://docs.socket.dev
+                  - generic [ref=e956]: Docs
+                - link "Changelog" [ref=e958] [cursor=pointer]:
+                  - /url: /changelog
+                  - generic [ref=e959]: Changelog
+                - link "Package Alerts" [ref=e961] [cursor=pointer]:
+                  - /url: /alerts
+                  - generic [ref=e962]: Package Alerts
+                - link "FAQ" [ref=e964] [cursor=pointer]:
+                  - /url: /faq
+                  - generic [ref=e965]: FAQ
+                - link "Glossary" [ref=e967] [cursor=pointer]:
+                  - /url: /glossary
+                  - generic [ref=e968]: Glossary
+            - generic [ref=e969]:
+              - paragraph [ref=e970]: Company
+              - generic [ref=e971]:
+                - link "About" [ref=e973] [cursor=pointer]:
+                  - /url: /about
+                  - generic [ref=e974]: About
+                - link "Careers" [ref=e976] [cursor=pointer]:
+                  - /url: /careers
+                  - generic [ref=e977]: Careers
+                - link "Investors" [ref=e979] [cursor=pointer]:
+                  - /url: /about#investors
+                  - generic [ref=e980]: Investors
+                - link "Security" [ref=e982] [cursor=pointer]:
+                  - /url: /security
+                  - generic [ref=e983]: Security
+                - link "Love" [ref=e985] [cursor=pointer]:
+                  - /url: /love
+                  - generic [ref=e986]: Love
+            - generic [ref=e987]:
+              - paragraph [ref=e988]: News
+              - generic [ref=e989]:
+                - link "Security" [ref=e991] [cursor=pointer]:
+                  - /url: /blog/category/security-news
+                  - generic [ref=e992]: Security
+                - link "Company" [ref=e994] [cursor=pointer]:
+                  - /url: /blog/category/news
+                  - generic [ref=e995]: Company
+                - link "Engineering" [ref=e997] [cursor=pointer]:
+                  - /url: /blog/category/engineering
+                  - generic [ref=e998]: Engineering
+                - link "Application Security" [ref=e1000] [cursor=pointer]:
+                  - /url: /blog/category/security
+                  - generic [ref=e1001]: Application Security
+                - link "View All" [ref=e1003] [cursor=pointer]:
+                  - /url: /blog
+                  - generic [ref=e1004]: View All
+            - generic [ref=e1005]:
+              - paragraph [ref=e1006]: Achievements
+              - generic [ref=e1007]:
+                - link "SOC 2 Type 2" [ref=e1009] [cursor=pointer]:
+                  - /url: /blog/announcing-soc-2-type-2-compliance
+                  - generic [ref=e1010]: SOC 2 Type 2
+                - link "Raised $125M" [ref=e1012] [cursor=pointer]:
+                  - /url: /blog/series-c
+                  - generic [ref=e1013]: Raised $125M
+                - link "Fortune Cyber 60" [ref=e1015] [cursor=pointer]:
+                  - /url: /blog/socket-recognized-on-fortune-cyber-60-list
+                  - generic [ref=e1016]: Fortune Cyber 60
+                - link "Top Customers" [ref=e1018] [cursor=pointer]:
+                  - /url: /customers
+                  - generic [ref=e1019]: Top Customers
+                - link "Company News" [ref=e1021] [cursor=pointer]:
+                  - /url: /blog/category/news
+                  - generic [ref=e1022]: Company News
+          - generic [ref=e1023]:
+            - generic [ref=e1024]:
+              - link "Socket home" [ref=e1025] [cursor=pointer]:
+                - /url: /
+                - img [ref=e1026]
+              - generic [ref=e1036]:
+                - link "Socket on X" [ref=e1037] [cursor=pointer]:
+                  - /url: https://x.com/SocketSecurity
+                  - img [ref=e1038]
+                - link "Socket on GitHub" [ref=e1040] [cursor=pointer]:
+                  - /url: https://github.com/SocketDev
+                  - img [ref=e1041]
+                - link "Socket on LinkedIn" [ref=e1043] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/company/socketinc
+                  - img [ref=e1044]
+                - link "Socket on Discord" [ref=e1046] [cursor=pointer]:
+                  - /url: https://discord.gg/JkhgPpXDSd
+                  - img [ref=e1047]
+                - link "Socket on Bluesky" [ref=e1049] [cursor=pointer]:
+                  - /url: https://bsky.app/profile/socket.dev
+                  - img [ref=e1050]
+            - generic [ref=e1052]:
+              - paragraph [ref=e1053]: Stay in touch
+              - paragraph [ref=e1054]: Get open source security insights delivered straight into your inbox.
+              - generic [ref=e1055]:
+                - textbox "Enter email" [ref=e1056]
+                - button "Subscribe to newsletter" [ref=e1057] [cursor=pointer]:
+                  - img [ref=e1058]
+            - generic [ref=e1060]:
+              - link "Book a Demo" [ref=e1061] [cursor=pointer]:
+                - /url: /demo
+                - generic [ref=e1062]: Book a Demo
+              - link "Sign In" [ref=e1063] [cursor=pointer]:
+                - /url: /auth/login
+                - generic [ref=e1064]: Sign In
+            - generic [ref=e1065]:
+              - link "Terms" [ref=e1066] [cursor=pointer]:
+                - /url: /terms
+                - generic [ref=e1067]: Terms
+              - link "Privacy" [ref=e1068] [cursor=pointer]:
+                - /url: /privacy
+                - generic [ref=e1069]: Privacy
+              - link "Security" [ref=e1070] [cursor=pointer]:
+                - /url: /security
+                - generic [ref=e1071]: Security
+          - generic [ref=e1072]:
+            - generic [ref=e1073]:
+              - paragraph [ref=e1074]: Made with ⚡️ by Socket Inc
+              - paragraph [ref=e1075]: U.S. Patent No. 12,346,443 & 12,314,394. Other pending.
+            - link "SOC 2 Type II certified" [ref=e1076] [cursor=pointer]:
+              - /url: /security
+              - img "SOC 2 Type II certified" [ref=e1077]
+  - alert [ref=e1078]
+  - region "bottom-end Notifications alt+T"
