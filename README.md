@@ -2,14 +2,15 @@
 
 **A queryable knowledge graph of your codebase, for Claude Code agents.**
 
-`codebase-pkg` parses your TypeScript/TSX and Python source tree into a Neo4j graph (functions, types, imports, call chains, constraints, change history) and exposes it to Claude Code over MCP. Instead of re-greping and re-reading files every session, the agent queries the graph.
+`codebase-pkg` parses your TypeScript/TSX, Python, and Rust source tree into a Neo4j graph (functions, types, imports, call chains, constraints, change history) and exposes it to Claude Code over MCP. Instead of re-greping and re-reading files every session, the agent queries the graph.
 
-> Status: 0.x — early release. TypeScript/TSX and Python (see [Language support](#language-support)). Tested with `node:test` (`npm test`). See the [CHANGELOG](./CHANGELOG.md) for what's new and known limitations.
+> Status: 0.x — early release. TypeScript/TSX, Python, and Rust (see [Language support](#language-support)). Tested with `node:test` (`npm test`). See the [CHANGELOG](./CHANGELOG.md) for what's new and known limitations.
 
 ## Language support
 
 - **TypeScript / TSX** — parsed in-process with ts-morph. No extra requirements.
 - **Python** — parsed with your own Python runtime via the stdlib `ast` module (zero extra npm dependencies). Needs `python3` or `python` (3.9+) on PATH, and only to index `.py` files — if no runtime is found, `.py` files are skipped with a warning and everything else works unchanged. Test files (`test_*.py`, `*_test.py`, `conftest.py`) and `__pycache__`/virtualenv directories are excluded automatically.
+- **Rust** — parsed with tree-sitter (WASM, bundled; no Rust toolchain or native build needed). Structs/unions map to `class`, enums to `enum`, traits to `interface`, type aliases to `type`, and `const`/`static` to constants. `impl` and trait methods are named `Type.method`; items in inline modules are named `mod::Item`; trait impls are recorded in the type's `implements`. Imports come from `use`, `extern crate`, and `mod` declarations: `crate::`/`self::`/`super::` paths resolve to local module directories, while external crates get no edge. `target/` (in Rust crates, i.e. folders with a `Cargo.toml`), `tests/`, and `benches/` directories, `#[cfg(test)]` modules, and `#[test]` functions are excluded. Limitations: no macro expansion (macro-generated items are invisible and macro calls are not callees), no `cfg` evaluation, and no type/trait resolution (calls are matched by name, like the other languages). Known limitation: the pinned grammar (tree-sitter-rust 0.24) misreads `&raw` when `raw` is a variable name as newer raw-borrow syntax, producing a "syntax errors; extracted partially" warning on valid code; declarations are still extracted, but calls/type refs inside the affected function may be incomplete.
 
 ## Install
 

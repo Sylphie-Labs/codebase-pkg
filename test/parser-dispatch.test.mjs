@@ -49,3 +49,28 @@ test('mixed .ts + .py batch routes to both parsers and concatenates results', as
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('mixed .ts + .rs batch routes to both parsers and concatenates results', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-dispatch-rs-'));
+  const tsPath = path.join(tmpDir, 'thing.ts');
+  const rsPath = path.join(tmpDir, 'thing.rs');
+
+  try {
+    fs.writeFileSync(tsPath, 'export function tsThing(): number { return 1; }\n', 'utf8');
+    fs.writeFileSync(rsPath, 'pub fn rs_thing() -> i32 { 1 }\n', 'utf8');
+
+    const results = parseFiles([tsPath, rsPath]);
+
+    const tsEntries = results.filter(r => r.filePath.endsWith('.ts'));
+    const rsEntries = results.filter(r => r.filePath.endsWith('.rs'));
+
+    assert.equal(tsEntries.length, 1, 'exactly one .ts entry');
+    assert.equal(tsEntries[0].functions[0]?.name, 'tsThing');
+    assert.equal(rsEntries.length, 1, 'exactly one .rs entry');
+    assert.equal(rsEntries[0].filePath, fwd(rsPath));
+    assert.equal(rsEntries[0].functions[0]?.name, 'rs_thing');
+    assert.equal(results.length, 2);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

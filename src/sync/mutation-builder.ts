@@ -17,6 +17,7 @@ import type { ParsedFunction, ParsedType, ParsedFile } from './ast-parser.js';
 import {
   resolveImportTarget,
   resolvePythonImportTarget,
+  resolveRustImportTarget,
   packageNameForDir,
 } from './import-resolver.js';
 
@@ -434,7 +435,9 @@ function buildEdgeAdd(edge: EdgeAdd): CypherStatement | null {
 
   const targetPath = fromFile.endsWith('.py')
     ? resolvePythonImportTarget(dirPath, moduleSpecifier)
-    : resolveImportTarget(dirPath, moduleSpecifier);
+    : fromFile.endsWith('.rs')
+      ? resolveRustImportTarget(dirPath, fromFile, moduleSpecifier)
+      : resolveImportTarget(dirPath, moduleSpecifier);
   if (!targetPath) return null;
 
   return {

@@ -15,6 +15,7 @@ import * as process from 'node:process';
 import {
   resolveImportTarget,
   resolvePythonImportTarget,
+  resolveRustImportTarget,
   getWatchedPackages,
 } from '../dist/sync/import-resolver.js';
 
@@ -289,5 +290,66 @@ test('env override returns CODEBASE_PKG_PACKAGES verbatim', () => {
     assert.deepEqual(pkgs, override);
   } finally {
     delete process.env.CODEBASE_PKG_PACKAGES;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Rust resolution (temp crate)
+// ---------------------------------------------------------------------------
+
+test('resolveRustImportTarget: crate/self/super/external', () => {
+  const root = fwd(fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-rsres-')));
+  try {
+    fs.mkdirSync(`${root}/src/a`, { recursive: true });
+    fs.writeFileSync(`${root}/Cargo.toml`, '[package]\nname = "x"\nversion = "0.1.0"\n');
+    for (const f of ['src/lib.rs', 'src/a/mod.rs', 'src/a/b.rs', 'src/c.rs']) {
+      fs.writeFileSync(`${root}/${f}`, '');
+    }
+    const src = `${root}/src`;
+    const lib = `${src}/lib.rs`;
+    const bRs = `${src}/a/b.rs`;
+
+    // crate::a -> src/a (directory module)
+    assert.equal(resolveRustImportTarget(`${root}/elsewhere`, lib, 'crate::a'), `${src}/a`);
+    // crate::a::b::Item -> descends dirs only (b is b.rs), lands on src/a
+    assert.equal(resolveRustImportTarget(src, bRs, 'crate::a::b::Item'), `${src}/a`);
+    // crate::c -> c.rs is a file, resolves to the crate src dir
+    assert.equal(resolveRustImportTarget(`${root}/elsewhere`, bRs, 'crate::c'), src);
+    // self::x from lib.rs -> src (self-loop guard returns null when sourceDir is src)
+    assert.equal(resolveRustImportTarget(`${root}/elsewhere`, lib, 'self::x'), src);
+    assert.equal(resolveRustImportTarget(src, lib, 'self::x'), null);
+    // self::a::foo from lib.rs descends into src/a
+    assert.equal(resolveRustImportTarget(src, lib, 'self::a::foo'), `${src}/a`);
+    // super:: from src/a/b.rs: module dir is src/a/b, parent src/a
+    assert.equal(resolveRustImportTarget(src, bRs, 'super::Item'), `${src}/a`);
+    assert.equal(resolveRustImportTarget(`${src}/a`, bRs, 'super::Item'), null);
+    // super::super:: climbs to src
+    assert.equal(resolveRustImportTarget(`${src}/a`, bRs, 'super::super::c'), src);
+    // external crate -> null
+    assert.equal(resolveRustImportTarget(src, lib, 'serde::Serialize'), null);
+    assert.equal(resolveRustImportTarget(src, lib, 'std::collections'), null);
+    // no Cargo.toml up the tree -> null
+    const orphan = fwd(fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-rsorph-')));
+    try {
+      fs.writeFileSync(`${orphan}/x.rs`, '');
+      assert.equal(resolveRustImportTarget(`${root}/elsewhere`, `${orphan}/x.rs`, 'crate::a'), null);
+    } finally {
+      fs.rmSync(orphan, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('resolveRustImportTarget: relative sourceDir self-link returns null', () => {
+  const root = fwd(fs.mkdtempSync(path.join(os.tmpdir(), 'cbpkg-rsrel-')));
+  try {
+    fs.mkdirSync(`${root}/src`, { recursive: true });
+    fs.writeFileSync(`${root}/Cargo.toml`, '[package]\nname = "x"\nversion = "0.1.0"\n');
+    fs.writeFileSync(`${root}/src/lib.rs`, '');
+    const relSrc = fwd(path.relative(process.cwd(), `${root}/src`));
+    assert.equal(resolveRustImportTarget(relSrc, `${root}/src/lib.rs`, 'self::x'), null);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });
