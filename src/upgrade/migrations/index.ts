@@ -20,6 +20,7 @@ import migration_0_5_0_to_0_5_1 from './0.5.0-to-0.5.1.js';
 import migration_0_5_1_to_0_5_2 from './0.5.1-to-0.5.2.js';
 import migration_0_5_2_to_0_5_3 from './0.5.2-to-0.5.3.js';
 import migration_0_5_3_to_0_5_4 from './0.5.3-to-0.5.4.js';
+import migration_0_5_4_to_0_6_0 from './0.5.4-to-0.6.0.js';
 
 export const MIGRATIONS: Migration[] = [
   migration_0_1_0_to_0_2_0,
@@ -31,6 +32,7 @@ export const MIGRATIONS: Migration[] = [
   migration_0_5_1_to_0_5_2,
   migration_0_5_2_to_0_5_3,
   migration_0_5_3_to_0_5_4,
+  migration_0_5_4_to_0_6_0,
 ];
 
 export type { Migration, MigrationContext, MigrationResult, MigrationSeverity } from './types.js';

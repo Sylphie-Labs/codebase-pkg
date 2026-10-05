@@ -1,5 +1,5 @@
 /**
- * git-diff.ts -- Detect changed source files (.ts/.tsx/.py) since the last sync.
+ * git-diff.ts -- Detect changed source files (.ts/.tsx/.py/.rs) since the last sync.
  *
  * Reads a .last-sync-commit file to find the last synced git commit, runs
  * git diff to identify changed files, and filters to only the source
@@ -100,6 +100,8 @@ const EXCLUDE_PATTERNS = [
   /(^|\/)test_[^\/]+\.py$/,
   /_test\.py$/,
   /(^|\/)conftest\.py$/,
+  /(^|\/)(tests|benches)\/.*\.rs$/,
+  /(^|\/)target\/.*\.rs$/,
 ];
 
 // ---------------------------------------------------------------------------
@@ -125,7 +127,8 @@ function isWatchedFile(relativePath: string): boolean {
   const isSourceFile =
     normalised.endsWith('.ts') ||
     normalised.endsWith('.tsx') ||
-    normalised.endsWith('.py');
+    normalised.endsWith('.py') ||
+    normalised.endsWith('.rs');
   if (!isSourceFile) return false;
 
   if (EXCLUDE_PATTERNS.some(rx => rx.test(normalised))) return false;

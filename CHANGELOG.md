@@ -4,6 +4,12 @@ All notable changes to `@sylphie-labs/codebase-pkg` will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-10-05
+
+### Added
+- **Rust support.** `.rs` files are now parsed with tree-sitter (`web-tree-sitter` 0.25.10, exact pin, with the grammar vendored at `grammars/tree-sitter-rust.wasm` and shipped in the package) -- no Rust toolchain or native build required. Structs/unions -> `class`, enums -> `enum`, traits -> `interface`, type aliases -> `type`, `const`/`static` -> constants; `impl` and trait methods are `Type.method`, inline-module items are `mod::Item`, and trait impls are recorded in the type's `implements`. Imports are read from `use`, `extern crate`, and `mod` declarations; `crate::`/`self::`/`super::` paths resolve to local module directories and external crates get no edge. `target/` (in Rust crates, i.e. folders with a `Cargo.toml`), `tests/`, `benches/`, `#[cfg(test)]` modules, and `#[test]` functions are excluded. Known limitation: the pinned grammar (tree-sitter-rust 0.24) misreads `&raw` when `raw` is a variable name as newer raw-borrow syntax, producing a "syntax errors; extracted partially" warning on valid code; declarations are still extracted, but calls/type refs inside the affected function may be incomplete.
+- **Known limitations (Rust):** no macro expansion (macro-generated items are invisible, macro calls are not callees), no `cfg` evaluation, and no type/trait resolution (calls are matched by name, like the other languages).
+
 ## [0.5.4] — 2026-06-28
 
 ### Fixed

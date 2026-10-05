@@ -8,6 +8,7 @@
  *   - workspace-scoped imports (CODEBASE_PKG_WORKSPACE_SCOPE, e.g. "@your-org")
  *   - relative imports ("./x", "../y")
  *   - Python dotted/relative imports via resolvePythonImportTarget
+ *   - Rust crate::/self::/super:: paths via resolveRustImportTarget
  * External package specifiers resolve to null and get no edge.
  */
 
@@ -20,7 +21,7 @@ const IGNORE_DIR_NAMES = new Set([
   'node_modules','dist','build','out','coverage','.git','.cache','.next','.turbo',
   '.codebase-pkg','venv','.venv','.tox','__pycache__','site-packages','.idea','.vscode',
 ]);
-const SOURCE_EXTENSIONS = ['.ts','.tsx','.py'];
+const SOURCE_EXTENSIONS = ['.ts','.tsx','.py','.rs'];
 const MAX_DETECT_DEPTH = 5;
 
 // Files that match a source extension but the seed (initial-seed.ts EXCLUDE_PATTERNS)
@@ -35,12 +36,17 @@ function isIndexableSourceName(name: string): boolean {
   if (/^test_.*\.py$/.test(name)) return false;
   if (/_test\.py$/.test(name)) return false;
   if (name === 'conftest.py') return false;
+  // Rust: no name-based test exclusion; tests/ and benches/ are excluded by directory.
   return true;
 }
 
 // Does this directory directly (or within a few levels) contain first-party source?
 // Used to decide whether a src-less package dir (e.g. a Python service) is worth watching.
 // Only counts files the seed would actually ingest (see isIndexableSourceName).
+function isRustTargetDir(parentDir: string, name: string): boolean {
+  return name === 'target' && fs.existsSync(path.join(parentDir, 'Cargo.toml'));
+}
+
 function dirContainsSource(dir: string, maxDepth: number): boolean {
   let entries: fs.Dirent[];
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return false; }
@@ -49,7 +55,7 @@ function dirContainsSource(dir: string, maxDepth: number): boolean {
   }
   if (maxDepth <= 0) return false;
   for (const e of entries) {
-    if (e.isDirectory() && !IGNORE_DIR_NAMES.has(e.name)) {
+    if (e.isDirectory() && !IGNORE_DIR_NAMES.has(e.name) && !isRustTargetDir(dir, e.name)) {
       if (dirContainsSource(path.join(dir, e.name), maxDepth - 1)) return true;
     }
   }
@@ -114,7 +120,7 @@ export function getWatchedPackages(repoRoot: string = REPO_ROOT): WatchedPackage
           // Long-standing behavior: any child with a src/ is a package — even if its name
           // collides with a noise dir (e.g. a package literally named 'build').
           add(entry.name, parent + '/' + entry.name + '/src');
-        } else if (!IGNORE_DIR_NAMES.has(entry.name) && dirContainsSource(pkgPath, MAX_DETECT_DEPTH)) {
+        } else if (!IGNORE_DIR_NAMES.has(entry.name) && !isRustTargetDir(parentPath, entry.name) && dirContainsSource(pkgPath, MAX_DETECT_DEPTH)) {
           // New src-less fallback: skip noise dirs (.venv, dist, node_modules, ...).
           add(entry.name, parent + '/' + entry.name);
         }
@@ -130,7 +136,7 @@ export function getWatchedPackages(repoRoot: string = REPO_ROOT): WatchedPackage
       if (!entry.isDirectory()) continue;
       const name = entry.name;
       if (name === 'apps' || name === 'packages' || name === 'src') continue;
-      if (IGNORE_DIR_NAMES.has(name) || name.startsWith('.')) continue;
+      if (IGNORE_DIR_NAMES.has(name) || isRustTargetDir(repoRoot, name) || name.startsWith('.')) continue;
       if (fs.existsSync(path.join(repoRoot, name, 'src'))) add(name, name + '/src');
     }
   } catch { /* ignore */ }
@@ -254,4 +260,76 @@ export function resolvePythonImportTarget(sourceDir: string, moduleSpecifier: st
 
   // External package or stdlib — skip
   return null;
+}
+
+/**
+ * Resolve a Rust `use` path to the absolute directory of the target module,
+ * or null for external crates / unresolvable paths.
+ *
+ * The crate root is the nearest ancestor directory (up to the repo root)
+ * containing Cargo.toml; module paths are resolved under its src/ dir
+ * (or the crate dir itself when there is no src/).
+ *
+ * Specifier shapes: "crate::a::b", "self::a", "super::a", "super::super::a".
+ * Any other first segment is an external crate and yields null. Segments are
+ * followed while they name directories; a `<seg>.rs` file or an item leaves
+ * the base at its containing directory.
+ *
+ * @param sourceDir - absolute directory of the importing file (forward slashes)
+ * @param fromFile - path of the importing file (absolute, or relative to the repo root)
+ * @param moduleSpecifier - the raw `::`-separated path
+ */
+export function resolveRustImportTarget(sourceDir: string, fromFile: string, moduleSpecifier: string): string | null {
+  const repoRoot = path.resolve(REPO_ROOT).replace(/\\/g, '/');
+  const absFile = path.resolve(fromFile).replace(/\\/g, '/');
+  const fileDir = path.dirname(absFile).replace(/\\/g, '/');
+
+  // (a) crate root: nearest Cargo.toml walking up toward the repo root (inclusive).
+  let crateDir: string | null = null;
+  let cur = fileDir;
+  for (;;) {
+    if (fs.existsSync(`${cur}/Cargo.toml`)) { crateDir = cur; break; }
+    if (cur === repoRoot) break;
+    const parent = path.dirname(cur).replace(/\\/g, '/');
+    if (parent === cur) break;
+    cur = parent;
+  }
+  if (!crateDir) return null;
+  const srcCandidate = `${crateDir}/src`;
+  const srcRoot = fs.existsSync(srcCandidate) && fs.statSync(srcCandidate).isDirectory() ? srcCandidate : crateDir;
+
+  // (b) directory of the module this file defines.
+  const base0 = path.basename(absFile);
+  const stem = base0.replace(/\.rs$/, '');
+  const moduleDir = base0 === 'mod.rs' || base0 === 'lib.rs' || base0 === 'main.rs'
+    ? fileDir
+    : `${fileDir}/${stem}`;
+
+  // (c) leading keyword.
+  const segments = moduleSpecifier.split('::').filter(s => s.length > 0);
+  if (segments.length === 0) return null;
+  const first = segments.shift()!;
+  let base: string;
+  if (first === 'crate') base = srcRoot;
+  else if (first === 'self') base = moduleDir;
+  else if (first === 'super') {
+    base = path.dirname(moduleDir).replace(/\\/g, '/');
+    while (segments[0] === 'super') {
+      segments.shift();
+      base = path.dirname(base).replace(/\\/g, '/');
+    }
+  } else return null; // external crate
+
+  // (d) descend through directory segments only.
+  for (const seg of segments) {
+    const next = `${base}/${seg}`;
+    if (fs.existsSync(next) && fs.statSync(next).isDirectory()) base = next;
+    else break;
+  }
+
+  // (e)
+  if (!fs.existsSync(base)) return null;
+  const normSource = path.resolve(sourceDir).replace(/\\/g, '/').replace(/\/+$/, '');
+  if (base === normSource) return null;
+  return base;
 }

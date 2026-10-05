@@ -1,6 +1,6 @@
 {
   "name": "@sylphie-labs/codebase-pkg",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "AST-driven Neo4j knowledge graph of your codebase, exposed to Claude Code via MCP. Map your monorepo once; let the agent query it instead of re-reading files.",
   "keywords": [
     "claude",
@@ -56,6 +56,7 @@
   },
   "files": [
     "dist/",
+    "grammars/",
     "template/",
     "constraints.example.json",
     "README.md",
@@ -79,7 +80,8 @@
     "@modelcontextprotocol/sdk": "^1.12.1",
     "neo4j-driver": "^5.27.0",
     "pg": "^8.13.0",
-    "ts-morph": "^25.0.0"
+    "ts-morph": "^25.0.0",
+    "web-tree-sitter": "0.25.10"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,7 +1,7 @@
 /**
  * initial-seed.ts -- One-time full codebase parse and PKG bootstrap.
  *
- * Walks the entire monorepo, extracts all source (.ts/.tsx/.py)
+ * Walks the entire monorepo, extracts all source (.ts/.tsx/.py/.rs)
  * functions/types/imports, creates the full node and edge set in the
  * codebase PKG, then runs integrity checks.
  *
@@ -15,7 +15,7 @@ import { parseFiles, clearProjectCache } from '../sync/parser.js';
 import { runIntegrityChecks } from '../sync/integrity-checker.js';
 import { writeLastSyncCommit } from '../sync/git-diff.js';
 import { getDriver, closeDriver } from '../mcp-server/neo4j-client.js';
-import { WATCHED_PACKAGES, resolveImportTarget, resolvePythonImportTarget } from '../sync/import-resolver.js';
+import { WATCHED_PACKAGES, resolveImportTarget, resolvePythonImportTarget, resolveRustImportTarget } from '../sync/import-resolver.js';
 import type { ParsedFile, ParsedImport } from '../sync/ast-parser.js';
 
 // ---------------------------------------------------------------------------
@@ -37,6 +37,8 @@ const EXCLUDE_PATTERNS = [
   /(^|\/)test_[^\/]+\.py$/,
   /_test\.py$/,
   /(^|\/)conftest\.py$/,
+  /(^|\/)(tests|benches)\/.*\.rs$/,
+  /(^|\/)target\/.*\.rs$/,
 ];
 
 const BATCH_SIZE = 50;
@@ -70,14 +72,16 @@ function collectSourceFiles(dir: string): string[] {
           entry.name === 'venv' ||
           entry.name === '.venv' ||
           entry.name === '.tox' ||
-          entry.name === 'site-packages'
+          entry.name === 'site-packages' ||
+          (entry.name === 'target' && fs.existsSync(path.join(currentDir, 'Cargo.toml')))
         ) continue;
         walk(fullPath);
       } else if (entry.isFile()) {
         const isSource =
           entry.name.endsWith('.ts') ||
           entry.name.endsWith('.tsx') ||
-          entry.name.endsWith('.py');
+          entry.name.endsWith('.py') ||
+          entry.name.endsWith('.rs');
         if (!isSource) continue;
         if (EXCLUDE_PATTERNS.some(rx => rx.test(relativePath))) continue;
         results.push(fullPath);
@@ -418,7 +422,9 @@ async function writeParsedBatch(
       for (const imp of parsedFile.imports) {
         const targetPath = parsedFile.extension === '.py'
           ? resolvePythonImportTarget(dirPath, imp.moduleSpecifier)
-          : resolveImportTarget(dirPath, imp.moduleSpecifier);
+          : parsedFile.extension === '.rs'
+            ? resolveRustImportTarget(dirPath, parsedFile.filePath, imp.moduleSpecifier)
+            : resolveImportTarget(dirPath, imp.moduleSpecifier);
         if (!targetPath) continue;
 
         await tx.run(

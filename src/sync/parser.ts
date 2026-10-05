@@ -1,18 +1,20 @@
 /**
  * parser.ts -- Language dispatcher: the single parse entry point.
  *
- * Routes .ts/.tsx files to the ts-morph based ast-parser and .py files to
- * the python-parser (which shells out to the user's Python runtime). Both
- * produce the same ParsedFile shape, so callers stay language-agnostic.
+ * Routes .ts/.tsx files to the ts-morph based ast-parser, .py files to the
+ * python-parser (which shells out to the user's Python runtime), and .rs files
+ * to the rust-parser (web-tree-sitter in a child process). All produce the
+ * same ParsedFile shape, so callers stay language-agnostic.
  */
 
 import { parseFiles as parseTypeScriptFiles, clearProjectCache } from './ast-parser.js';
 import { parsePythonFiles, pythonAvailable } from './python-parser.js';
+import { parseRustFiles } from './rust-parser.js';
 import type { ParsedFile } from './ast-parser.js';
 
 /**
  * Parse a mixed list of source files. Results are the TypeScript results
- * followed by the Python results (no ordering guarantee beyond that).
+ * followed by the Python results, then the Rust results (no ordering guarantee beyond that).
  *
  * If .py files are present but no Python runtime is found on PATH, they are
  * skipped with a single stderr warning.
@@ -20,11 +22,14 @@ import type { ParsedFile } from './ast-parser.js';
 export function parseFiles(filePaths: string[]): ParsedFile[] {
   const tsFiles: string[] = [];
   const pyFiles: string[] = [];
+  const rsFiles: string[] = [];
 
   for (const rawPath of filePaths) {
     const filePath = rawPath.replace(/\\/g, '/');
     if (filePath.endsWith('.py')) {
       pyFiles.push(filePath);
+    } else if (filePath.endsWith('.rs')) {
+      rsFiles.push(filePath);
     } else {
       // .ts/.tsx (and anything else, preserving the previous single-parser
       // behavior for unexpected extensions).
@@ -46,6 +51,10 @@ export function parseFiles(filePaths: string[]): ParsedFile[] {
     } else {
       results.push(...parsePythonFiles(pyFiles));
     }
+  }
+
+  if (rsFiles.length > 0) {
+    results.push(...parseRustFiles(rsFiles));
   }
 
   return results;
